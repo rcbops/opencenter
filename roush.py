@@ -2,6 +2,8 @@
 import sys
 
 from flask import Flask, Response, request, session, jsonify, url_for
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import UnmappedInstanceError
 
 from database import db_session
 from models import Nodes, Roles, Clusters
@@ -11,7 +13,7 @@ from getopt import getopt, GetoptError
 from pprint import pprint
 
 app = Flask(__name__)
-app.config['DEBUG'] = True
+
 
 @app.teardown_request
 def shutdown_session(exception=None):
@@ -26,17 +28,18 @@ def list_roles():
 
         role = Roles(name, desc)
         db_session.add(role)
-        db_session.commit()
-
-        message = {
-            'status': 201,
-            'message': 'Role Created',
-            'role': dict((c, getattr(role, c))
-                         for c in role.__table__.columns.keys()),
-            'ref': url_for('role_by_id', role_id=role.id)
-        }
-        resp = jsonify(message)
-        resp.status_code = 201
+        try:
+            db_session.commit()
+            message = {'status': 201, 'message': 'Role Created',
+                       'role': dict((c, getattr(role, c))
+                                    for c in role.__table__.columns.keys()),
+                       'ref': url_for('role_by_id', role_id=role.id)}
+            resp = jsonify(msg)
+            resp.status_code = 201
+        except IntegrityError, e:
+            msg = {'status': 500, "message": e.message}
+            resp = jsonify(msg)
+            resp.status_code = 500
         return resp
     else:
         role_list = dict(roles=[dict((c, getattr(r, c))
@@ -49,6 +52,10 @@ def list_roles():
 @app.route('/roles/<role_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def role_by_id(role_id):
     if request.method == 'PUT':
+        role_id = None
+        if 'role_id' in request.json:
+            role_id = request.json['role_id']
+
         message = {
             'status': 501,
             'message': 'Not Implemented'
@@ -66,14 +73,25 @@ def role_by_id(role_id):
         return resp
     elif request.method == 'DELETE':
         r = Roles.query.filter_by(id=role_id).first()
-        db_session.delete(r)
-        db_session.commit()
-        return 'Deleted role: %s' % (role_id)
+        try:
+            db_session.delete(r)
+            db_session.commit()
+            msg = {'status': 200, 'message': 'Role deleted'}
+            resp = jsonify(msg)
+            resp.status_code = 200
+        except UnmappedInstanceError, e:
+            msg = {'status': 404, 'message': 'Resource not found',
+                   'role': {'id': role_id}}
+            resp = jsonify(msg)
+            resp.status_code = 404
+        return resp
     else:
         r = Roles.query.filter_by(id=role_id).first()
-        pprint(r)
         if r is None:
-            resp = jsonify(dict())
+            msg = {'status': 404, 'message': 'Resource not found',
+                   'role': {'id': role_id}}
+            resp = jsonify(msg)
+            resp.status_code = 404
         else:
             resp = jsonify(dict((c, getattr(r, c))
                            for c in r.__table__.columns.keys()))
@@ -158,7 +176,7 @@ def node_by_id(node_id):
         return resp
 
 if __name__ == '__main__':
-    debug = False
+    debug = True
     configfile = None
     daemonize = False
     config_hash = {}
@@ -179,7 +197,7 @@ if __name__ == '__main__':
         usage()
         sys.exit(1)
 
-    for o,a in opts:
+    for o, a in opts:
         if o == '-c':
             configfile = a
         elif o == '-d':
@@ -193,7 +211,7 @@ if __name__ == '__main__':
         config = ConfigParser()
         config.read(configfile)
 
-        config_hash = { i: dict(config._sections[i]) for i in config._sections }
+        config_hash = {i: dict(config._sections[i]) for i in config._sections}
 
         bind_address = config_hash['main'].get('bind_address', '0.0.0.0')
         bind_port = int(config_hash['main'].get('bind_port', '8080'))
