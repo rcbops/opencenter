@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
+import resource
 
 from flask import Flask, Response, request, session, jsonify, url_for
 from sqlalchemy.exc import IntegrityError
@@ -185,7 +186,7 @@ if __name__ == '__main__':
     debug = False
     configfile = None
     daemonize = False
-    config_hash = {}
+    config_hash = { "main": {} }
     global backend
 
     bind_address = '0.0.0.0'
@@ -200,6 +201,23 @@ if __name__ == '__main__':
             os.umask(0)
             if os.fork():
                 sys.exit(0)
+
+        # Resource usage information.
+        maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
+        if (maxfd == resource.RLIM_INFINITY):
+            maxfd = 1024 # ?
+
+        # Iterate through and close all file descriptors.
+        for fd in range(0, maxfd):
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+
+        # reopen stds to/from /dev/null
+        os.open("/dev/null", os.O_RDWR) # this will be 0
+        os.dup2(0,1)
+        os.dup2(0,2)
 
     def usage():
         print "%s: [options]\n"
@@ -228,11 +246,6 @@ if __name__ == '__main__':
 
     # set up logging
     LOG = logging.getLogger()
-    if(debug):
-        LOG.setLevel(logging.DEBUG)
-    else:
-        LOG.setLevel(logging.WARNING)
-
     LOG.addHandler(logging.FileHandler("/dev/stdout"))
 
     # read the config file
@@ -250,18 +263,23 @@ if __name__ == '__main__':
         backend = backends.load(
             backend_module, config_hash.get('%s_backend' % backend_module, {}))
 
-        # set up logging
-        if 'logfile' in config_hash['main']:
-            for handler in LOG.handlers:
-                LOG.removeHandler(handler)
-
-            handler = logging.FileHandler(config_hash['main']['logfile'])
-            LOG.addHandler(handler)
-
     app.debug = debug
-    LOG.debug("Starting app server on %s:%d" % (bind_address, bind_port))
 
     if daemonize and not debug:
         do_daemonize()
 
+    # open log handler
+    # set up logging
+    if 'logfile' in config_hash['main']:
+        for handler in LOG.handlers:
+            LOG.removeHandler(handler)
+
+        handler = logging.FileHandler(config_hash['main']['logfile'])
+        LOG.addHandler(handler)
+
+    if 'loglevel' in config_hash['main']:
+        LOG.setLevel(config_hash['main']['loglevel'])
+
+
+    LOG.debug("Starting app server on %s:%d" % (bind_address, bind_port))
     app.run(host=bind_address, port=bind_port)
