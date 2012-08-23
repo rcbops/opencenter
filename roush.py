@@ -162,7 +162,7 @@ def cluster_by_id(cluster_id):
         try:
             db_session.delete(r)
             db_session.commit()
-            msg = {'status': 200, 'message': 'Role deleted'}
+            msg = {'status': 200, 'message': 'Cluster deleted'}
             resp = jsonify(msg)
             resp.status_code = 200
         except UnmappedInstanceError, e:
@@ -184,70 +184,92 @@ def cluster_by_id(cluster_id):
 
 
 @app.route('/nodes', methods=['GET', 'POST'])
-def node():
+def list_nodes():
     if request.method == 'POST':
-        hostname = request.json['hostname']
+        if 'hostname' in request.json:
+            hostname = request.json['hostname']
 
-        role_id = None
-        if 'role_id' in request.json:
-            role_id = request.json['role_id']
+            role_id = None
+            if 'role_id' in request.json:
+                role_id = request.json['role_id']
 
-        cluster_id = None
-        if 'cluster_id' in request.json:
-            cluster_id = request.json['cluster_id']
+            cluster_id = None
+            if 'cluster_id' in request.json:
+                cluster_id = request.json['cluster_id']
 
-        node = Nodes(hostname, role_id, cluster_id)
-        # TODO(shep): need to break if IntegrityError is thrown
-        db_session.add(node)
-        db_session.commit()
-        message = {
-            'status': 201,
-            'message': 'Node Created',
-            'ref': url_for('node_by_id', node_id=node.id)
-        }
-        resp = jsonify(message)
-        resp.status_code = 201
-        return resp
+            # This should probably check against Roles.id and Clusters.id
+            node = Nodes(hostname=hostname, role_id=role_id, cluster_id=cluster_id)
+            db_session.add(node)
+            try:
+                db_session.commit()
+                message = {'status': 201, 'message': 'Node Created',
+                           'cluster': dict((c, getattr(node, c))
+                                           for c in node.__table__.columns.keys()),
+                    'ref': url_for('node_by_id', node_id=node.id)
+                }
+                resp = jsonify(message)
+                resp.status_code = 201
+            except IntegrityError, e:
+                msg = {'status': 500, "message": e.message}
+                resp = jsonify(msg)
+                resp.status_code = 500
+        else:
+            msg = {'status': 400, "message": "Attribute 'name' was not provided"}
+            resp = jsonify(msg)
+            resp.status_code = 400
     else:
         node_list = dict(nodes=[dict((c, getattr(r, c))
                          for c in r.__table__.columns.keys())
                          for r in Nodes.query.all()])
         resp = jsonify(node_list)
-        return resp
+    return resp
 
 
 @app.route('/nodes/<node_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def node_by_id(node_id):
-    if request.method == 'PUT':
+    if request.method == 'PATCH' or request.method == 'POST':
         message = {
             'status': 501,
             'message': 'Not Implemented'
         }
         resp = jsonify(message)
         resp.status_code = 501
-        return resp
-    elif request.method == 'PATCH':
-        message = {
-            'status': 501,
-            'message': 'Not Implemented'
-        }
-        resp = jsonify(message)
-        resp.status_code = 501
-        return resp
+    elif request.method == 'PUT':
+        r = Nodes.query.filter_by(id=node_id).first()
+        if 'hostname' in request.json:
+            r.hostname = request.json['hostname']
+        if 'cluster_id' in request.json:
+            r.cluster_id = request.json['cluster_id']
+        if 'role_id' in request.json:
+            r.role_id = request.json['role_id']
+        #TODO(shep): this is an un-excepted db call
+        db_session.commit()
+        resp = jsonify(dict((c, getattr(r, c))
+                       for c in r.__table__.columns.keys()))
     elif request.method == 'DELETE':
         r = Nodes.query.filter_by(id=node_id).first()
-        db_session.delete(r)
-        db_session.commit()
-        return 'Deleted node: %s' % (node_id)
-    elif request.method == 'GET':
+        try:
+            db_session.delete(r)
+            db_session.commit()
+            msg = {'status': 200, 'message': 'Node deleted'}
+            resp = jsonify(msg)
+            resp.status_code = 200
+        except UnmappedInstanceError, e:
+            msg = {'status': 404, 'message': 'Resource not found',
+                   'node': {'id': node_id}}
+            resp = jsonify(msg)
+            resp.status_code = 404
+    else:
         r = Nodes.query.filter_by(id=node_id).first()
-        pprint(r)
         if r is None:
-            resp = jsonify(dict())
+            msg = {'status': 404, 'message': 'Resource not found',
+                   'node': {'id': node_id}}
+            resp = jsonify(msg)
+            resp.status_code = 404
         else:
             resp = jsonify(dict((c, getattr(r, c))
                            for c in r.__table__.columns.keys()))
-        return resp
+    return resp
 
 if __name__ == '__main__':
     debug = False
