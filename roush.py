@@ -12,6 +12,7 @@ from ConfigParser import ConfigParser
 from getopt import getopt, GetoptError
 from pprint import pprint
 
+import logging
 import backends
 
 app = Flask(__name__)
@@ -209,6 +210,15 @@ if __name__ == '__main__':
             usage()
             sys.exit(1)
 
+    # set up logging
+    LOG = logging.getLogger()
+    if(debug):
+        LOG.setLevel(logging.DEBUG)
+    else:
+        LOG.setLevel(logging.WARNING)
+
+    LOG.addHandler(logging.FileHandler("/dev/stdout"))
+
     # read the config file
     if configfile:
         config = ConfigParser()
@@ -220,9 +230,19 @@ if __name__ == '__main__':
         bind_address = config_hash['main'].get('bind_address', '0.0.0.0')
         bind_port = int(config_hash['main'].get('bind_port', '8080'))
 
-        backend_module = config_hash['main'].get('backend', 'none')
+        backend_module = config_hash['main'].get('backend', 'null')
         backend = backends.load(
-            backend_module, config_hash.get('%s_backend' % backend_module), {})
+            backend_module, config_hash.get('%s_backend' % backend_module, {}))
+
+        # set up logging
+        if 'logfile' in config_hash['main']:
+            for handler in LOG.handlers:
+                LOG.removeHandler(handler)
+
+            handler = logging.FileHandler(config_hash['main']['logfile'])
+            LOG.addHandler(handler)
 
     app.debug = debug
+    LOG.debug("Starting app server on %s:%d" % (bind_address, bind_port))
+
     app.run(host=bind_address, port=bind_port)
