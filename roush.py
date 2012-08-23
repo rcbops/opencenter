@@ -1,67 +1,85 @@
-import sqlite3
+from flask import Flask, Response, request, session, jsonify
+
+from database import db_session
+from models import Nodes, Roles, Clusters
+
 from pprint import pprint
 
-from flask import Flask, request, session, g
-
-
-# Configuration
-DATABASE = 'roush.db'
-DEBUG = True
-
 app = Flask(__name__)
-app.config.from_object(__name__)
-app.config.from_envvar('ROUSH_SETTINGS', silent=True)
+app.config['DEBUG'] = True
 
-def connect_db():
-    return sqlite3.connect(app.config['DATABASE'])
-
-@app.before_request
-def before_request():
-    g.db = connect_db()
 
 @app.teardown_request
-def teardown_request(exception):
-    g.db.close()
+def shutdown_session(exception=None):
+    db_session.remove()
 
-@app.route('/role', methods=['GET'])
+
+@app.route('/roles', methods=['GET'])
 def list_roles():
-    cur = g.db.execute('select id,name,description from roles')
-    entries = dict(roles=[dict(role_id=row[0], name=row[1], description=row[2]) for row in cur.fetchall()])
-    return '%s' % entries
+    role_list = dict(roles=[dict((c, getattr(r, c))
+                     for c in r.__table__.columns.keys())
+                     for r in Roles.query.all()])
+    resp = jsonify(role_list)
+    return resp
 
-@app.route('/cluster', methods=['GET'])
-def list_roles():
-    cur = g.db.execute('select id,name,description from clusters')
-    entries = dict(clusters=[dict(role_id=row[0], name=row[1], description=row[2]) for row in cur.fetchall()])
-    return '%s' % entries
 
-@app.route('/node', methods=['GET','POST'])
+@app.route('/clusters', methods=['GET'])
+def list_clusters():
+    cluster_list = dict(clusters=[dict((c, getattr(r, c))
+                        for c in r.__table__.columns.keys())
+                        for r in Clusters.query.all()])
+    resp = jsonify(cluster_list)
+    return resp
+
+
+@app.route('/nodes', methods=['GET', 'POST'])
 def node():
     if request.method == 'GET':
-        cur = g.db.execute('select hostname,role_id,cluster_id from nodes')
-        entries = [dict(hostname=row[0], role_id=row[1], cluster_id=row[2]) for row in cur.fetchall()]
-        return '%s' % entries
+        node_list = dict(nodes=[dict((c, getattr(r, c))
+                         for c in r.__table__.columns.keys())
+                         for r in Nodes.query.all()])
+        resp = jsonify(node_list)
+        return resp
     elif request.method == 'POST':
-        g.db.execute('insert into nodes (hostname,role_id,cluster_id) values (?,?,?)', 
-                      [request.json['hostname'], request.json['role_id'], request.json['cluster_id']])
-        g.db.commit()
+        node = Nodes(request.json['hostname'])
+        db_session.add(node)
+        db_session.commit()
         return 'Created new node: %s' % (request.json['hostname'])
 
-@app.route('/node/<node_id>', methods=['GET','PUT','DELETE','PATCH'])
+
+@app.route('/nodes/<node_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def show_node(node_id):
     if request.method == 'PUT':
-        return 'PUT: show_node(%s)' % node_id
+        message = {
+            'status': 501,
+            'message': 'Not Implemented'
+        }
+        resp = jsonify(message)
+        resp.status_code = 501
+        return resp
     elif request.method == 'PATCH':
-        return 'PATCH: show_node(%s)' % node_id
+        message = {
+            'status': 501,
+            'message': 'Not Implemented'
+        }
+        resp = jsonify(message)
+        resp.status_code = 501
+        return resp
     elif request.method == 'DELETE':
-        g.db.execute('delete from nodes where id=%s' % node_id)
-        g.db.commit()
+        r = Nodes.query.filter_by(id=1).first()
+        db_session.delete(r)
+        db_session.commit()
         return 'Deleted node: %s' % (node_id)
     elif request.method == 'GET':
-        cur = g.db.execute('select hostname,role_id,cluster_id from nodes where id=%s' % node_id)
-        entries = [dict(hostname=row[0], role_id=row[1], cluster_id=row[2]) for row in cur.fetchall()]
-        return '%s' % entries
+        r = Nodes.query.filter_by(id=1).first()
+        pprint(r)
+        if r is None:
+            resp = jsonify(dict())
+        else:
+            resp = jsonify(dict((c, getattr(r, c))
+                           for c in r.__table__.columns.keys()))
+        return resp
 
 if __name__ == '__main__':
     app.debug = True
-    app.run(host='0.0.0.0',port=8080)
+    app.run(host='0.0.0.0', port=8080)
