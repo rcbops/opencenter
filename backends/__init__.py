@@ -5,7 +5,7 @@ import logging
 
 LOG=logging.getLogger('backend.driver')
 
-def load(name):
+def load(name, config={}):
     # expects an include of backends/#{name}.py,
     # with a class of #{name.capitalize}Backend
 
@@ -13,7 +13,7 @@ def load(name):
     class_str = "%sBackend" % name.capitalize()
 
     __import__(import_str)
-    return getattr(sys.modules[import_str], class_str)()
+    return getattr(sys.modules[import_str], class_str)(config)
 
 class ConfigurationBackend(object):
     def get_cluster_settings(self, cluster_name):
