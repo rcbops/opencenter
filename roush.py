@@ -26,23 +26,29 @@ def shutdown_session(exception=None):
 @app.route('/roles', methods=['GET', 'POST'])
 def list_roles():
     if request.method == 'POST':
-        name = request.json['name']
-        desc = request.json['description']
-
-        role = Roles(name, desc)
-        db_session.add(role)
-        try:
-            db_session.commit()
-            message = {'status': 201, 'message': 'Role Created',
-                       'role': dict((c, getattr(role, c))
-                                    for c in role.__table__.columns.keys()),
-                       'ref': url_for('role_by_id', role_id=role.id)}
+        if 'name' in request.json:
+            name = request.json['name']
+            desc = None
+            if 'description' in request.json:
+                desc = request.json['description']
+            role = Roles(name, desc)
+            db_session.add(role)
+            try:
+                db_session.commit()
+                msg = {'status': 201, 'message': 'Role Created',
+                           'role': dict((c, getattr(role, c))
+                                        for c in role.__table__.columns.keys()),
+                           'ref': url_for('role_by_id', role_id=role.id)}
+                resp = jsonify(msg)
+                resp.status_code = 201
+            except IntegrityError, e:
+                msg = {'status': 500, "message": e.message}
+                resp = jsonify(msg)
+                resp.status_code = 500
+        else:
+            msg = {'status': 400, "message": "Attribute 'name' was not provided"}
             resp = jsonify(msg)
-            resp.status_code = 201
-        except IntegrityError, e:
-            msg = {'status': 500, "message": e.message}
-            resp = jsonify(msg)
-            resp.status_code = 500
+            resp.status_code = 400
         return resp
     else:
         role_list = dict(roles=[dict((c, getattr(r, c))
@@ -54,26 +60,23 @@ def list_roles():
 
 @app.route('/roles/<role_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def role_by_id(role_id):
-    if request.method == 'PUT':
-        role_id = None
-        if 'role_id' in request.json:
-            role_id = request.json['role_id']
-
+    if request.method == 'PATCH' or request.method == 'POST':
         message = {
             'status': 501,
             'message': 'Not Implemented'
         }
         resp = jsonify(message)
         resp.status_code = 501
-        return resp
-    elif request.method == 'PATCH':
-        message = {
-            'status': 501,
-            'message': 'Not Implemented'
-        }
-        resp = jsonify(message)
-        resp.status_code = 501
-        return resp
+    elif request.method == 'PUT':
+        r = Roles.query.filter_by(id=role_id).first()
+        if 'name' in request.json:
+            r.name = request.json['name']
+        if 'description' in request.json:
+            r.description = request.json['description']
+        #TODO(shep): this is an un-excepted db call
+        db_session.commit()
+        resp = jsonify(dict((c, getattr(r, c))
+                       for c in r.__table__.columns.keys()))
     elif request.method == 'DELETE':
         r = Roles.query.filter_by(id=role_id).first()
         try:
@@ -87,7 +90,6 @@ def role_by_id(role_id):
                    'role': {'id': role_id}}
             resp = jsonify(msg)
             resp.status_code = 404
-        return resp
     else:
         r = Roles.query.filter_by(id=role_id).first()
         if r is None:
@@ -98,7 +100,7 @@ def role_by_id(role_id):
         else:
             resp = jsonify(dict((c, getattr(r, c))
                            for c in r.__table__.columns.keys()))
-        return resp
+    return resp
 
 
 @app.route('/clusters', methods=['GET'])
