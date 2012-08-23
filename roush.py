@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 
+import sys
+
 from flask import Flask, Response, request, session, jsonify
 
 from database import db_session
 from models import Nodes, Roles, Clusters
 
+from ConfigParser import ConfigParser
+from getopt import getopt, GetoptError
 from pprint import pprint
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
-
 
 @app.teardown_request
 def shutdown_session(exception=None):
@@ -83,5 +86,45 @@ def show_node(node_id):
         return resp
 
 if __name__ == '__main__':
-    app.debug = True
-    app.run(host='0.0.0.0', port=8080)
+    debug = False
+    configfile = None
+    daemonize = False
+    config_hash = {}
+
+    bind_address = '0.0.0.0'
+    bind_port = 8080
+
+    def usage():
+        print "%s: [options]\n"
+        print "Options:"
+        print " -c <configfile>         use exernal config"
+        print " -d                      set debugging"
+
+    try:
+        opts, args = getopt(sys.argv[1:], "c:d")
+    except GetoptError, e:
+        print str(e)
+        usage()
+        sys.exit(1)
+
+    for o,a in opts:
+        if o == '-c':
+            configfile = a
+        elif o == '-d':
+            debug = True
+        else:
+            usage()
+            sys.exit(1)
+
+    # read the config file
+    if configfile:
+        config = ConfigParser()
+        config.read(configfile)
+
+        config_hash = { i: dict(config._sections[i]) for i in config._sections }
+
+        bind_address = config_hash['main'].get('bind_address', '0.0.0.0')
+        bind_port = int(config_hash['main'].get('bind_port', '8080'))
+
+    app.debug = debug
+    app.run(host=bind_address, port=bind_port)
