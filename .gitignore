@@ -1,2 +1,3 @@
 .roush-venv
 roush.db
+*.pyc
