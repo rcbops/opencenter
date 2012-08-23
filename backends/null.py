@@ -4,12 +4,13 @@ import logging
 
 import backends
 
-LOG=logging.getLogger('backend.driver')
+LOG = logging.getLogger('backend.driver')
+
 
 class NullBackend(backends.ConfigurationBackend):
     def __init__(self, config):
         LOG.debug('initializing null backend')
-        self.config=config
+        self.config = config
 
     def get_cluster_settings(self, cluster_name):
         pass

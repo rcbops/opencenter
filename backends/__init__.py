@@ -3,7 +3,8 @@
 import sys
 import logging
 
-LOG=logging.getLogger('backend.driver')
+LOG = logging.getLogger('backend.driver')
+
 
 def load(name, config={}):
     # expects an include of backends/#{name}.py,
@@ -14,6 +15,7 @@ def load(name, config={}):
 
     __import__(import_str)
     return getattr(sys.modules[import_str], class_str)(config)
+
 
 class ConfigurationBackend(object):
     def get_cluster_settings(self, cluster_name):
