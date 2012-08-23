@@ -313,7 +313,7 @@ if __name__ == '__main__':
 
     # set up logging
     LOG = logging.getLogger()
-    LOG.addHandler(logging.FileHandler("/dev/stdout"))
+    LOG.addHandler(logging.FileHandler("/dev/stderr"))
 
     # read the config file
     if configfile:
@@ -347,6 +347,8 @@ if __name__ == '__main__':
     if 'loglevel' in config_hash['main']:
         LOG.setLevel(config_hash['main']['loglevel'])
 
+    if debug:
+        LOG.setLevel(logging.DEBUG)
 
     LOG.debug("Starting app server on %s:%d" % (bind_address, bind_port))
     app.run(host=bind_address, port=bind_port)
