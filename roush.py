@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from flask import Flask, Response, request, session, jsonify, url_for
 
 from database import db_session
