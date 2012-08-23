@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import sys
 
 from flask import Flask, Response, request, session, jsonify, url_for
@@ -181,7 +182,7 @@ def node_by_id(node_id):
         return resp
 
 if __name__ == '__main__':
-    debug = True
+    debug = False
     configfile = None
     daemonize = False
     config_hash = {}
@@ -190,14 +191,25 @@ if __name__ == '__main__':
     bind_address = '0.0.0.0'
     bind_port = 8080
 
+    def do_daemonize():
+        if os.fork():
+            sys.exit(0)
+        else:
+            os.setsid()
+            os.chdir('/')
+            os.umask(0)
+            if os.fork():
+                sys.exit(0)
+
     def usage():
         print "%s: [options]\n"
         print "Options:"
         print " -c <configfile>         use exernal config"
-        print " -d                      set debugging"
+        print " -d                      daemonize"
+        print " -v                      verbose"
 
     try:
-        opts, args = getopt(sys.argv[1:], "c:d")
+        opts, args = getopt(sys.argv[1:], "c:dv")
     except GetoptError, e:
         print str(e)
         usage()
@@ -206,8 +218,10 @@ if __name__ == '__main__':
     for o, a in opts:
         if o == '-c':
             configfile = a
-        elif o == '-d':
+        elif o == '-v':
             debug = True
+        elif o == '-d':
+            daemonize = True
         else:
             usage()
             sys.exit(1)
@@ -246,5 +260,8 @@ if __name__ == '__main__':
 
     app.debug = debug
     LOG.debug("Starting app server on %s:%d" % (bind_address, bind_port))
+
+    if daemonize and not debug:
+        do_daemonize()
 
     app.run(host=bind_address, port=bind_port)
