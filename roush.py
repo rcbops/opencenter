@@ -253,7 +253,7 @@ if __name__ == '__main__':
     debug = False
     configfile = None
     daemonize = False
-    config_hash = { "main": {} }
+    config_hash = {"main": {}}
     global backend
 
     bind_address = '0.0.0.0'
@@ -272,7 +272,7 @@ if __name__ == '__main__':
         # Resource usage information.
         maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
         if (maxfd == resource.RLIM_INFINITY):
-            maxfd = 1024 # ?
+            maxfd = 1024  # ?
 
         # Iterate through and close all file descriptors.
         for fd in range(0, maxfd):
@@ -282,9 +282,9 @@ if __name__ == '__main__':
                 pass
 
         # reopen stds to/from /dev/null
-        os.open("/dev/null", os.O_RDWR) # this will be 0
-        os.dup2(0,1)
-        os.dup2(0,2)
+        os.open("/dev/null", os.O_RDWR)  # this will be 0
+        os.dup2(0, 1)
+        os.dup2(0, 2)
 
     def usage():
         print "%s: [options]\n"
