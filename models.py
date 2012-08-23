@@ -25,26 +25,26 @@ class Nodes(Base):
 class Roles(Base):
     __tablename__ = 'roles'
     id = Column(Integer, primary_key=True)
-    name = Column(String(20))
+    name = Column(String(20), unique=True)
     description = Column(String(80))
 
-    def __init(self, name, description):
+    def __init__(self, name, description):
         self.name = name
         self.description = description
 
     def __repr__(self):
-        return '<Roles %r>' % role.name
+        return '<Roles %r>' % (self.name)
 
 
 class Clusters(Base):
     __tablename__ = 'clusters'
     id = Column(Integer, primary_key=True)
-    name = Column(String(20))
+    name = Column(String(20), unique=True)
     description = Column(String(80))
 
-    def __init(self, name, description):
+    def __init__(self, name, description):
         self.name = name
         self.description = description
 
     def __repr__(self):
-        return '<Clusters %r>' % role.name
+        return '<Clusters %r>' % (self.name)
