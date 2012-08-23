@@ -3,6 +3,9 @@
 import backends
 
 class NullBackend(backends.ConfigurationBackend):
+    def __init__(self, config):
+        self.config=config
+
     def get_cluster_settings(self, cluster_name):
         pass
 

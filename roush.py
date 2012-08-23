@@ -12,6 +12,8 @@ from ConfigParser import ConfigParser
 from getopt import getopt, GetoptError
 from pprint import pprint
 
+import backends
+
 app = Flask(__name__)
 
 
@@ -180,6 +182,7 @@ if __name__ == '__main__':
     configfile = None
     daemonize = False
     config_hash = {}
+    global backend
 
     bind_address = '0.0.0.0'
     bind_port = 8080
@@ -211,10 +214,15 @@ if __name__ == '__main__':
         config = ConfigParser()
         config.read(configfile)
 
-        config_hash = {i: dict(config._sections[i]) for i in config._sections}
+        config_hash = dict(
+            [(s, dict(config.items(s))) for s in config.sections()])
 
         bind_address = config_hash['main'].get('bind_address', '0.0.0.0')
         bind_port = int(config_hash['main'].get('bind_port', '8080'))
+
+        backend_module = config_hash['main'].get('backend', 'none')
+        backend = backends.load(
+            backend_module, config_hash.get('%s_backend' % backend_module), {})
 
     app.debug = debug
     app.run(host=bind_address, port=bind_port)
