@@ -19,25 +19,37 @@ def load(name, config={}):
 
 class ConfigurationBackend(object):
     def get_cluster_settings(self, cluster_name):
-        LOG.debug('Calling unimplemented function "get_cluster_settings"')
         raise NotImplementedError()
 
     def set_cluster_settings(self, cluster_name, settings):
-        LOG.debug('Calling unimplemented function "set_cluster_settings"')
         raise NotImplementedError()
 
-    def get_node_settings(self, node_name):
-        LOG.debug('Calling unimplemented function "get_node_settings"')
+    def create_cluster(self, cluster_name):
         raise NotImplementedError()
 
-    def set_node_settings(self, node_name, settings):
-        LOG.debug('Calling unimplemented function "set_node_settings"')
+    def delete_cluster(self, cluster_name):
         raise NotImplementedError()
 
-    def add_node_to_cluster(self, node_name, cluster_name):
-        LOG.debug('Calling unimplemented function "add_node_to_cluster"')
+    def set_cluster_for_node(self, node, cluster):
         raise NotImplementedError()
 
-    def set_node_role(self, node_name, role_name):
-        LOG.debug('Calling unimplemented function "set_node_role"')
+    def get_cluster_for_node(self, node):
+        raise NotImplementedError()
+
+    def set_node_settings(self, node, settings):
+        raise NotImplementedError()
+
+    def get_node_status(self, node, settings):
+        raise NotImplementedError()
+
+    def delete_node(self, node):
+        raise NotImplementedError()
+
+    def get_node_settings(self, node):
+        raise NotImplementedError()
+
+    def set_role_for_node(self, node, role):
+        raise NotImplementedError()
+
+    def get_role_for_node(self, node):
         raise NotImplementedError()

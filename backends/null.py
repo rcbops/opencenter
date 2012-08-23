@@ -18,14 +18,32 @@ class NullBackend(backends.ConfigurationBackend):
     def set_cluster_settings(self, cluster_name, settings):
         pass
 
-    def get_node_settings(self, node_name):
+    def create_cluster(self, cluster_name):
         pass
 
-    def set_node_settings(self, node_name, settings):
+    def delete_cluster(self, cluster_name):
         pass
 
-    def add_node_to_cluster(self, node_name, cluster_name):
+    def set_cluster_for_node(self, node, cluster):
         pass
 
-    def set_node_role(self, node_name, role_name):
+    def get_cluster_for_node(self, node):
+        pass
+
+    def set_node_settings(self, node, settings):
+        pass
+
+    def get_node_status(self, node, settings):
+        pass
+
+    def delete_node(self, node):
+        pass
+
+    def get_node_settings(self, node):
+        pass
+
+    def set_role_for_node(self, node, role):
+        pass
+
+    def get_role_for_node(self, node):
         pass

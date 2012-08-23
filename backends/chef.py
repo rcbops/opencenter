@@ -11,6 +11,3 @@ class ChefBackend(backends.ConfigurationBackend):
     def __init__(self, config):
         LOG.debug('initializing chef backend')
         self.config = config
-
-    def get_cluster_settings(self, cluster_name):
-        LOG.debug('calling chef-backed "get_cluster_settings"')

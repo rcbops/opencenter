@@ -116,7 +116,11 @@ def list_clusters():
             cluster = Clusters(name=name, description=desc)
             db_session.add(cluster)
             try:
+                # FIXME(rp): Transactional problem
                 db_session.commit()
+                backend.create_cluster(name)
+
+                # FIXME(rp): do set_cluster_settings if have json
                 msg = {'status': 201, 'message': 'Cluster Created',
                            'cluster': dict((c, getattr(cluster, c))
                                         for c in cluster.__table__.columns.keys()),
@@ -149,6 +153,7 @@ def cluster_by_id(cluster_id):
         resp.status_code = 501
     elif request.method == 'PUT':
         r = Clusters.query.filter_by(id=cluster_id).first()
+        # FIXME(rp): renames break the backend association
         if 'name' in request.json:
             r.name = request.json['name']
         if 'description' in request.json:
@@ -162,7 +167,12 @@ def cluster_by_id(cluster_id):
         try:
             db_session.delete(r)
             db_session.commit()
+
+            # FIXME(rp): Transaction
+            backend.delete_cluster(r.name)
+
             msg = {'status': 200, 'message': 'Cluster deleted'}
+
             resp = jsonify(msg)
             resp.status_code = 200
         except UnmappedInstanceError, e:
@@ -199,6 +209,10 @@ def list_nodes():
 
             # This should probably check against Roles.id and Clusters.id
             node = Nodes(hostname=hostname, role_id=role_id, cluster_id=cluster_id)
+
+            # FIXME(rp): get a role name and a node name, and
+            # do a set_cluster_for_node(node_name, cluster_name)
+
             db_session.add(node)
             try:
                 db_session.commit()
@@ -235,6 +249,9 @@ def node_by_id(node_id):
         resp = jsonify(message)
         resp.status_code = 501
     elif request.method == 'PUT':
+        # NOTE: We probably can't rename hosts -- it affect chef...
+        # Think on this.  Also, probably should do a get_node_status
+        # to make sure it's happy in the config management
         r = Nodes.query.filter_by(id=node_id).first()
         if 'hostname' in request.json:
             r.hostname = request.json['hostname']
@@ -251,6 +268,9 @@ def node_by_id(node_id):
         try:
             db_session.delete(r)
             db_session.commit()
+            # FIXME(rp): transaction
+            backend.delete_node(r.hostname)
+
             msg = {'status': 200, 'message': 'Node deleted'}
             resp = jsonify(msg)
             resp.status_code = 200
