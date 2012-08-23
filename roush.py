@@ -314,6 +314,8 @@ if __name__ == '__main__':
     # set up logging
     LOG = logging.getLogger()
     LOG.addHandler(logging.FileHandler("/dev/stderr"))
+    if debug:
+        LOG.setLevel(logging.DEBUG)
 
     # read the config file
     if configfile:
@@ -323,19 +325,18 @@ if __name__ == '__main__':
         config_hash = dict(
             [(s, dict(config.items(s))) for s in config.sections()])
 
-        bind_address = config_hash['main'].get('bind_address', '0.0.0.0')
-        bind_port = int(config_hash['main'].get('bind_port', '8080'))
+    bind_address = config_hash['main'].get('bind_address', '0.0.0.0')
+    bind_port = int(config_hash['main'].get('bind_port', '8080'))
 
-        backend_module = config_hash['main'].get('backend', 'null')
-        backend = backends.load(
-            backend_module, config_hash.get('%s_backend' % backend_module, {}))
+    backend_module = config_hash['main'].get('backend', 'null')
+    backend = backends.load(
+        backend_module, config_hash.get('%s_backend' % backend_module, {}))
 
     app.debug = debug
 
     if daemonize and not debug:
         do_daemonize()
 
-    # open log handler
     # set up logging
     if 'logfile' in config_hash['main']:
         for handler in LOG.handlers:
@@ -346,9 +347,6 @@ if __name__ == '__main__':
 
     if 'loglevel' in config_hash['main']:
         LOG.setLevel(config_hash['main']['loglevel'])
-
-    if debug:
-        LOG.setLevel(logging.DEBUG)
 
     LOG.debug("Starting app server on %s:%d" % (bind_address, bind_port))
     app.run(host=bind_address, port=bind_port)
