@@ -9,4 +9,5 @@ if __name__ == '__main__':
     loader = unittest.TestLoader()
     tests = loader.discover('tests')
     testRunner = unittest.runner.TextTestRunner(stream=sys.stdout, verbosity=2)
-    testRunner.run(tests)
+    runner = testRunner.run(tests)
+    sys.exit(not runner.status)
