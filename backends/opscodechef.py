@@ -22,24 +22,24 @@ class OpscodechefBackend(backends.ConfigurationBackend):
             api = chef.api.autoconfigure()
 
         if api:
-            api.set_default
+            self.api = api
         else:
             raise BackendError
 
     def get_cluster_settings(self, cluster_name):
         # FIXME: raise on no environment
-        return chef.Environment(cluster_name).override_attributes
+        return chef.Environment(cluster_name, self.api).override_attributes
 
     def set_cluster_settings(self, cluster_name, settings):
         # FIXME: raise on no environment
-        env = chef.Environment(cluster_name)
+        env = chef.Environment(cluster_name, self.api)
         env.override_attributes = settings
         env.save()
 
     def create_cluster(self, cluster_name):
-        env = chef.Environment(cluster_name)
+        env = chef.Environment(cluster_name, self.api)
         env.save()
 
     def delete_cluster(self, cluster_name):
-        env = chef.Environment(cluster_name)
+        env = chef.Environment(cluster_name, self.api)
         env.delete()
