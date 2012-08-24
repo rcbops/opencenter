@@ -1,3 +1,4 @@
 .roush-venv
 roush.db
 *.pyc
+run_tests.err.log
