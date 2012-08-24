@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship, backref
 from database import Base
 
 
@@ -7,11 +8,7 @@ class Nodes(Base):
     id = Column(Integer, primary_key=True)
     hostname = Column(String(64), unique=True)
     role_id = Column(Integer, ForeignKey('roles.id'))
-#    role_name = relationship('Roles',
-#        backref=backref('name', lazy='dynamic'))
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
-#    cluster_name = relationship('Clusters',
-#        backref=backref('name', lazy='dynamic'))
 
     def __init__(self, hostname=None, role_id=None, cluster_id=None):
         self.hostname = hostname
@@ -27,6 +24,8 @@ class Roles(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(20), unique=True)
     description = Column(String(80))
+    node = relationship('Nodes',
+        backref=backref('role', uselist=False, lazy='dynamic'))
 
     def __init__(self, name, description):
         self.name = name
@@ -41,6 +40,8 @@ class Clusters(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(20), unique=True)
     description = Column(String(80))
+    node = relationship('Nodes',
+        backref=backref('cluster', uselist=False, lazy='dynamic'))
 
     def __init__(self, name, description):
         self.name = name
