@@ -11,11 +11,9 @@ import logging
 
 backend = None
 
-class Thing:
-    def __init__(self, **kwargs):
-        configfile = kwargs.get('configfile', None)
-        confighash = kwargs.get('confighash', None)
-        debug = kwargs.get('debug', False)
+class Thing(Flask):
+    def __init__(self, name, configfile=None, confighash=None, debug=False):
+        super(Thing, self).__init__(name)
 
         defaults = { 'main':
                      { 'bind_address': '0.0.0.0',
@@ -37,14 +35,9 @@ class Thing:
             defaults.update(confighash)
 
         backend_module = defaults['main']['backend']
-        backend = backends.load(
+        self.backend = backends.load(
             backend_module, defaults['%s_backend' % backend_module])
-        self.config = defaults['main']
-
-        self.app = Flask('roush')
-        self.app.register_blueprint(clusters, url_prefix='/clusters')
-        self.app.register_blueprint(nodes, url_prefix='/nodes')
-        self.app.register_blueprint(roles, url_prefix='/roles')
+        self.config.update(defaults['main'])
 
         LOG = logging.getLogger()
 
@@ -63,16 +56,12 @@ class Thing:
         if 'loglevel' in defaults['main']:
             LOG.setLevel(defaults['main']['loglevel'])
 
-        self.app.testing = debug
+        self.register_blueprint(clusters, url_prefix='/clusters')
+        self.register_blueprint(nodes, url_prefix='/nodes')
+        self.register_blueprint(roles, url_prefix='/roles')
+#        self.testing = debug
+
 
     def run(self):
-        self.app.run(host = self.config['bind_address'],
+        super(Thing, self).run(host = self.config['bind_address'],
                      port = self.config['bind_port'])
-
-    def test_client(self):
-        result = self.app.test_client()
-        LOG = logging.getLogger()
-        LOG.addHandler(logging.FileHandler("./stupid.log"))
-        LOG.setLevel(logging.DEBUG)
-
-        return result
