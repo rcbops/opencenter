@@ -15,6 +15,9 @@ class NodeDoesNotExist(BackendException):
 class ClusterDoesNotExist(BackendException):
     pass
 
+class RoleDoesNotExist(BackendException):
+    pass
+
 class BackendError(BackendException):
     pass
 

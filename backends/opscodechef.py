@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import logging
 import chef
 
@@ -13,7 +14,6 @@ class OpscodechefBackend(backends.ConfigurationBackend):
         api = None
         self.config = config
 
-
         print self.config
 
         if 'knife_file' in self.config:
@@ -25,6 +25,37 @@ class OpscodechefBackend(backends.ConfigurationBackend):
             self.api = api
         else:
             raise BackendError
+
+        self.role_map = {}
+
+        # load the role map
+        if 'role_location' in self.config:
+            self._load_roles(self.config['role_location'])
+
+    def _load_roles(self, path):
+        if os.path.isdir(path):
+            self._load_role_directory(path)
+        else:
+            self._load_role_file(path)
+
+    def _load_role_directory(self, path):
+        dirlist = os.listdir(path)
+        for rel in dirlist:
+            f = os.path.join(path, rel)
+
+            if not os.path.isdir(f) and f.endswith(".map"):
+                self._load_role_file(f)
+
+    def _load_role_file(self, path):
+        with open(path, 'r') as f:
+            for line in f:
+                line = line.strip().split("#",1)[0]
+                print line
+                if '=' in line:
+                    key, roles = map(lambda x: x.strip(), line.split('='))
+#                    print key, roles
+                    self.role_map[key] = map(
+                        lambda x: x.strip(), roles.split(','))
 
     def _entity_exists(self, entity, key, value):
         result = chef.Search(entity, '%s:%s' % (key, value), 1, 0, self.api)
@@ -115,7 +146,15 @@ class OpscodechefBackend(backends.ConfigurationBackend):
         return [ x['name'] for x in env ]
 
     def set_role_for_node(self, node, role):
-        raise NotImplementedError
+        if not role in self.role_map:
+            raise RoleDoesNotExist
+
+        if not self._host_exists(node):
+            raise RoleDoesNotExist
+
+        node = chef.Node(node, self.api)
+        node.run_list = self.role_map[role]
+        node.save()
 
     def  get_role_for_node(self, node):
         raise NotImplementedError
