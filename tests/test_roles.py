@@ -7,6 +7,7 @@ import string
 import unittest
 import tempfile
 
+import webapp
 
 def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
@@ -16,8 +17,11 @@ class RoleCRUDTestCase(unittest.TestCase):
 
     def setUp(self):
         # This has to be set to expose tracebacks
-        roush.app.testing = True
-        self.app = roush.app.test_client()
+        # roush.app.testing = True
+        # self.app = roush.app.test_client()
+        foo = webapp.Thing(configfile='local.conf', debug = True)
+        self.app = foo.test_client()
+
 
     def tearDown(self):
         pass
@@ -62,8 +66,10 @@ class RoleTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         # This has to be set to expose tracebacks
-        roush.app.testing = True
-        self.app = roush.app.test_client()
+        foo = webapp.Thing(configfile='local.conf', debug = True)
+        self.app = foo.test_client()
+        # roush.app.testing = True
+        # self.app = roush.app.test_client()
         # Create a role
         self.role_name = _randomStr(10)
         self.role_desc = _randomStr(30)

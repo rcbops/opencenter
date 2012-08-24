@@ -7,6 +7,8 @@ import string
 import unittest
 import tempfile
 
+import webapp
+
 
 def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
@@ -16,8 +18,9 @@ class ClusterCRUDTestCase(unittest.TestCase):
 
     def setUp(self):
         # This has to be set to expose tracebacks
-        roush.app.testing = True
-        self.app = roush.app.test_client()
+
+        foo = webapp.Thing(configfile='local.conf', debug = True)
+        self.app = foo.test_client()
 
     def tearDown(self):
         pass
@@ -28,7 +31,7 @@ class ClusterCRUDTestCase(unittest.TestCase):
 
         # create a new cluster
         cluster = {"name": tmp_name, "description": tmp_description}
-        resp = self.app.post('/clusters', data=json.dumps(cluster), content_type='application/json')
+        resp = self.app.post('/clusters/', data=json.dumps(cluster), content_type='application/json')
         # pprint(resp)
         self.assertEqual(resp.status_code, 201)
         data = json.loads(resp.data)
@@ -62,13 +65,15 @@ class ClusterTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         # This has to be set to expose tracebacks
-        roush.app.testing = True
-        self.app = roush.app.test_client()
+        foo = webapp.Thing(configfile='local.conf', debug = True)
+        self.app = foo.test_client()
+        # roush.app.testing = True
+        # self.app = roush.app.test_client()
         # Create a cluster
         self.cluster_name = _randomStr(10)
         self.cluster_desc = _randomStr(30)
         self.cluster_data = {"name": self.cluster_name, "description": self.cluster_desc}
-        tmp = self.app.post('/clusters', data=json.dumps(self.cluster_data), content_type='application/json')
+        tmp = self.app.post('/clusters/', data=json.dumps(self.cluster_data), content_type='application/json')
         self.cluster_json = json.loads(tmp.data)
         self.cluster_id = self.cluster_json['cluster']['id']
 

@@ -14,8 +14,6 @@ class OpscodechefBackend(backends.ConfigurationBackend):
         api = None
         self.config = config
 
-        print self.config
-
         if 'knife_file' in self.config:
             api = chef.ChefAPI.from_config_file(self.config['knife_file'])
         else:
@@ -50,10 +48,8 @@ class OpscodechefBackend(backends.ConfigurationBackend):
         with open(path, 'r') as f:
             for line in f:
                 line = line.strip().split("#",1)[0]
-                print line
                 if '=' in line:
                     key, roles = map(lambda x: x.strip(), line.split('='))
-#                    print key, roles
                     self.role_map[key] = map(
                         lambda x: x.strip(), roles.split(','))
 
