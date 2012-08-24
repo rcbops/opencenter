@@ -42,22 +42,28 @@ class ConfigurationBackend(object):
     def delete_cluster(self, cluster_name):
         raise NotImplementedError()
 
+    def list_clusters(self):
+        raise NotImplementedError()
+
     def set_cluster_for_node(self, node, cluster):
         raise NotImplementedError()
 
     def get_cluster_for_node(self, node):
         raise NotImplementedError()
 
+    def get_node_settings(self, node):
+        raise NotImplementedError()
+
     def set_node_settings(self, node, settings):
         raise NotImplementedError()
 
-    def get_node_status(self, node, settings):
+    def get_node_status(self, node):
         raise NotImplementedError()
 
     def delete_node(self, node):
         raise NotImplementedError()
 
-    def get_node_settings(self, node):
+    def list_nodes(self):
         raise NotImplementedError()
 
     def set_role_for_node(self, node, role):
