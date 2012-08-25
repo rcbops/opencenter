@@ -15,10 +15,9 @@ class NodeCRUDTestCase(RoushTestCase):
 
     def test_node_crud(self):
         tmp_name = _randomStr(10)
-        tmp_description = "lorem ipsum"
 
         # create a new node
-        node = {"hostname": tmp_name, "description": tmp_description}
+        node = {"hostname": tmp_name}
         resp = self.app.post('/nodes/', data=json.dumps(node), content_type='application/json')
         self.assertEqual(resp.status_code, 201)
         data = json.loads(resp.data)
@@ -32,20 +31,20 @@ class NodeCRUDTestCase(RoushTestCase):
         self.assertEqual(tmp['hostname'], tmp_name)
 
         # update node attributes
-        new_desc = "updated description"
-        new_node = {"description": new_desc}
-        resp = self.app.put(url, data=json.dumps(new_node), content_type='application/json')
+        new_name = "updated_%s" % (tmp_name)
+        new_node = {"hostname": new_name}
+        resp = self.app.put(url, data=json.dumps(new_node), 
+                            content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         tmp_data = json.loads(resp.data)
-        print tmp_data
-        self.assertEqual(tmp_data['description'], new_desc)
+        self.assertEqual(tmp_data['hostname'], new_name)
 
         # clean up the node
         resp = self.app.delete(url)
         self.assertEqual(resp.status_code, 200)
         tmp = json.loads(resp.data)
         self.assertEqual(tmp['status'], 200)
-        self.assertEqual(tmp['message'], 'Role deleted')
+        self.assertEqual(tmp['message'], 'Node deleted')
 
 
 # class NodeTestCase(RoushTestCase):
