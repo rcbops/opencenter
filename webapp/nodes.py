@@ -35,7 +35,7 @@ def list_nodes():
                 message = {'status': 201, 'message': 'Node Created',
                            'cluster': dict((c, getattr(node, c))
                                            for c in node.__table__.columns.keys()),
-                    'ref': url_for('node_by_id', node_id=node.id)
+                    'ref': url_for('nodes.node_by_id', node_id=node.id)
                 }
                 resp = jsonify(message)
                 resp.status_code = 201

@@ -30,7 +30,7 @@ def list_clusters():
                 msg = {'status': 201, 'message': 'Cluster Created',
                            'cluster': dict((c, getattr(cluster, c))
                                         for c in cluster.__table__.columns.keys()),
-                           'ref': url_for('cluster_by_id', cluster_id=cluster.id)}
+                           'ref': url_for('clusters.cluster_by_id', cluster_id=cluster.id)}
                 resp = jsonify(msg)
                 resp.status_code = 201
             except IntegrityError, e:

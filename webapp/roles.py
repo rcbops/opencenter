@@ -27,7 +27,7 @@ def list_roles():
                 msg = {'status': 201, 'message': 'Role Created',
                            'role': dict((c, getattr(role, c))
                                         for c in role.__table__.columns.keys()),
-                           'ref': url_for('role_by_id', role_id=role.id)}
+                           'ref': url_for('roles.role_by_id', role_id=role.id)}
                 resp = jsonify(msg)
                 resp.status_code = 201
             except IntegrityError, e:
