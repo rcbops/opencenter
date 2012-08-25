@@ -6,7 +6,7 @@ import roush
 import string
 import unittest
 import tempfile
-
+from test_roush import RoushTestCase
 import webapp
 
 
@@ -14,16 +14,7 @@ def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
 
 
-class ClusterCRUDTestCase(unittest.TestCase):
-
-    def setUp(self):
-        # This has to be set to expose tracebacks
-
-        foo = webapp.Thing(configfile='local.conf', debug = True)
-        self.app = foo.test_client()
-
-    def tearDown(self):
-        pass
+class ClusterCRUDTestCase(RoushTestCase):
 
     def test_cluster_crud(self):
         tmp_name = _randomStr(10)
@@ -57,32 +48,32 @@ class ClusterCRUDTestCase(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         tmp = json.loads(resp.data)
         self.assertEqual(tmp['status'], 200)
-        self.assertEqual(tmp['message'], 'Role deleted')
+        self.assertEqual(tmp['message'], 'Cluster deleted')
 
 
-class ClusterTestCase(unittest.TestCase):
+# class ClusterTestCase(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(self):
-        # This has to be set to expose tracebacks
-        foo = webapp.Thing(configfile='local.conf', debug = True)
-        self.app = foo.test_client()
-        # roush.app.testing = True
-        # self.app = roush.app.test_client()
-        # Create a cluster
-        self.cluster_name = _randomStr(10)
-        self.cluster_desc = _randomStr(30)
-        self.cluster_data = {"name": self.cluster_name, "description": self.cluster_desc}
-        tmp = self.app.post('/clusters/', data=json.dumps(self.cluster_data), content_type='application/json')
-        self.cluster_json = json.loads(tmp.data)
-        self.cluster_id = self.cluster_json['cluster']['id']
+#     @classmethod
+#     def setUpClass(self):
+#         # This has to be set to expose tracebacks
+#         foo = webapp.Thing(configfile='local.conf', debug = True)
+#         self.app = foo.test_client()
+#         # roush.app.testing = True
+#         # self.app = roush.app.test_client()
+#         # Create a cluster
+#         self.cluster_name = _randomStr(10)
+#         self.cluster_desc = _randomStr(30)
+#         self.cluster_data = {"name": self.cluster_name, "description": self.cluster_desc}
+#         tmp = self.app.post('/clusters/', data=json.dumps(self.cluster_data), content_type='application/json')
+#         self.cluster_json = json.loads(tmp.data)
+#         self.cluster_id = self.cluster_json['cluster']['id']
 
-    @classmethod
-    def tearDownClass(self):
-        tmp = self.app.delete('/cluster/%s' % self.cluster_id)
+#     @classmethod
+#     def tearDownClass(self):
+#         tmp = self.app.delete('/cluster/%s' % self.cluster_id)
 
-    def test_blah(self):
-        pass
+#     def test_blah(self):
+#         pass
 
 if __name__ == '__main__':
     unittest.main()
