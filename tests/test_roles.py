@@ -8,7 +8,6 @@ import unittest
 import tempfile
 from test_roush import RoushTestCase
 from pprint import pprint
-import webapp
 
 def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
@@ -55,7 +54,7 @@ class RoleCRUDTestCase(RoushTestCase):
 
 #    @classmethod
 #    def setUpClass(self):
-        
+
         # roush.app.testing = True
         # self.app = roush.app.test_client()
         # Create a role
