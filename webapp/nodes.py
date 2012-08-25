@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-from flask import Blueprint, Flask, Response, request, session, jsonify, url_for
+from flask import Blueprint, Flask, Response, request
+from flask import session, jsonify, url_for, current_app
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
@@ -84,7 +85,7 @@ def node_by_id(node_id):
             db_session.delete(r)
             db_session.commit()
             # FIXME(rp): transaction
-            backend.delete_node(r.hostname)
+            current_app.backend.delete_node(r.hostname)
 
             msg = {'status': 200, 'message': 'Node deleted'}
             resp = jsonify(msg)

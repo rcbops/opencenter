@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-from flask import Blueprint, Flask, Response, request, session, jsonify, url_for
+from flask import Blueprint, Flask, Response, request
+from flask import session, jsonify, url_for, current_app
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 

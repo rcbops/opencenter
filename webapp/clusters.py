@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-from flask import Blueprint, Flask, Response, request, session, jsonify, url_for
+from flask import Blueprint, Flask, Response, request
+from flask import session, jsonify, url_for, current_app
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
@@ -22,7 +24,7 @@ def list_clusters():
             try:
                 # FIXME(rp): Transactional problem
                 db_session.commit()
-                backend.create_cluster(name)
+                current_app.backend.create_cluster(name)
 
                 # FIXME(rp): do set_cluster_settings if have json
                 msg = {'status': 201, 'message': 'Cluster Created',
@@ -73,7 +75,7 @@ def cluster_by_id(cluster_id):
             db_session.commit()
 
             # FIXME(rp): Transaction
-            backend.delete_cluster(r.name)
+            current_app.backend.delete_cluster(r.name)
 
             msg = {'status': 200, 'message': 'Cluster deleted'}
 
