@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
+import json
+from pprint import pprint
+
 from flask import Blueprint, Flask, Response, request
 from flask import session, jsonify, url_for, current_app
-
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
@@ -13,6 +15,7 @@ from errors import (
     http_conflict,
     http_not_found,
     http_not_implemented)
+from chef.exceptions import ChefServerError
 
 clusters = Blueprint('clusters', __name__)
 
@@ -25,29 +28,52 @@ def list_clusters():
             desc = None
             if 'description' in request.json:
                 desc = request.json['description']
-            cluster = Clusters(name=name, description=desc)
+            config = None
+            if 'config' in request.json:
+                config = json.dumps(request.json['config'])
+            cluster = Clusters(name=name, description=desc, config=config)
             db_session.add(cluster)
             try:
                 # FIXME(rp): Transactional problem
+                # FIXME(shep): this will throw an error if config == None
+                current_app.backend.create_cluster(name,
+                                                   desc,
+                                                   json.loads(config))
                 db_session.commit()
-                current_app.backend.create_cluster(name)
-
+                # have to unravel json object from the db
+                cls = dict()
+                for c in cluster.__table__.columns.keys():
+                    if c == 'config':
+                        cls[c] = json.loads(getattr(cluster, c))
+                    else:
+                        cls[c] = getattr(cluster, c)
                 # FIXME(rp): do set_cluster_settings if have json
-                msg = {'status': 201, 'message': 'Cluster Created',
-                       'cluster': dict((c, getattr(cluster, c))
-                                       for c in cluster.__table__.columns.keys()),
-                       'ref': url_for('clusters.cluster_by_id',
-                                      cluster_id=cluster.id)}
+                msg = {'status': 201,
+                       'message': 'Cluster Created',
+                       'cluster': cls}
                 resp = jsonify(msg)
+                resp.headers['Location'] = request.base_url + str(cluster.id)
                 resp.status_code = 201
             except IntegrityError, e:
+                # db_session.expunge(cluster)
+                db_session.rollback()
+                return http_conflict(e)
+            except ChefServerError, e:
+                # db_session.expunge(cluster)
+                db_session.rollback()
                 return http_conflict(e)
         else:
             return http_bad_request('name')
     else:
-        cluster_list = dict(clusters=[dict((c, getattr(r, c))
-                            for c in r.__table__.columns.keys())
-                            for r in Clusters.query.all()])
+        cluster_list = {"clusters": []}
+        for r in Clusters.query.all():
+            tmp = dict()
+            for c in r.__table__.columns.keys():
+                if c == 'config':
+                    tmp[c] = json.loads(getattr(r, c))
+                else:
+                    tmp[c] = getattr(r, c)
+            cluster_list['clusters'].append(tmp)
         resp = jsonify(cluster_list)
     return resp
 
@@ -63,10 +89,17 @@ def cluster_by_id(cluster_id):
             r.name = request.json['name']
         if 'description' in request.json:
             r.description = request.json['description']
+        if 'config' in request.json:
+            r.config = json.dumps(request.json['config'])
         #TODO(shep): this is an un-excepted db call
         db_session.commit()
-        resp = jsonify(dict((c, getattr(r, c))
-                       for c in r.__table__.columns.keys()))
+        cls = dict()
+        for c in r.__table__.columns.keys():
+            if c == 'config':
+                cls[c] = json.loads(getattr(r, c))
+            else:
+                cls[c] = getattr(r, c)
+        resp = jsonify(cls)
     elif request.method == 'DELETE':
         r = Clusters.query.filter_by(id=cluster_id).first()
         try:
@@ -87,6 +120,11 @@ def cluster_by_id(cluster_id):
         if r is None:
             return http_not_found()
         else:
-            resp = jsonify(dict((c, getattr(r, c))
-                           for c in r.__table__.columns.keys()))
+            cls = dict()
+            for c in r.__table__.columns.keys():
+                if c == 'config':
+                    cls[c] = json.loads(getattr(r, c))
+                else:
+                    cls[c] = getattr(r, c)
+            resp = jsonify(cls)
     return resp

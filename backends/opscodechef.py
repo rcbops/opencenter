@@ -77,8 +77,12 @@ class OpscodechefBackend(backends.ConfigurationBackend):
         env.override_attributes = settings
         env.save()
 
-    def create_cluster(self, cluster_name):
-        env = chef.Environment(cluster_name, self.api)
+    def create_cluster(self, cluster_name, cluster_desc=None,
+                       cluster_settings=None):
+        env = chef.Environment.create(cluster_name,
+                                      self.api,
+                                      description=cluster_desc,
+                                      override_attributes=cluster_settings)
         env.save()
 
     def delete_cluster(self, cluster_name):
