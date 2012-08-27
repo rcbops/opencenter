@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from flask import Blueprint, Flask, Response, request
+from flask import Blueprint, Flask, Response, request, abort
 from flask import session, jsonify, url_for, current_app
 
 from sqlalchemy.exc import IntegrityError
@@ -27,18 +27,18 @@ def list_roles():
                 msg = {'status': 201, 'message': 'Role Created',
                        'role': dict((c, getattr(role, c))
                                     for c in role.__table__.columns.keys()),
-                       'ref': url_for('roles.role_by_id', role_id=role.id)}
+                       'ref': request.url + url_for('roles.role_by_id',
+                                                    role_id=role.id)}
                 resp = jsonify(msg)
+                resp.headers['location'] = request.url + url_for('roles.role_by_id',
+                                                                 role_id=role.id)
                 resp.status_code = 201
             except IntegrityError, e:
                 msg = {'status': 500, "message": e.message}
                 resp = jsonify(msg)
                 resp.status_code = 500
         else:
-            msg = {'status': 400,
-                   'message': "Attribute 'name' was not provided"}
-            resp = jsonify(msg)
-            resp.status_code = 400
+            return bad_request("name")
         return resp
     else:
         role_list = dict(roles=[dict((c, getattr(r, c))
@@ -51,12 +51,7 @@ def list_roles():
 @roles.route('/<role_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def role_by_id(role_id):
     if request.method == 'PATCH' or request.method == 'POST':
-        message = {
-            'status': 501,
-            'message': 'Not Implemented'
-        }
-        resp = jsonify(message)
-        resp.status_code = 501
+        return not_implemented()
     elif request.method == 'PUT':
         r = Roles.query.filter_by(id=role_id).first()
         if 'name' in request.json:
@@ -76,18 +71,43 @@ def role_by_id(role_id):
             resp = jsonify(msg)
             resp.status_code = 200
         except UnmappedInstanceError, e:
-            msg = {'status': 404, 'message': 'Resource not found',
-                   'role': {'id': role_id}}
-            resp = jsonify(msg)
-            resp.status_code = 404
+            return not_found()
+            # abort(404)
     else:
         r = Roles.query.filter_by(id=role_id).first()
         if r is None:
-            msg = {'status': 404, 'message': 'Resource not found',
-                   'role': {'id': role_id}}
-            resp = jsonify(msg)
-            resp.status_code = 404
+            # return errors.not_found()
+            abort(404)
         else:
             resp = jsonify(dict((c, getattr(r, c))
                            for c in r.__table__.columns.keys()))
+    return resp
+
+
+@roles.errorhandler(404)
+def not_found(error=None):
+    msg = {
+        'status': 404,
+        'message': 'Not Found: ' + request.url}
+    resp = jsonify(msg)
+    resp.status_code = 404
+    return resp
+
+
+@roles.errorhandler(501)
+def not_implemented(error=None):
+    msg = {
+        'status': 501,
+        'message': 'Not Implemented'}
+    resp = jsonify(msg)
+    resp.status_code = 501
+    return resp
+
+@roles.errorhandler(400)
+def bad_request(error=None):
+    print "ERROR: %s" % error
+    msg = {'status': 400,
+           'message': "Attribute '%s' was not provided" % error}
+    resp = jsonify(msg)
+    resp.status_code = 400
     return resp
