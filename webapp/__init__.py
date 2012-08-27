@@ -20,7 +20,8 @@ class Thing(Flask):
                     {'bind_address': '0.0.0.0',
                      'bind_port': 8080,
                      'backend': 'null',
-                     'loglevel': 'WARNING'},
+                     'loglevel': 'WARNING',
+                     'database_uri': 'sqlite:///:memory:'},
                     'opscodechef_backend':
                     {'role_location': '/etc/roush/roles.d'},
                     'null_backend': {}}
