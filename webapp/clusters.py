@@ -6,8 +6,8 @@ from flask import session, jsonify, url_for, current_app
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
-from database import db_session
-from models import Nodes, Roles, Clusters
+from db.database import db_session
+from db.models import Nodes, Roles, Clusters
 
 clusters = Blueprint('clusters', __name__)
 
