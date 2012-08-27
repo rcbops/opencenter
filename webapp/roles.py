@@ -8,8 +8,11 @@ from sqlalchemy.orm.exc import UnmappedInstanceError
 
 from db.database import db_session
 from db.models import Nodes, Roles, Clusters
-
-from pprint import pprint
+from errors import (
+    http_bad_request,
+    http_conflict,
+    http_not_found,
+    http_not_implemented)
 
 roles = Blueprint('roles', __name__)
 
@@ -36,7 +39,7 @@ def list_roles():
                                                                  role_id=role.id)
                 resp.status_code = 201
             except IntegrityError, e:
-                return http_confict(e)
+                return http_conflict(e)
         else:
             return bad_request("name")
         return resp
@@ -72,49 +75,11 @@ def role_by_id(role_id):
             resp.status_code = 200
         except UnmappedInstanceError, e:
             return not_found()
-            # abort(404)
     else:
         r = Roles.query.filter_by(id=role_id).first()
         if r is None:
-            # return errors.not_found()
-            abort(404)
+            return not_found()
         else:
             resp = jsonify(dict((c, getattr(r, c))
                            for c in r.__table__.columns.keys()))
-    return resp
-
-
-@roles.errorhandler(404)
-def not_found(error=None):
-    msg = {
-        'status': 404,
-        'message': 'Not Found: ' + request.url}
-    resp = jsonify(msg)
-    resp.status_code = 404
-    return resp
-
-
-@roles.errorhandler(501)
-def not_implemented(error=None):
-    msg = {
-        'status': 501,
-        'message': 'Not Implemented'}
-    resp = jsonify(msg)
-    resp.status_code = 501
-    return resp
-
-@roles.errorhandler(400)
-def bad_request(error=None):
-    msg = {'status': 400,
-           'message': "Attribute '%s' was not provided" % error}
-    resp = jsonify(msg)
-    resp.status_code = 400
-    return resp
-
-@roles.errorhandler(409)
-def http_confict(error=None):
-    pprint(error)
-    msg = {'status': 409, "message": error.message}
-    resp = jsonify(msg)
-    resp.status_code = 409
     return resp
