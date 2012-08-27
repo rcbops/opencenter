@@ -23,8 +23,12 @@ def list_nodes():
             if 'cluster_id' in request.json:
                 cluster_id = request.json['cluster_id']
 
+            extra = None
+            if 'extra' in request.json:
+                extra = request.json['extra']
+
             # This should probably check against Roles.id and Clusters.id
-            node = Nodes(hostname=hostname, role_id=role_id, cluster_id=cluster_id)
+            node = Nodes(hostname=hostname, role_id=role_id, cluster_id=cluster_id, extra=extra)
 
             # FIXME(rp): get a role name and a node name, and
             # do a set_cluster_for_node(node_name, cluster_name)
@@ -75,6 +79,8 @@ def node_by_id(node_id):
             r.cluster_id = request.json['cluster_id']
         if 'role_id' in request.json:
             r.role_id = request.json['role_id']
+        if 'extra' in request.json:
+            r.extra = request.json['extra']
         #TODO(shep): this is an un-excepted db call
         db_session.commit()
         resp = jsonify(dict((c, getattr(r, c))
