@@ -70,7 +70,10 @@ def list_clusters():
             tmp = dict()
             for c in r.__table__.columns.keys():
                 if c == 'config':
-                    tmp[c] = json.loads(getattr(r, c))
+                    if getattr(r, c) is not None:
+                        tmp[c] = json.loads(getattr(r, c))
+                    else:
+                        tmp[c] = getattr(r, c)
                 else:
                     tmp[c] = getattr(r, c)
             cluster_list['clusters'].append(tmp)
