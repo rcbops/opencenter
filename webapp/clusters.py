@@ -8,6 +8,11 @@ from sqlalchemy.orm.exc import UnmappedInstanceError
 
 from db.database import db_session
 from db.models import Nodes, Roles, Clusters
+from errors import (
+    http_bad_request,
+    http_conflict,
+    http_not_found,
+    http_not_implemented)
 
 clusters = Blueprint('clusters', __name__)
 
@@ -36,14 +41,9 @@ def list_clusters():
                 resp = jsonify(msg)
                 resp.status_code = 201
             except IntegrityError, e:
-                msg = {'status': 500, "message": e.message}
-                resp = jsonify(msg)
-                resp.status_code = 500
+                return http_conflict(e)
         else:
-            msg = {'status': 400,
-                   'message': "Attribute 'name' was not provided"}
-            resp = jsonify(msg)
-            resp.status_code = 400
+            return http_bad_request('name')
     else:
         cluster_list = dict(clusters=[dict((c, getattr(r, c))
                             for c in r.__table__.columns.keys())
@@ -55,12 +55,7 @@ def list_clusters():
 @clusters.route('/<cluster_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def cluster_by_id(cluster_id):
     if request.method == 'PATCH' or request.method == 'POST':
-        message = {
-            'status': 501,
-            'message': 'Not Implemented'
-        }
-        resp = jsonify(message)
-        resp.status_code = 501
+        return http_not_implemented()
     elif request.method == 'PUT':
         r = Clusters.query.filter_by(id=cluster_id).first()
         # FIXME(rp): renames break the backend association
@@ -86,17 +81,11 @@ def cluster_by_id(cluster_id):
             resp = jsonify(msg)
             resp.status_code = 200
         except UnmappedInstanceError, e:
-            msg = {'status': 404, 'message': 'Resource not found',
-                   'cluster': {'id': cluster_id}}
-            resp = jsonify(msg)
-            resp.status_code = 404
+            return http_not_found()
     else:
         r = Clusters.query.filter_by(id=cluster_id).first()
         if r is None:
-            msg = {'status': 404, 'message': 'Resource not found',
-                   'cluster': {'id': cluster_id}}
-            resp = jsonify(msg)
-            resp.status_code = 404
+            return http_not_found()
         else:
             resp = jsonify(dict((c, getattr(r, c))
                            for c in r.__table__.columns.keys()))

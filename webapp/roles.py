@@ -41,7 +41,7 @@ def list_roles():
             except IntegrityError, e:
                 return http_conflict(e)
         else:
-            return bad_request("name")
+            return http_bad_request("name")
         return resp
     else:
         role_list = dict(roles=[dict((c, getattr(r, c))
@@ -54,7 +54,7 @@ def list_roles():
 @roles.route('/<role_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def role_by_id(role_id):
     if request.method == 'PATCH' or request.method == 'POST':
-        return not_implemented()
+        return http_not_implemented()
     elif request.method == 'PUT':
         r = Roles.query.filter_by(id=role_id).first()
         if 'name' in request.json:
@@ -74,11 +74,11 @@ def role_by_id(role_id):
             resp = jsonify(msg)
             resp.status_code = 200
         except UnmappedInstanceError, e:
-            return not_found()
+            return http_not_found()
     else:
         r = Roles.query.filter_by(id=role_id).first()
         if r is None:
-            return not_found()
+            return http_not_found()
         else:
             resp = jsonify(dict((c, getattr(r, c))
                            for c in r.__table__.columns.keys()))
