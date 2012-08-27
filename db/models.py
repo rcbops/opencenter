@@ -44,14 +44,15 @@ class Clusters(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(20), unique=True)
     description = Column(String(80))
-    extra = Column(Text)
+    config = Column(Text)
     node = relationship('Nodes', backref=backref('cluster',
                                                  uselist=False,
                                                  lazy='dynamic'))
 
-    def __init__(self, name, description):
+    def __init__(self, name, description, config=None):
         self.name = name
         self.description = description
+        self.config = config
 
     def __repr__(self):
         return '<Clusters %r>' % (self.name)
