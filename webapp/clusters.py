@@ -11,6 +11,7 @@ from db.models import Nodes, Roles, Clusters
 
 clusters = Blueprint('clusters', __name__)
 
+
 @clusters.route('/', methods=['GET', 'POST'])
 def list_clusters():
     if request.method == 'POST':
@@ -28,9 +29,10 @@ def list_clusters():
 
                 # FIXME(rp): do set_cluster_settings if have json
                 msg = {'status': 201, 'message': 'Cluster Created',
-                           'cluster': dict((c, getattr(cluster, c))
-                                        for c in cluster.__table__.columns.keys()),
-                           'ref': url_for('clusters.cluster_by_id', cluster_id=cluster.id)}
+                       'cluster': dict((c, getattr(cluster, c))
+                                       for c in cluster.__table__.columns.keys()),
+                       'ref': url_for('clusters.cluster_by_id',
+                                      cluster_id=cluster.id)}
                 resp = jsonify(msg)
                 resp.status_code = 201
             except IntegrityError, e:
@@ -38,15 +40,17 @@ def list_clusters():
                 resp = jsonify(msg)
                 resp.status_code = 500
         else:
-            msg = {'status': 400, "message": "Attribute 'name' was not provided"}
+            msg = {'status': 400,
+                   'message': "Attribute 'name' was not provided"}
             resp = jsonify(msg)
             resp.status_code = 400
     else:
         cluster_list = dict(clusters=[dict((c, getattr(r, c))
-                         for c in r.__table__.columns.keys())
-                         for r in Clusters.query.all()])
+                            for c in r.__table__.columns.keys())
+                            for r in Clusters.query.all()])
         resp = jsonify(cluster_list)
     return resp
+
 
 @clusters.route('/<cluster_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def cluster_by_id(cluster_id):

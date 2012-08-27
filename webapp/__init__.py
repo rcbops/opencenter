@@ -11,18 +11,19 @@ import logging
 
 backend = None
 
+
 class Thing(Flask):
     def __init__(self, name, configfile=None, confighash=None, debug=False):
         super(Thing, self).__init__(name)
 
-        defaults = { 'main':
-                     { 'bind_address': '0.0.0.0',
-                       'bind_port': 8080,
-                       'backend': 'null',
-                       'loglevel': 'WARNING' },
-                     'opscodechef_backend':
-                     { 'role_location': '/etc/roush/roles.d' },
-                     'null_backend': {}}
+        defaults = {'main':
+                    {'bind_address': '0.0.0.0',
+                     'bind_port': 8080,
+                     'backend': 'null',
+                     'loglevel': 'WARNING'},
+                    'opscodechef_backend':
+                    {'role_location': '/etc/roush/roles.d'},
+                    'null_backend': {}}
 
         if configfile:
             config = ConfigParser()
@@ -61,7 +62,6 @@ class Thing(Flask):
         self.register_blueprint(roles, url_prefix='/roles')
 #        self.testing = debug
 
-
     def run(self):
-        super(Thing, self).run(host = self.config['bind_address'],
-                     port = self.config['bind_port'])
+        super(Thing, self).run(host=self.config['bind_address'],
+                               port=self.config['bind_port'])
