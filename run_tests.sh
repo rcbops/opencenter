@@ -43,9 +43,9 @@ function run_tests {
 
 function run_pep8 {
   echo "Running pep8 ..."
-  PEP8_EXCLUDE=vcsversion.y
+  PEP8_EXCLUDE=".roush-venv"
   PEP8_OPTIONS="--exclude=$PEP8_EXCLUDE --repeat --show-pep8 --show-source"
-  PEP8_INCLUDE="tests tools test_runner.py"
+  PEP8_INCLUDE="."
   ${wrapper} pep8 $PEP8_OPTIONS $PEP8_INCLUDE || exit 1
 }
 TESTS="env python test_runner.py"
