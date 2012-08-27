@@ -38,7 +38,7 @@ done
 
 function run_tests {
   # Just run the test suites in current environment
-  ${wrapper} $TESTS 2> run_tests.err.log
+  ${wrapper} $TESTS
 }
 
 function run_pep8 {
