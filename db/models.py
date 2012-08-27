@@ -11,7 +11,8 @@ class Nodes(Base):
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
     extra = Column(Text)
 
-    def __init__(self, hostname=None, role_id=None, cluster_id=None, extra=None):
+    def __init__(self, hostname=None, role_id=None,
+                 cluster_id=None, extra=None):
         self.hostname = hostname
         self.role_id = role_id
         self.cluster_id = cluster_id
@@ -26,8 +27,9 @@ class Roles(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(20), unique=True)
     description = Column(String(80))
-    node = relationship('Nodes',
-        backref=backref('role', uselist=False, lazy='dynamic'))
+    node = relationship('Nodes', backref=backref('role',
+                                                 uselist=False,
+                                                 lazy='dynamic'))
 
     def __init__(self, name, description):
         self.name = name
@@ -43,8 +45,9 @@ class Clusters(Base):
     name = Column(String(20), unique=True)
     description = Column(String(80))
     extra = Column(Text)
-    node = relationship('Nodes',
-        backref=backref('cluster', uselist=False, lazy='dynamic'))
+    node = relationship('Nodes', backref=backref('cluster',
+                                                 uselist=False,
+                                                 lazy='dynamic'))
 
     def __init__(self, name, description):
         self.name = name

@@ -9,17 +9,22 @@ LOG = logging.getLogger('backend.driver')
 class BackendException(Exception):
     pass
 
+
 class NodeDoesNotExist(BackendException):
     pass
+
 
 class ClusterDoesNotExist(BackendException):
     pass
 
+
 class RoleDoesNotExist(BackendException):
     pass
 
+
 class BackendError(BackendException):
     pass
+
 
 def load(name, config={}):
     # expects an include of backends/#{name}.py,

@@ -47,7 +47,7 @@ class OpscodechefBackend(backends.ConfigurationBackend):
     def _load_role_file(self, path):
         with open(path, 'r') as f:
             for line in f:
-                line = line.strip().split("#",1)[0]
+                line = line.strip().split("#", 1)[0]
                 if '=' in line:
                     key, roles = map(lambda x: x.strip(), line.split('='))
                     self.role_map[key] = map(
@@ -90,7 +90,7 @@ class OpscodechefBackend(backends.ConfigurationBackend):
 
     def list_clusters(self):
         env = chef.Search('environment', '*:*', 1000, 0, self.api)
-        return [ x['name'] for x in env ]
+        return [x['name'] for x in env]
 
     def set_cluster_for_node(self, node, cluster):
         if not self._cluster_exists(cluster):
@@ -139,7 +139,7 @@ class OpscodechefBackend(backends.ConfigurationBackend):
 
     def list_nodes(self):
         env = chef.Search('node', '*:*', 1000, 0, self.api)
-        return [ x['name'] for x in env ]
+        return [x['name'] for x in env]
 
     def set_role_for_node(self, node, role):
         if not role in self.role_map:
