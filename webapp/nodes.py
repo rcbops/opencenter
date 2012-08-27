@@ -9,6 +9,7 @@ from db.models import Nodes, Roles, Clusters
 
 nodes = Blueprint('nodes', __name__)
 
+
 @nodes.route('/', methods=['GET', 'POST'])
 def list_nodes():
     if request.method == 'POST':
@@ -28,7 +29,8 @@ def list_nodes():
                 extra = request.json['extra']
 
             # This should probably check against Roles.id and Clusters.id
-            node = Nodes(hostname=hostname, role_id=role_id, cluster_id=cluster_id, extra=extra)
+            node = Nodes(hostname=hostname, role_id=role_id,
+                         cluster_id=cluster_id, extra=extra)
 
             # FIXME(rp): get a role name and a node name, and
             # do a set_cluster_for_node(node_name, cluster_name)
@@ -38,9 +40,8 @@ def list_nodes():
                 db_session.commit()
                 message = {'status': 201, 'message': 'Node Created',
                            'node': dict((c, getattr(node, c))
-                                           for c in node.__table__.columns.keys()),
-                    'ref': url_for('nodes.node_by_id', node_id=node.id)
-                }
+                                        for c in node.__table__.columns.keys()),
+                           'ref': url_for('nodes.node_by_id', node_id=node.id)}
                 resp = jsonify(message)
                 resp.status_code = 201
             except IntegrityError, e:
@@ -48,7 +49,8 @@ def list_nodes():
                 resp = jsonify(msg)
                 resp.status_code = 500
         else:
-            msg = {'status': 400, "message": "Attribute 'name' was not provided"}
+            msg = {'status': 400,
+                   'message': "Attribute 'hostname' was not provided"}
             resp = jsonify(msg)
             resp.status_code = 400
     else:

@@ -25,9 +25,9 @@ def list_roles():
             try:
                 db_session.commit()
                 msg = {'status': 201, 'message': 'Role Created',
-                           'role': dict((c, getattr(role, c))
-                                        for c in role.__table__.columns.keys()),
-                           'ref': url_for('roles.role_by_id', role_id=role.id)}
+                       'role': dict((c, getattr(role, c))
+                                    for c in role.__table__.columns.keys()),
+                       'ref': url_for('roles.role_by_id', role_id=role.id)}
                 resp = jsonify(msg)
                 resp.status_code = 201
             except IntegrityError, e:
@@ -35,7 +35,8 @@ def list_roles():
                 resp = jsonify(msg)
                 resp.status_code = 500
         else:
-            msg = {'status': 400, "message": "Attribute 'name' was not provided"}
+            msg = {'status': 400,
+                   'message': "Attribute 'name' was not provided"}
             resp = jsonify(msg)
             resp.status_code = 400
         return resp
