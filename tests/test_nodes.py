@@ -7,6 +7,7 @@ import unittest
 import tempfile
 from test_roush import RoushTestCase
 
+
 def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
 
@@ -18,7 +19,8 @@ class NodeCRUDTestCase(RoushTestCase):
 
         # create a new node
         node = {"hostname": tmp_name}
-        resp = self.app.post('/nodes/', data=json.dumps(node), content_type='application/json')
+        resp = self.app.post('/nodes/', data=json.dumps(node),
+                             content_type='application/json')
         self.assertEqual(resp.status_code, 201)
         data = json.loads(resp.data)
         url = '/nodes/%s' % data['node']['id']
@@ -33,7 +35,7 @@ class NodeCRUDTestCase(RoushTestCase):
         # update node attributes
         new_name = "updated_%s" % (tmp_name)
         new_node = {"hostname": new_name}
-        resp = self.app.put(url, data=json.dumps(new_node), 
+        resp = self.app.put(url, data=json.dumps(new_node),
                             content_type='application/json')
         self.assertEqual(resp.status_code, 200)
         tmp_data = json.loads(resp.data)
@@ -57,10 +59,13 @@ class NodeCRUDTestCase(RoushTestCase):
 #         self.content_type = 'application/json'
 #         self.list_url = '/nodes'
 #         # Create a node
-#         self.node_hostname = "%s.%s.%s" % (_randomStr(10), _randomStr(10), _randomStr(10))
+#         self.node_hostname = "%s.%s.%s" % (_randomStr(10), _randomStr(10),
+#                                            _randomStr(10))
 #         self.node_desc = _randomStr(30)
-#         self.node_data = {"hostname": self.node_hostname, "description": self.node_desc}
-#         tmp = self.app.post(self.list_url, data=json.dumps(self.node_data), content_type=self.content_type)
+#         self.node_data = {"hostname": self.node_hostname,
+#                           "description": self.node_desc}
+#         tmp = self.app.post(self.list_url, data=json.dumps(self.node_data),
+#                             content_type=self.content_type)
 #         self.node_json = json.loads(tmp.data)
 #         self.node_id = self.node_json['node']['id']
 #         self.node_url = '/nodes/%s' % self.node_id
