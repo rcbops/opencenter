@@ -3,6 +3,7 @@
 import json
 from pprint import pprint
 
+from chef.exceptions import ChefServerError
 from flask import Blueprint, Flask, Response, request
 from flask import session, jsonify, url_for, current_app
 from sqlalchemy.exc import IntegrityError
@@ -15,7 +16,6 @@ from errors import (
     http_conflict,
     http_not_found,
     http_not_implemented)
-from chef.exceptions import ChefServerError
 
 clusters = Blueprint('clusters', __name__)
 
@@ -32,10 +32,10 @@ def list_clusters():
             if 'config' in request.json:
                 config = json.dumps(request.json['config'])
             cluster = Clusters(name=name, description=desc, config=config)
-            db_session.add(cluster)
             try:
+                db_session.add(cluster)
                 # FIXME(rp): Transactional problem
-                # README(shep): setting override_attributes as part of
+                # NOTE(shep): setting override_attributes as part of
                 #  the create, due to the lag time of chef.search
                 current_app.backend.create_cluster(
                     name,
@@ -50,18 +50,20 @@ def list_clusters():
                         cls[col] = tmp if (tmp is None) else json.loads(tmp)
                     else:
                         cls[col] = getattr(cluster, col)
+                href = request.base_url + str(cluster.id)
                 msg = {'status': 201,
                        'message': 'Cluster Created',
-                       'cluster': cls}
+                       'cluster': cls,
+                       'ref': href}
                 resp = jsonify(msg)
-                resp.headers['Location'] = request.base_url + str(cluster.id)
+                resp.headers['Location'] = href
                 resp.status_code = 201
             except IntegrityError, e:
-                # db_session.expunge(cluster)
+                # This is thrown on duplicate rows
                 db_session.rollback()
                 return http_conflict(e)
             except ChefServerError, e:
-                # db_session.expunge(cluster)
+                # This is thrown on duplicate environments
                 db_session.rollback()
                 return http_conflict(e)
         else:
