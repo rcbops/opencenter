@@ -51,7 +51,7 @@ class ClusterCreateTests(unittest.TestCase):
 
         # Cleanup the cluster we created
         if self.foo.config['backend'] != "null":
-            time.sleep(2 * self.shep) # chef-solr indexing can be slow
+            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
         resp = self.app.delete('/clusters/%s' % out['cluster']['id'],
                                content_type=self.content_type)
         self.assertEquals(resp.status_code, 200)
@@ -75,7 +75,7 @@ class ClusterCreateTests(unittest.TestCase):
 
         # Cleanup the cluster we created
         if self.foo.config['backend'] != "null":
-            time.sleep(2 * self.shep) # chef-solr indexing can be slow
+            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
         resp = self.app.delete('/clusters/%s' % out['cluster']['id'],
                                content_type=self.content_type)
         self.assertEquals(resp.status_code, 200)
@@ -83,7 +83,7 @@ class ClusterCreateTests(unittest.TestCase):
         self.assertEquals(out['status'], 200)
         self.assertEquals(out['message'], 'Cluster deleted')
 
-    def test_create_cluster_with_no_desc_and_override_attributes(self):
+    def test_create_cluster_with_override_attributes_and_no_desc(self):
         data = {'name': self.name,
                 'config': self.attribs}
         resp = self.app.post('/clusters/',
@@ -99,7 +99,7 @@ class ClusterCreateTests(unittest.TestCase):
 
         # Cleanup the cluster we created
         if self.foo.config['backend'] != "null":
-            time.sleep(2 * self.shep) # chef-solr indexing can be slow
+            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
         resp = self.app.delete('/clusters/%s' % out['cluster']['id'],
                                content_type=self.content_type)
         self.assertEquals(resp.status_code, 200)
@@ -122,7 +122,7 @@ class ClusterCreateTests(unittest.TestCase):
 
         # Cleanup the cluster we created
         if self.foo.config['backend'] != "null":
-            time.sleep(2 * self.shep) # chef-solr indexing can be slow
+            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
         resp = self.app.delete('/clusters/%s' % out['cluster']['id'],
                                content_type=self.content_type)
         self.assertEquals(resp.status_code, 200)
@@ -140,6 +140,47 @@ class ClusterCreateTests(unittest.TestCase):
         out = json.loads(resp.data)
         self.assertEquals(out['status'], 400)
         self.assertTrue('was not provided' in out['message'])
+
+
+class ClusterUpdateTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(self):
+        self.foo = webapp.Thing('roush', configfile='local.conf', debug=True)
+        init_db(self.foo.config['database_uri'])
+        self.app = self.foo.test_client()
+        self.name = _randomStr(10)
+        self.desc = _randomStr(30)
+        self.attribs = {"package_component": "essex-final",
+                        "monitoring": {"metric_provider": "null"}}
+        self.content_type = 'application/json'
+        self.shep = 30
+        self.create_data = {'name': self.name,
+                            'description': self.desc,
+                            'config': self.attribs}
+        tmp = self.app.post('/clusters/',
+                            content_type=self.content_type,
+                            data=json.dumps(self.create_data))
+        self.json = json.loads(tmp.data)
+        self.cluster_id = self.json['cluster']['id']
+        if self.foo.config['backend'] != 'null':
+            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+
+    def test_update_cluster_with_description_and_override_attributes(self):
+        pass
+
+    def test_update_cluster_with_description_and_no_override_attributes(self):
+        pass
+
+    def test_update_cluster_with_override_attributes_and_no_description(self):
+        pass
+
+    def test_update_cluster_with_no_data(self):
+        pass
+
+    @classmethod
+    def tearDownClass(self):
+        tmp_resp = self.app.delete('/clusters/%s' + str(self.cluster_id),
+                                   content_type=self.content_type)
 
 
 #class ClusterTestCase(RoushTest):
