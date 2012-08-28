@@ -69,12 +69,16 @@ class OpscodechefBackend(backends.ConfigurationBackend):
 
         return chef.Environment(cluster_name, self.api).override_attributes
 
-    def set_cluster_settings(self, cluster_name, settings):
+    def set_cluster_settings(self, cluster_name, cluster_desc=None,
+                             cluster_settings=None):
         if not self._cluster_exists(cluster_name):
             raise ClusterDoesNotExist
 
         env = chef.Environment(cluster_name, self.api)
-        env.override_attributes = settings
+        if cluster_desc is not None:
+            env.description = cluster_desc
+        if cluster_settings is not None:
+            env.override_attributes = cluster_settings
         env.save()
 
     def create_cluster(self, cluster_name, cluster_desc=None,

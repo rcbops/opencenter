@@ -88,6 +88,7 @@ def cluster_by_id(cluster_id):
     if request.method == 'PATCH' or request.method == 'POST':
         return http_not_implemented()
     elif request.method == 'PUT':
+        # FIXME(shep): currently breaks badly on an empty put
         r = Clusters.query.filter_by(id=cluster_id).first()
         # FIXME(rp): renames break the backend association
         if 'name' in request.json:
@@ -97,7 +98,17 @@ def cluster_by_id(cluster_id):
         if 'config' in request.json:
             r.config = json.dumps(request.json['config'])
         #TODO(shep): this is an un-excepted db call
-        db_session.commit()
+        try:
+            current_app.backend.set_cluster_settings(r.name,
+                cluster_desc=r.description if (
+                    'description' in request.json) else None,
+                cluster_settings=request.json['config'] if (
+                    'config' in request.json) else None)
+            db_session.commit()
+        except ChefServerError, e:
+            db_session.rollback()
+            # FIXME(shep): this is not the correct return code/action
+            return http_conflict(e)
         cls = dict()
         for c in r.__table__.columns.keys():
             if c == 'config':

@@ -15,7 +15,8 @@ class NullBackend(backends.ConfigurationBackend):
     def get_cluster_settings(self, cluster_name):
         pass
 
-    def set_cluster_settings(self, cluster_name, settings):
+    def set_cluster_settings(self, cluster_name, cluster_desc=None,
+                             cluster_settings=None):
         pass
 
     def create_cluster(self, cluster_name, cluster_desc=None,
