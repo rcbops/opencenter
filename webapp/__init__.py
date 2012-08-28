@@ -21,7 +21,7 @@ class Thing(Flask):
                      'bind_port': 8080,
                      'backend': 'null',
                      'loglevel': 'WARNING',
-                     'database_uri': 'sqlite:///:memory:'},
+                     'database_uri': 'sqlite:///'},
                     'opscodechef_backend':
                     {'role_location': '/etc/roush/roles.d'},
                     'null_backend': {}}
