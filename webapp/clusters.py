@@ -35,19 +35,21 @@ def list_clusters():
             db_session.add(cluster)
             try:
                 # FIXME(rp): Transactional problem
-                # FIXME(shep): this will throw an error if config == None
-                current_app.backend.create_cluster(name,
-                                                   desc,
-                                                   json.loads(config))
+                # README(shep): setting override_attributes as part of
+                #  the create, due to the lag time of chef.search
+                current_app.backend.create_cluster(
+                    name,
+                    desc,
+                    config if (config is None) else json.loads(config))
                 db_session.commit()
                 # have to unravel json object from the db
                 cls = dict()
-                for c in cluster.__table__.columns.keys():
-                    if c == 'config':
-                        cls[c] = json.loads(getattr(cluster, c))
+                for col in cluster.__table__.columns.keys():
+                    if col == 'config':
+                        tmp = getattr(cluster, col)
+                        cls[col] = tmp if (tmp is None) else json.loads(tmp)
                     else:
-                        cls[c] = getattr(cluster, c)
-                # FIXME(rp): do set_cluster_settings if have json
+                        cls[col] = getattr(cluster, col)
                 msg = {'status': 201,
                        'message': 'Cluster Created',
                        'cluster': cls}
@@ -66,16 +68,14 @@ def list_clusters():
             return http_bad_request('name')
     else:
         cluster_list = {"clusters": []}
-        for r in Clusters.query.all():
+        for row in Clusters.query.all():
             tmp = dict()
-            for c in r.__table__.columns.keys():
-                if c == 'config':
-                    if getattr(r, c) is not None:
-                        tmp[c] = json.loads(getattr(r, c))
-                    else:
-                        tmp[c] = getattr(r, c)
+            for col in row.__table__.columns.keys():
+                if col == 'config':
+                    val = getattr(row, col)
+                    tmp[col] = val if (val is None) else json.loads(val)
                 else:
-                    tmp[c] = getattr(r, c)
+                    tmp[col] = getattr(row, col)
             cluster_list['clusters'].append(tmp)
         resp = jsonify(cluster_list)
     return resp
