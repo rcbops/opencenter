@@ -141,6 +141,21 @@ class ClusterCreateTests(unittest.TestCase):
         self.assertEquals(out['status'], 400)
         self.assertTrue('was not provided' in out['message'])
 
+    def test_verify_delete_method_returns_a_405_on_clusters(self):
+        resp = self.app.delete('/clusters/',
+                               content_type=self.content_type)
+        self.assertEquals(resp.status_code, 405)
+
+    def test_verify_patch_method_returns_a_405_on_clusters(self):
+        resp = self.app.patch('/clusters/',
+                              content_type=self.content_type)
+        self.assertEquals(resp.status_code, 405)
+
+    def test_verify_put_method_returns_a_405_on_clusters(self):
+        resp = self.app.put('/clusters/',
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 405)
+
 
 class ClusterUpdateTests(unittest.TestCase):
     @classmethod
@@ -148,6 +163,8 @@ class ClusterUpdateTests(unittest.TestCase):
         self.foo = webapp.Thing('roush', configfile='local.conf', debug=True)
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
+
+    def setUp(self):
         self.name = _randomStr(10)
         self.desc = _randomStr(30)
         self.attribs = {"package_component": "essex-final",
@@ -166,19 +183,74 @@ class ClusterUpdateTests(unittest.TestCase):
             time.sleep(2 * self.shep)  # chef-solr indexing can be slow
 
     def test_update_cluster_with_description_and_override_attributes(self):
-        pass
+        tmp_desc = _randomStr(30)
+        tmp_attribs = {'package_component': 'grizzly-final',
+                       'monitoring': {'metric_provider': 'collectd'}}
+        data = {'name': self.name,
+                'description': tmp_desc,
+                'config': tmp_attribs}
+        resp = self.app.put('/clusters/%s' % self.cluster_id,
+                            content_type=self.content_type,
+                            data=json.dumps(data))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['id'], self.cluster_id)
+        self.assertEquals(out['name'], self.name)
+        self.assertEquals(out['description'], tmp_desc)
+        self.assertNotEquals(out['description'], self.desc)
+        self.assertEquals(out['config'], tmp_attribs)
+        self.assertNotEquals(out['config'], self.attribs)
 
     def test_update_cluster_with_description_and_no_override_attributes(self):
-        pass
+        tmp_desc = _randomStr(30)
+        data = {'name': self.name,
+                'description': tmp_desc}
+        resp = self.app.put('/clusters/%s' % self.cluster_id,
+                            content_type=self.content_type,
+                            data=json.dumps(data))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['id'], self.cluster_id)
+        self.assertEquals(out['name'], self.name)
+        self.assertEquals(out['description'], tmp_desc)
+        self.assertNotEquals(out['description'], self.desc)
+        self.assertEquals(out['config'], self.attribs)
 
     def test_update_cluster_with_override_attributes_and_no_description(self):
-        pass
+        tmp_attribs = {'package_component': 'grizzly-final',
+                       'monitoring': {'metric_provider': 'collectd'}}
+        data = {'name': self.name,
+                'config': tmp_attribs}
+        resp = self.app.put('/clusters/%s' % self.cluster_id,
+                            content_type=self.content_type,
+                            data=json.dumps(data))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['id'], self.cluster_id)
+        self.assertEquals(out['name'], self.name)
+        self.assertEquals(out['description'], self.desc)
+        self.assertEquals(out['config'], tmp_attribs)
+        self.assertNotEquals(out['config'], self.attribs)
 
     def test_update_cluster_with_no_data(self):
-        pass
+        resp = self.app.put('/clusters/%s' % self.cluster_id,
+                            data=None,
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 400)
 
-    @classmethod
-    def tearDownClass(self):
+    def test_verify_post_method_returns_a_405_on_clusters_with_id(self):
+        resp = self.app.post('/clusters/%s' % self.cluster_id,
+                             content_type=self.content_type)
+        self.assertEquals(resp.status_code, 405)
+
+    # TODO(shep): this method probably should not be part of the
+    #             allowed method list.
+    def test_verify_patch_method_returns_a_501_on_clusters_with_id(self):
+        resp = self.app.patch('/clusters/%s' % self.cluster_id,
+                              content_type=self.content_type)
+        self.assertEquals(resp.status_code, 501)
+
+    def tearDown(self):
         tmp_resp = self.app.delete('/clusters/%s' + str(self.cluster_id),
                                    content_type=self.content_type)
 
