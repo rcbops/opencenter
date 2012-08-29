@@ -112,7 +112,8 @@ def cluster_by_id(cluster_id):
         cls = dict()
         for c in r.__table__.columns.keys():
             if c == 'config':
-                cls[c] = json.loads(getattr(r, c))
+                val = getattr(r, c)
+                cls[c] = val if (val is None) else json.loads(val)
             else:
                 cls[c] = getattr(r, c)
         resp = jsonify(cls)
@@ -139,7 +140,8 @@ def cluster_by_id(cluster_id):
             cls = dict()
             for c in r.__table__.columns.keys():
                 if c == 'config':
-                    cls[c] = json.loads(getattr(r, c))
+                    val = getattr(r, c)
+                    cls[c] = val if (val is None) else json.loads(val)
                 else:
                     cls[c] = getattr(r, c)
             resp = jsonify(cls)
