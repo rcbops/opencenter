@@ -41,6 +41,10 @@ class NullBackend(backends.ConfigurationBackend):
     def set_node_settings(self, node, settings):
         pass
 
+    def create_node(self, node_name, role=None,
+                    cluster=None, node_settings=None):
+        pass
+
     def get_node_status(self, node):
         pass
 
