@@ -5,6 +5,7 @@ from flask import Flask
 from clusters import clusters
 from nodes import nodes
 from roles import roles
+from index import index
 
 import backends
 import logging
@@ -58,6 +59,7 @@ class Thing(Flask):
         if 'loglevel' in defaults['main']:
             LOG.setLevel(defaults['main']['loglevel'])
 
+        self.register_blueprint(index)
         self.register_blueprint(clusters, url_prefix='/clusters')
         self.register_blueprint(nodes, url_prefix='/nodes')
         self.register_blueprint(roles, url_prefix='/roles')
