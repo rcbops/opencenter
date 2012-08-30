@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Text
+from sqlalchemy import (Column, Integer, String, ForeignKey,
+                        Text, Enum, DateTime)
 from sqlalchemy.orm import relationship, backref
 from database import Base
 
@@ -9,14 +10,14 @@ class Nodes(Base):
     hostname = Column(String(64), unique=True)
     role_id = Column(Integer, ForeignKey('roles.id'))
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
-    extra = Column(Text)
+    config = Column(Text)
 
     def __init__(self, hostname=None, role_id=None,
-                 cluster_id=None, extra=None):
+                 cluster_id=None, config=None):
         self.hostname = hostname
         self.role_id = role_id
         self.cluster_id = cluster_id
-        self.extra = extra
+        self.config = config
 
     def __repr__(self):
         return '<Nodes %r>' % (self.hostname)
@@ -53,6 +54,37 @@ class Clusters(Base):
         self.name = name
         self.description = description
         self.config = config
+
+    def __repr__(self):
+        return '<Clusters %r>' % (self.name)
+
+
+class Tasks(Base):
+    __tablename__ = 'tasks'
+    id = Column(Integer, primary_key=True)
+    node_id = Column(Integer, ForeignKey('nodes.id'))
+    action = Column(String(40))
+    payload = Column(Text)
+    state = Column(Enum('pending', 'running', 'done', 'timeout', 'cancelled'))
+    result = Column(Text)
+    submitted = Column(DateTime)
+    completed = Column(DateTime)
+    expires = Column(DateTime)
+    node = relationship('Nodes', backref=backref('tasks',
+                                                 uselist=False,
+                                                 lazy='dynamic'))
+
+    def __init__(self, node_id, action, payload, state,
+                 result=None, submitted=None, completed=None,
+                 expires=None):
+        self.node_id = node_id
+        self.action = action
+        self.payload = payload
+        self.state = state
+        self.result = result
+        self.submitted = submitted
+        self.completed = completed
+        self.expires = expires
 
     def __repr__(self):
         return '<Clusters %r>' % (self.name)
