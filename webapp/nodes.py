@@ -49,7 +49,7 @@ def list_nodes():
                     node.hostname,
                     role=node.role_id,
                     cluster=node.cluster_id,
-                    node_settings=request.json['config'])
+                    node_settings=config)
                 db_session.commit()
                 n = dict()
                 for col in node.__table__.columns.keys():
