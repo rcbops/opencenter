@@ -1,12 +1,14 @@
 #!/usr/bin/env python
-
 import json
+
 from pprint import pprint
+from time import time
 
 from flask import Blueprint, Flask, Response, request
 from flask import session, jsonify, url_for, current_app
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
+from sqlalchemy import or_
 
 from db.database import db_session
 from db.models import Nodes, Roles, Clusters, Tasks
@@ -22,62 +24,35 @@ tasks = Blueprint('tasks', __name__)
 @tasks.route('/', methods=['GET', 'POST'])
 def list_tasks():
     if request.method == 'POST':
-        msg = {'message': 'POST Method not implemented',
-               'status': 501}
-        resp = jsonify(msg)
-        resp.status_code = 501
-        if 'node_id' in request.json:
-            action = request.json['node_id']
+        # TODO(shep): sanity check action and payload
 
-#            role_id = None
-#            if 'role_id' in request.json:
-#                role_id = request.json['role_id']
-#
-#            cluster_id = None
-#            if 'cluster_id' in request.json:
-#                cluster_id = request.json['cluster_id']
-#
-#            config = None
-#            if 'config' in request.json:
-#                config = json.dumps(request.json['config'])
-#
-#            # This should probably check against Roles.id and Clusters.id
-#            node = Nodes(hostname=hostname, role_id=role_id,
-#                         cluster_id=cluster_id, config=config)
-#
-#            # FIXME(rp): get a role name and a node name, and
-#            # do a set_cluster_for_node(node_name, cluster_name)
-#            try:
-#                db_session.add(node)
-#                current_app.backend.create_node(
-#                    node.hostname,
-#                    role=node.role_id,
-#                    cluster=node.cluster_id,
-#                    node_settings=config)
-#                db_session.commit()
-#                n = dict()
-#                for col in node.__table__.columns.keys():
-#                    if col == 'config':
-#                        tmp = getattr(node, col)
-#                        n[col] = tmp if (tmp is None) else json.loads(tmp)
-#                    else:
-#                        n[col] = getattr(node, col)
-#                href = request.base_url + str(node.id)
-#                msg = {'status': 201,
-#                       'message': 'Node Created',
-#                       'node': n,
-#                       'ref': href}
-#                resp = jsonify(msg)
-#                resp.headers['Location'] = href
-#                resp.status_code = 201
-#            except IntegrityError, e:
-#                db_session.rollback()
-#                return http_conflict(e)
-        else:
-            return http_bad_request('node_id')
+        task = Tasks(node_id=request.json['node_id'],
+                     action=request.json['action'],
+                     payload=request.json['payload'],
+                     state='pending',
+                     result=None,
+                     submitted=int(time()),
+                     completed=None,
+                     expires=None)
+
+        db_session.add(task)
+        try:
+            db_session.commit()
+            # FIXME(shep): add a ref
+            msg = { 'status': 201, 'message': 'Task Created',
+                    'task': dict((c, getattr(task, c))
+                                 for c in task.__table__.columns.keys())}
+        except IntegrityError, e:
+            db_session.rollback()
+            return http_conflict(e)
+
+        resp='{ "smokeyou": true }'
     else:
         task_list = {"tasks": []}
-        for row in Tasks.query.all():
+
+        # FIXME(rp): need api selectable filters here
+        for row in Tasks.query.filter(or_(Tasks.state == 'pending',
+                                          Tasks.state == 'running')):
             tmp = dict()
             for col in row.__table__.columns.keys():
                 if col == 'payload' or col == 'result':
@@ -127,5 +102,6 @@ def task_by_id(task_id):
                     task[col] = val if (val is None) else json.loads(val)
                 else:
                     task[col] = getattr(row, col)
+
             resp = jsonify(task)
     return resp
