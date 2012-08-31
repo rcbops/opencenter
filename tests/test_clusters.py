@@ -26,6 +26,7 @@ class ClusterCreateTests(unittest.TestCase):
         self.foo = webapp.Thing('roush', configfile='local.conf', debug=True)
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
+        self.app.testing = True
         self.name = _randomStr(10)
         self.desc = _randomStr(30)
         self.attribs = {_randomStr(5): _randomStr(10),

@@ -19,6 +19,7 @@ class RoleCRUDTestCase(unittest.TestCase):
     def setUpClass(self):
         foo = webapp.Thing("roush", configfile='local.conf', debug=True)
         self.app = foo.test_client()
+
         self.role_name = _randomStr(10)
         self.role_desc = _randomStr(30)
         self.content_type = 'application/json'
@@ -33,8 +34,9 @@ class RoleCRUDTestCase(unittest.TestCase):
         data = json.loads(resp.data)
 
         # make sure the role was created
-        resp = self.app.get(data['ref'],
+        resp = self.app.get("/roles/%s" % data['role']['id'],
                             content_type=self.content_type)
+
         tmp = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(tmp['id'], data['role']['id'])
@@ -44,7 +46,7 @@ class RoleCRUDTestCase(unittest.TestCase):
         # update role attributes
         new_desc = _randomStr(30)
         new_role = {"description": new_desc}
-        resp = self.app.put(data['ref'],
+        resp = self.app.put("/roles/%d" % data['role']['id'],
                             data=json.dumps(new_role),
                             content_type=self.content_type)
         self.assertEqual(resp.status_code, 200)
@@ -53,7 +55,7 @@ class RoleCRUDTestCase(unittest.TestCase):
         self.assertNotEqual(tmp_data['description'], self.role_desc)
 
         # clean up the role
-        resp = self.app.delete(data['ref'],
+        resp = self.app.delete("/roles/%d" % data['role']['id'],
                                content_type=self.content_type)
         self.assertEqual(resp.status_code, 200)
         tmp = json.loads(resp.data)

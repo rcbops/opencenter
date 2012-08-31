@@ -153,7 +153,7 @@ class NodeCreateTests(unittest.TestCase):
         out = json.loads(resp.data)
         self.assertEquals(out['status'], 200)
         self.assertEquals(out['message'], 'Node deleted')
-        self.assertTrue(False)
+        # self.assertTrue(False)
 
     def test_create_node_without_hostname(self):
         data = {'description': self.desc,

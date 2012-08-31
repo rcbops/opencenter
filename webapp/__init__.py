@@ -67,6 +67,9 @@ class Thing(Flask):
         self.register_blueprint(tasks, url_prefix='/tasks')
         self.testing = debug
 
+        if debug:
+            self.config['TESTING'] = True
+
     def run(self):
         super(Thing, self).run(host=self.config['bind_address'],
                                port=self.config['bind_port'])
