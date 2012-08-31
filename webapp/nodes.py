@@ -49,7 +49,7 @@ def list_nodes():
                     node.hostname,
                     role=node.role_id,
                     cluster=node.cluster_id,
-                    node_settings=request.json['config'])
+                    node_settings=config)
                 db_session.commit()
                 n = dict()
                 for col in node.__table__.columns.keys():
@@ -77,7 +77,7 @@ def list_nodes():
             tmp = dict()
             for col in row.__table__.columns.keys():
                 if col == 'config':
-                    val = getarrt(row, col)
+                    val = getattr(row, col)
                     tmp[col] = val if (val is None) else json.loads(val)
                 else:
                     tmp[col] = getattr(row, col)
