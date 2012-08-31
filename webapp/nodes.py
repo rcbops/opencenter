@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
 from db.database import db_session
-from db.models import Nodes, Roles, Clusters
+from db.models import Nodes, Roles, Clusters, Tasks
 from errors import (
     http_bad_request,
     http_conflict,
@@ -89,7 +89,22 @@ def list_nodes():
 @nodes.route('/<node_id>/tasks', methods=['GET', 'PUT'])
 def tasks_by_node_id(node_id):
     # Display only tasks with state=pending
-    pass
+    row = Tasks.query.filter_by(node_id=node_id,
+                                state='pending').first()
+    if row is None:
+        return http_not_found()
+    else:
+        task = dict()
+        for col in row.__table__.columns.keys():
+            if col == 'payload' or col == 'result':
+                val = getattr(row, col)
+                task[col] = val if (val is None) else json.loads(val)
+            else:
+                task[col] = getattr(row, col)
+
+        resp = jsonify(task)
+        return resp
+
 
 @nodes.route('/<node_id>', methods=['GET', 'PUT', 'DELETE'])
 def node_by_id(node_id):
@@ -111,7 +126,7 @@ def node_by_id(node_id):
         node = dict()
         for col in r.__table__.columns.keys():
             if col == 'config':
-                val = getattr(r,col)
+                val = getattr(r, col)
                 node[col] = val if (val is None) else json.loads(val)
             else:
                 node[col] = getattr(r, col)
