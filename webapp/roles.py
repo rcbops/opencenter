@@ -38,6 +38,7 @@ def list_roles():
                 resp.headers['location'] = request.url + str(role.id)
                 resp.status_code = 201
             except IntegrityError, e:
+                db_session.rollback()
                 return http_conflict(e)
         else:
             return http_bad_request("name")
