@@ -32,11 +32,10 @@ def list_roles():
                 msg = {'status': 201, 'message': 'Role Created',
                        'role': dict((c, getattr(role, c))
                                     for c in role.__table__.columns.keys()),
-                       'ref': request.url + url_for('roles.role_by_id',
-                                                    role_id=role.id)}
+                       'ref': request.url + str(role.id)
+                       }
                 resp = jsonify(msg)
-                resp.headers['location'] = request.url + url_for('roles.role_by_id',
-                                                                 role_id=role.id)
+                resp.headers['location'] = request.url + str(role.id)
                 resp.status_code = 201
             except IntegrityError, e:
                 return http_conflict(e)
