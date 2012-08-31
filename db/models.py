@@ -67,7 +67,7 @@ class Tasks(Base):
     payload = Column(Text)
     state = Column(Enum('pending', 'running', 'done', 'timeout', 'cancelled'))
     result = Column(Text)
-    submitted = Column(DateTime)
+    submitted = Column(DateTime, server_default=text('NOW()'))
     completed = Column(DateTime)
     expires = Column(DateTime)
     node = relationship('Nodes', backref=backref('tasks',
