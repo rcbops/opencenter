@@ -39,14 +39,14 @@ def list_tasks():
         try:
             db_session.commit()
             # FIXME(shep): add a ref
-            msg = { 'status': 201, 'message': 'Task Created',
-                    'task': dict((c, getattr(task, c))
-                                 for c in task.__table__.columns.keys())}
+            msg = {'status': 201, 'message': 'Task Created',
+                   'task': dict((c, getattr(task, c))
+                                for c in task.__table__.columns.keys())}
         except IntegrityError, e:
             db_session.rollback()
             return http_conflict(e)
 
-        resp='{ "smokeyou": true }'
+        resp = '{ "smokeyou": true }'
     else:
         task_list = {"tasks": []}
 
@@ -85,7 +85,7 @@ def task_by_id(task_id):
         task = dict()
         for col in r.__table__.columns.keys():
             if col == 'payload' or col == 'result':
-                val = getattr(r,col)
+                val = getattr(r, col)
                 task[col] = val if (val is None) else json.loads(val)
             else:
                 task[col] = getattr(r, col)
