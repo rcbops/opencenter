@@ -93,7 +93,7 @@ def task_by_id(task_id):
         # NOTE: We probably can't rename hosts -- it affect chef...
         # Think on this.  Also, probably should do a get_node_status
         # to make sure it's happy in the config management
-        r = Tasks.query.filter_by(id=node_id).first()
+        r = Tasks.query.filter_by(id=task_id).first()
         if 'action' in request.json:
             r.action = request.json['action']
         if 'payload' in request.json:
