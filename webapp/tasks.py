@@ -25,29 +25,50 @@ tasks = Blueprint('tasks', __name__)
 def list_tasks():
     if request.method == 'POST':
         # TODO(shep): sanity check action and payload
+        fields = {'node_id': None,
+                  'action': None,
+                  'payload': 'json',
+                  'state': 'pending',
+                  'result': 'json',
+                  'completed': None,
+                  'expires': None}
 
-        task = Tasks(node_id=request.json['node_id'],
-                     action=request.json['action'],
-                     payload=request.json['payload'],
-                     state='pending',
-                     result=None,
-                     submitted=int(time()),
-                     completed=None,
-                     expires=None)
+        for k,v in fields.iteritems():
+            if v == 'json':
+                if k in request.json:
+                    fields[k] = json.dumps(request.json[k])
+                else:
+                    fields[k] = None
+            else:
+                if k in request.json:
+                    fields[k] = request.json[k]
 
+        task = Tasks(node_id=fields['node_id'], action=fields['action'],
+                     payload=fields['payload'], state=fields['state'],
+                     result=fields['result'], submitted=int(time()),
+                     completed=fields['completed'], expires=fields['expires'])
         db_session.add(task)
         msg = {'status': 500, 'message': 'Internal Error'}
         try:
             db_session.commit()
             # FIXME(shep): add a ref
+            href = request.base_url + str(task.id)
+            tmp = dict()
+            for col in task.__table__.columns.keys():
+                if col == 'payload' or col == 'result':
+                    val = getattr(task, col)
+                    tmp[col] = val if (val is None) else json.loads(val)
+                else:
+                    tmp[col] = getattr(task, col)
             msg = {'status': 201, 'message': 'Task Created',
-                   'task': dict((c, getattr(task, c))
-                                for c in task.__table__.columns.keys())}
+                   'ref': href, 'task': tmp}
         except IntegrityError, e:
             db_session.rollback()
             return http_conflict(e)
 
         resp = jsonify(msg)
+        resp.status_code = 201
+        resp.headers['Location'] = href
     else:
         task_list = {"tasks": []}
 
