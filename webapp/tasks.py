@@ -36,6 +36,7 @@ def list_tasks():
                      expires=None)
 
         db_session.add(task)
+        msg = {'status': 500, 'message': 'Internal Error'}
         try:
             db_session.commit()
             # FIXME(shep): add a ref
@@ -46,7 +47,7 @@ def list_tasks():
             db_session.rollback()
             return http_conflict(e)
 
-        resp = '{ "smokeyou": true }'
+        resp = jsonify(msg)
     else:
         task_list = {"tasks": []}
 
