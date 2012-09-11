@@ -2,7 +2,11 @@
 
 import daemon
 import fcntl
+import getopt
+import logging
 import os
+import sys
+import traceback
 
 from ConfigParser import ConfigParser
 from flask import Flask
@@ -13,7 +17,6 @@ from index import index
 from tasks import tasks
 
 import backends
-import logging
 
 backend = None
 
@@ -47,8 +50,30 @@ class PidFile(object):
 
 
 class Thing(Flask):
-    def __init__(self, name, configfile=None, confighash=None, debug=False):
+    def __init__(self, name, argv=None, configfile=None, confighash=None, debug=False):
+        daemonize = False
+
         super(Thing, self).__init__(name)
+
+        if argv:
+            try:
+                opts,args = getopt.getopt(argv, 'c:vd')
+            except getopt.GetoptError as err:
+                print str(err)
+                sys.exit(1)
+
+            for o,a in opts:
+                if o == '-c':
+                    configfile = a
+                elif o == '-v':
+                    debug = True
+                elif o == '-d':
+                    daemonize = True
+                else:
+                    print "Bad option"
+                    sys.exit(1)
+
+        print("daemonize: %s, debug: %s, configfile %s" % (daemonize, debug, configfile))
 
         defaults = {'main':
                     {'bind_address': '0.0.0.0',
@@ -110,7 +135,12 @@ class Thing(Flask):
         if debug:
             self.config['TESTING'] = True
 
+        if daemonize:
+            self.config['daemonize'] = True
+
     def run(self):
+        context = None
+
         if self.config['daemonize']:
             pidfile = None
             if self.config['pidfile']:
@@ -121,11 +151,33 @@ class Thing(Flask):
                 umask = 0o022,
                 pidfile = pidfile)
 
-            with context:
-                self._run()
-        else:
-            self._run()
 
-    def _run(self):
-        super(Thing, self).run(host=self.config['bind_address'],
-                               port=self.config['bind_port'])
+
+        try:
+            if context:
+                context.open()
+
+            super(Thing, self).run(host=self.config['bind_address'],
+                                   port=self.config['bind_port'])
+        except KeyboardInterrupt:
+            sys.exit(1)
+        except SystemExit:
+            raise
+        except:
+            exc_info = sys.exc_info()
+            if hasattr(exc_info[0], "__name__"):
+                exc_class, exc, tb = exc_info
+                tb_path, tb_lineno, tb_func = traceback.extract_tb(tb)[-1][:3]
+                log.error("%s (%s:%s in %s)", exc_info[1], tb_path,
+                          tb_lineno, tb_func)
+            else:  # string exception
+                log.error(exc_info[0])
+            if log.isEnabledFor(logging.DEBUG):
+                print ''
+                traceback.print_exception(*exc_info)
+                sys.exit(1)
+            else:
+                sys.exit(retval)
+        finally:
+            if context:
+                context.close()
