@@ -1,0 +1,52 @@
+#!/usr/bin/make -f
+
+# Verbose mode
+#export DH_VERBOSE=1
+
+%:
+	dh $@ --with python2
+
+# ifeq (,$(filter nocheck, $(DEB_BUILD_OPTIONS)))
+# override_dh_auto_test:
+# 	python $* setup.py test -vv
+# else
+# override_dh_auto_test:
+# endif
+
+override_dh_auto_test:
+
+override_dh_auto_build:
+	# python $* setup.py build
+	# dh_auto_build
+
+override_dh_auto_install:
+	# python setup.py install --prefix=/usr --install-layout=deb --root=.
+	# ls -lR debian
+	# dh_auto_install
+
+# ifeq(,$(filter nodocs, $(DEB_BUILD_OPTIONS)))
+# override_dh_installdocs:
+# 	python setup.py build_sphinx
+# 	dh_installdocs build/sphinx/html
+# endif
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rf build
+	rm -rf *.egg-info
+
+# override_dh_auto_build:
+
+# override_dh_auto_install:
+# 	python setup.py install --root=debian/roush-agent --prefix=/usr
+# 	ls -lR debian
+
+override_dh_installinit:
+	# installinit prefers .upstart to .init
+	if dpkg-vendor --derives-from ubuntu; then \
+		for i in debian/*upstart.in; do \
+			MYPKG=`basename $$i .upstart.in`; \
+			cp debian/$$MYPKG.upstart.in debian/$$MYPKG.upstart; \
+		done; \
+	fi
+	dh_installinit --name="roush"

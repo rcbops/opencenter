@@ -1,0 +1,35 @@
+Source: roush
+Section: net
+Priority: optional
+Maintainer: Ron Pedde <ron@pedde.com>
+Build-Depends: debhelper (>= 7.0.50~),
+ python-all,
+ python-support (>= 0.90),
+ python-setuptools,
+ python-requests,
+ python-flask
+Standards-Version: 3.9.1
+XS-Python-Version: >= 2.6
+Homepage: https://github.com/galstrom21/roush
+XCBS-RCB-Component: rcb-utils
+
+Package: roush
+Architecture: all
+Section: python
+Depends: ${python:Depends}, ${misc:Depends},
+ python-setuptools,
+ python-requests,
+ python-flask
+Provides: ${python:Provides}
+Description: roush web API
+
+Package: roush-simple
+Architecture: all
+Section: python
+Depends: ${python:Depends}, ${misc:Depends},
+ roush (= ${binary:Version})
+Provides: ${python:Provides}
+Description: init scripts for running roush in self-hosted flask.
+ These init scripts run roush out of the flask built-in web server.
+ This is something of a fail.  Do not do this in practice. DO WHAT I
+ SAY NOT WHAT I DO.
