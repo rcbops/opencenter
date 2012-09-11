@@ -83,11 +83,15 @@ class OpscodechefBackend(backends.ConfigurationBackend):
 
     def create_cluster(self, cluster_name, cluster_desc=None,
                        cluster_settings=None):
-        env = chef.Environment.create(cluster_name,
-                                      self.api,
-                                      description=cluster_desc,
-                                      override_attributes=cluster_settings)
-        env.save()
+            env = chef.Environment.create(cluster_name,
+                                          self.api,
+                                          description=cluster_desc,
+                                          override_attributes=cluster_settings)
+
+            try:
+                env.save()
+            except chef.ChefServerError as e:
+                raise BackendError(e)
 
     def delete_cluster(self, cluster_name):
         if not self._cluster_exists(cluster_name):
@@ -131,8 +135,8 @@ class OpscodechefBackend(backends.ConfigurationBackend):
         node.override = settings
         node.save()
 
-   def create_node(self, node, role=None,                            
-                    cluster=None, node_settings=None):                     
+   def create_node(self, node, role=None,
+                    cluster=None, node_settings=None):
         pass
 
     def get_node_status(self, node):

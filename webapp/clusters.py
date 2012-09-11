@@ -3,7 +3,6 @@
 import json
 from pprint import pprint
 
-from chef.exceptions import ChefServerError
 from flask import Blueprint, Flask, Response, request
 from flask import session, jsonify, url_for, current_app
 from sqlalchemy.exc import IntegrityError
@@ -62,7 +61,7 @@ def list_clusters():
                 # This is thrown on duplicate rows
                 db_session.rollback()
                 return http_conflict(e)
-            except ChefServerError, e:
+            except BackendError, e:
                 # This is thrown on duplicate environments
                 db_session.rollback()
                 return http_conflict(e)
