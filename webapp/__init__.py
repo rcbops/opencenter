@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+import daemon
+import fcntl
+import os
+
 from ConfigParser import ConfigParser
 from flask import Flask
 from clusters import clusters
@@ -13,6 +17,34 @@ import logging
 
 backend = None
 
+# Stolen: http://code.activestate.com/recipes/577911-context-manager-for-a-daemon-pid-file/
+class PidFile(object):
+    def __init__(self, path):
+        self.path = path
+        self.pidfile = None
+
+    def __enter__(self):
+        self.pidfile = open(self.path, 'a+')
+        try:
+            fcntl.flock(self.pidfile.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except IOError:
+            raise SystemExit('Pid file in use')
+
+        self.pidfile.seek(0)
+        self.pidfile.truncate()
+        self.pidfile.write(str(os.getpid()))
+        self.pidfile.flush()
+        self.pidfile.seek(0)
+        return self.pidfile
+
+    def __exit__(self, exc_type = None, exc_value = None, exc_tb = None):
+        try:
+            self.pidfile.close()
+        except IOError as err:
+            if err.errno != 9:
+                raise
+        os.remove(self.path)
+
 
 class Thing(Flask):
     def __init__(self, name, configfile=None, confighash=None, debug=False):
@@ -23,7 +55,9 @@ class Thing(Flask):
                      'bind_port': 8080,
                      'backend': 'null',
                      'loglevel': 'WARNING',
-                     'database_uri': 'sqlite:///'},
+                     'database_uri': 'sqlite:///',
+                     'daemonize': False,
+                     'pidfile': None },
                     'opscodechef_backend':
                     {'role_location': '/etc/roush/roles.d'},
                     'null_backend': {}}
@@ -32,8 +66,14 @@ class Thing(Flask):
             config = ConfigParser()
             config.read(configfile)
 
-            defaults.update(
-                dict([(s, dict(config.items(s))) for s in config.sections()]))
+            configfile_hash = dict(
+                [(s, dict(config.items(s))) for s in config.sections()])
+
+            for section in configfile_hash:
+                if section in defaults:
+                    defaults[section].update(configfile_hash[section])
+                else:
+                    defaults[section] = configfile_hash[section]
 
         if confighash:
             defaults.update(confighash)
@@ -71,5 +111,21 @@ class Thing(Flask):
             self.config['TESTING'] = True
 
     def run(self):
+        if self.config['daemonize']:
+            pidfile = None
+            if self.config['pidfile']:
+                pidfile = PidFile(self.config['pidfile'])
+
+            context = daemon.DaemonContext(
+                working_directory = '/',
+                umask = 0o022,
+                pidfile = pidfile)
+
+            with context:
+                self._run()
+        else:
+            self._run()
+
+    def _run(self):
         super(Thing, self).run(host=self.config['bind_address'],
                                port=self.config['bind_port'])
