@@ -82,7 +82,14 @@ def list_clusters():
         resp = jsonify(cluster_list)
     return resp
 
-
+@clusters.route('/<cluster_id>/nodes', methods=['GET'])
+def nodes_by_cluster_id(cluster_id):
+    if request.method == 'GET':
+        r = Clusters.query.filter_by(id=cluster_id).first()
+        node_list = dict(nodes = list(x.id for x in r.nodes))
+        resp = jsonify(node_list)
+        return resp
+        
 @clusters.route('/<cluster_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def cluster_by_id(cluster_id):
     if request.method == 'PATCH' or request.method == 'POST':
