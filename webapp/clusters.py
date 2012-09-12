@@ -82,14 +82,18 @@ def list_clusters():
         resp = jsonify(cluster_list)
     return resp
 
+
 @clusters.route('/<cluster_id>/nodes', methods=['GET'])
 def nodes_by_cluster_id(cluster_id):
     if request.method == 'GET':
         r = Clusters.query.filter_by(id=cluster_id).first()
-        node_list = dict(nodes = list(x.id for x in r.nodes))
+        node_list = dict(nodes=list(
+                         {'id': x.id, 'hostname': x.hostname}
+                         for x in r.nodes))
         resp = jsonify(node_list)
         return resp
-        
+
+
 @clusters.route('/<cluster_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def cluster_by_id(cluster_id):
     if request.method == 'PATCH' or request.method == 'POST':
@@ -106,8 +110,8 @@ def cluster_by_id(cluster_id):
             r.config = json.dumps(request.json['config'])
         #TODO(shep): this is an un-excepted db call
         try:
-            current_app.backend.set_cluster_settings(r.name,
-                cluster_desc=r.description if (
+            current_app.backend.set_cluster_settings(
+                r.name, cluster_desc=r.description if (
                     'description' in request.json) else None,
                 cluster_settings=request.json['config'] if (
                     'config' in request.json) else None)
