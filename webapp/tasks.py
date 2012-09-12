@@ -33,7 +33,7 @@ def list_tasks():
                   'completed': None,
                   'expires': None}
 
-        for k,v in fields.iteritems():
+        for k, v in fields.iteritems():
             if v == 'json':
                 if k in request.json:
                     fields[k] = json.dumps(request.json[k])

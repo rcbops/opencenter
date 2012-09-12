@@ -10,6 +10,10 @@ class Nodes(Base):
     hostname = Column(String(64), unique=True)
     role_id = Column(Integer, ForeignKey('roles.id'))
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
+    clusters = relationship('Clusters',
+                            backref=backref('nodes',
+                            uselist=False,
+                            lazy='dynamic'))
     config = Column(Text)
 
     def __init__(self, hostname=None, role_id=None,
