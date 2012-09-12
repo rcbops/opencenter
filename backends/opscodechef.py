@@ -131,8 +131,8 @@ class OpscodechefBackend(backends.ConfigurationBackend):
         node.override = settings
         node.save()
 
-   def create_node(self, node, role=None,                            
-                    cluster=None, node_settings=None):                     
+    def create_node(self, node, role=None,
+                    cluster=None, node_settings=None):
         pass
 
     def get_node_status(self, node):

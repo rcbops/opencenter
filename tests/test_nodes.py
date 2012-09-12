@@ -40,8 +40,8 @@ class NodeCreateTests(unittest.TestCase):
                            'description': self.clus1_desc,
                            'config': self.clus1_config}
         tmp = self.app.post('/clusters/',
-                             content_type=self.content_type,
-                             data=json.dumps(self.clus1_data))
+                            content_type=self.content_type,
+                            data=json.dumps(self.clus1_data))
         out = json.loads(tmp.data)
         self.clus1_id = out['cluster']['id']
         # neet to create a test role
