@@ -86,11 +86,18 @@ def list_clusters():
 def nodes_by_cluster_id(cluster_id):
     if request.method == 'GET':
         r = Clusters.query.filter_by(id=cluster_id).first()
-        node_list = dict(nodes=list(
-                         {'id': x.id, 'hostname': x.hostname}
-                         for x in r.nodes))
-        resp = jsonify(node_list)
-        return resp
+        if r is None:
+            return http_not_found()
+        else:
+            if r.nodes.count > 0:
+                node_list = dict(nodes=list(
+                                 {'id': x.id, 'hostname': x.hostname}
+                                 for x in r.nodes))
+                resp = jsonify(node_list)
+            else:
+                tmp = dict(nodes=list())
+                resp = jsonify(tmp)
+            return resp
 
 
 @clusters.route('/<cluster_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
