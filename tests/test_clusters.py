@@ -256,6 +256,82 @@ class ClusterUpdateTests(unittest.TestCase):
                                    content_type=self.content_type)
 
 
+class ClusterAttributeTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(self):
+        self.foo = webapp.Thing('roush', configfile='local.conf', debug=True)
+        init_db(self.foo.config['database_uri'])
+        self.app = self.foo.test_client()
+
+    def setUp(self):
+        self.name = _randomStr(10)
+        self.desc = _randomStr(30)
+        self.attribs = {"package_component": "essex-final",
+                        "monitoring": {"metric_provider": "null"}}
+        self.content_type = 'application/json'
+        self.shep = 30
+        self.create_data = {'name': self.name,
+                            'description': self.desc,
+                            'config': self.attribs}
+        tmp = self.app.post('/clusters/',
+                            content_type=self.content_type,
+                            data=json.dumps(self.create_data))
+        self.json = json.loads(tmp.data)
+        self.cluster_id = self.json['cluster']['id']
+        if self.foo.config['backend'] != 'null':
+            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+
+    def test_cluster_node_list_on_non_existent_cluster_id(self):
+        resp = self.app.get('/clusters/99/nodes',
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 404)
+
+    def test_cluster_node_list_on_cluster_id_with_empty_nodes_list(self):
+        resp = self.app.get('/clusters/1/nodes',
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(len(out['nodes']), 0)
+
+    def test_cluster_node_list(self):
+        # Create a node with cluster_id=self.cluster_id
+        hostname = _randomStr(10)
+        data = {'hostname': hostname,
+                'cluster_id': self.cluster_id}
+        resp = self.app.post('/nodes/',
+                             content_type=self.content_type,
+                             data=json.dumps(data))
+        self.assertEquals(resp.status_code, 201)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 201)
+        self.assertEquals(out['message'], 'Node Created')
+        self.assertEquals(out['node']['hostname'], hostname)
+        self.assertEquals(out['node']['cluster_id'], self.cluster_id)
+        self.assertEquals(out['node']['role_id'], None)
+        self.assertEquals(out['node']['config'], None)
+
+        # make sure /clusters/<cluster_id>/nodes looks right
+        resp = self.app.get('/clusters/%s/nodes' % self.cluster_id,
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 200)
+        tmp = json.loads(resp.data)
+        self.assertEquals(len(tmp['nodes']), 1)
+        self.assertEquals(tmp['nodes'][0]['id'], 1)
+        self.assertEquals(tmp['nodes'][0]['hostname'], hostname)
+
+        # Cleanup the node we created
+        if self.foo.config['backend'] != "null":
+            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+        resp = self.app.delete('/nodes/%s' % out['node']['id'],
+                               content_type=self.content_type)
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 200)
+        self.assertEquals(out['message'], 'Node deleted')
+
+    def tearDown(self):
+        tmp_resp = self.app.delete('/clusters/%s' + str(self.cluster_id),
+                                   content_type=self.content_type)
 #class ClusterTestCase(RoushTest):
 #
 #    @classmethod
