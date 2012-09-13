@@ -22,8 +22,8 @@ class Nodes(Base):
     type_state = Column(Integer, ForeignKey('typestates.id'))
     config = Column(Text)
 
-    def __init__(self, hostname, type_id, role_id=None,
-                 cluster_id=None, config=None, typestate=None):
+    def __init__(self, hostname, role_id=None, cluster_id=None, config=None,
+                 type_id=None, typestate=None):
         self.hostname = hostname
         self.type_id = type_id
         self.role_id = role_id
