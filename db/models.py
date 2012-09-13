@@ -14,17 +14,55 @@ class Nodes(Base):
                             backref=backref('nodes',
                             uselist=False,
                             lazy='dynamic'))
+    type_id = Column(Integer, ForeignKey('types.id'))
+    types = relationship('Types',
+                         backref=backref('nodes',
+                         uselist=False,
+                         lazy='dynamic'))
+    type_state = Column(Integer, ForeignKey('typestates.id'))
     config = Column(Text)
 
-    def __init__(self, hostname=None, role_id=None,
-                 cluster_id=None, config=None):
+    def __init__(self, hostname, type_id, role_id=None,
+                 cluster_id=None, config=None, typestate=None):
         self.hostname = hostname
+        self.type_id = type_id
         self.role_id = role_id
         self.cluster_id = cluster_id
         self.config = config
+        self.typestate = typestate
 
     def __repr__(self):
         return '<Nodes %r>' % (self.hostname)
+
+
+class Types(Base):
+    __tablename__ = 'types'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(30), unique=True)
+
+    def __init__(self, name):
+        self.name = name
+
+    def __repr__(self):
+        return '<Types %r>' % (self.name)
+
+
+class TypeStates(Base):
+    __tablename__ = 'typestates'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(30), unique=True)
+    type_id = Column(Integer, ForeignKey('types.id'))
+    types = relationship('Types',
+                         backref=backref('states',
+                         uselist=False,
+                         lazy='dynamic'))
+
+    def __init__(self, name, type_id):
+        self.name = name
+        self.type_id = type_id
+
+    def __repr__(self):
+        return '<TypeStates %r>' % (self.name)
 
 
 class Roles(Base):
