@@ -22,9 +22,9 @@ def http_not_implemented(error=None):
     return resp
 
 
-def http_bad_request(error=None):
+def http_bad_request(msg):
     msg = {'status': 400,
-           'message': "Attribute '%s' was not provided" % error}
+           'message': msg}
     resp = jsonify(msg)
     resp.status_code = 400
     return resp
