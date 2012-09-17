@@ -76,9 +76,6 @@ class Thing(Flask):
                     print "Bad option"
                     sys.exit(1)
 
-        print("daemonize: %s, debug: %s, configfile %s" %
-              (daemonize, debug, configfile))
-
         defaults = {'main':
                     {'bind_address': '0.0.0.0',
                      'bind_port': 8080,
@@ -116,8 +113,16 @@ class Thing(Flask):
 
         if debug:
             LOG.setLevel(logging.DEBUG)
+        elif 'loglevel' in defaults['main']:
+            LOG.setLevel(defaults['main']['loglevel'])
         else:
             LOG.setLevel(logging.WARNING)
+
+        print("daemonize: %s, debug: %s, configfile: %s, loglevel: %s " \
+                % (daemonize,
+                   debug,
+                   configfile,
+                   logging.getLevelName(LOG.getEffectiveLevel())))
 
         if 'logfile' in defaults['main']:
             for handler in LOG.handlers:
@@ -125,9 +130,6 @@ class Thing(Flask):
 
             handler = logging.FileHandler(defaults['main']['logfile'])
             LOG.addHandler(handler)
-
-        if 'loglevel' in defaults['main']:
-            LOG.setLevel(defaults['main']['loglevel'])
 
         self.register_blueprint(index)
         self.register_blueprint(clusters, url_prefix='/clusters')
