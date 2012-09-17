@@ -20,7 +20,9 @@ import backends
 
 backend = None
 
-# Stolen: http://code.activestate.com/recipes/577911-context-manager-for-a-daemon-pid-file/
+
+# Stolen: http://code.activestate.com/recipes/\
+#         577911-context-manager-for-a-daemon-pid-file/
 class PidFile(object):
     def __init__(self, path):
         self.path = path
@@ -50,8 +52,8 @@ class PidFile(object):
 
 
 class Thing(Flask):
-    def __init__(self, name, argv=None, \
-            configfile=None, confighash=None, debug=False):
+    def __init__(self, name, argv=None, configfile=None,
+                 confighash=None, debug=False):
         daemonize = False
 
         super(Thing, self).__init__(name)
@@ -74,8 +76,8 @@ class Thing(Flask):
                     print "Bad option"
                     sys.exit(1)
 
-        print("daemonize: %s, debug: %s, configfile %s" \
-                % (daemonize, debug, configfile))
+        print("daemonize: %s, debug: %s, configfile %s" %
+              (daemonize, debug, configfile))
 
         defaults = {'main':
                     {'bind_address': '0.0.0.0',

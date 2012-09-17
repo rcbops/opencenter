@@ -100,6 +100,63 @@ def nodes_by_cluster_id(cluster_id):
             return resp
 
 
+@clusters.route('/<cluster_id>/<key>', methods=['GET', 'PUT'])
+def attributes_by_cluster_id(cluster_id, key):
+    r = Clusters.query.filter_by(id=cluster_id).first()
+    if r is None:
+        return http_not_found()
+    else:
+        if request.method == 'PUT':
+            if key in ['id']:
+                msg = "Attribute %s is not modifiable" % key
+                return http_bad_request(msg)
+            else:
+                if key not in request.json:
+                    msg = "Empty body"
+                    return http_bad_request(msg)
+                else:
+                    r.__setattr__(key, request.json[key])
+                    try:
+                        db_session.commit()
+                        msg = {'status': 200,
+                               'message': 'Updated Attribute: %s' % key}
+                        resp = jsonify(msg)
+                        resp.status_code = 200
+                    except Exception, e:
+                        return http_conflict(e)
+        else:
+            resp = jsonify({key: r.__getattribute__(key)})
+        return resp
+
+
+@clusters.route('/<cluster_id>/config', methods=['GET', 'PUT', 'PATCH'])
+def config_by_cluster_id(cluster_id):
+    r = Clusters.query.filter_by(id=cluster_id).first()
+    if r is None:
+        return http_not_found()
+    else:
+        if request.method == 'PUT':
+            if 'config' not in request.json:
+                msg = "Empty body"
+                return http_bad_request(msg)
+            else:
+                r.config = json.dumps(request.json['config'])
+                try:
+                    db_session.commit()
+                    msg = {'status': 200,
+                           'message': 'Updated Attribute: config'}
+                    resp = jsonify(msg)
+                    resp.status_code = 200
+                except Exception, e:
+                    return http_conflict(e)
+        elif request.method == 'PATCH':
+            #TODO(shep): need to implement this
+            return http_not_implemented()
+        else:
+            resp = jsonify(json.loads(r.config))
+        return resp
+
+
 @clusters.route('/<cluster_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def cluster_by_id(cluster_id):
     if request.method == 'PATCH' or request.method == 'POST':
