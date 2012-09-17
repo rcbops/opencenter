@@ -243,12 +243,10 @@ class ClusterUpdateTests(unittest.TestCase):
                              content_type=self.content_type)
         self.assertEquals(resp.status_code, 405)
 
-    # TODO(shep): this method probably should not be part of the
-    #             allowed method list.
-    def test_verify_patch_method_returns_a_501_on_clusters_with_id(self):
+    def test_verify_patch_method_returns_a_405_on_clusters_with_id(self):
         resp = self.app.patch('/clusters/%s' % self.cluster_id,
                               content_type=self.content_type)
-        self.assertEquals(resp.status_code, 501)
+        self.assertEquals(resp.status_code, 405)
 
     def tearDown(self):
         tmp_resp = self.app.delete('/clusters/%s' % self.cluster_id,
@@ -327,6 +325,13 @@ class ClusterAttributeTests(unittest.TestCase):
         out = json.loads(resp.data)
         self.assertEquals(out['status'], 200)
         self.assertEquals(out['message'], 'Node deleted')
+
+    def test_update_cluster_id_returns_a_400(self):
+        data = {'id': 99}
+        resp = self.app.put('/clusters/%s/id' % self.cluster_id,
+                            data=json.dumps(data),
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 400)
 
     def tearDown(self):
         tmp_resp = self.app.delete('/clusters/%s' % self.cluster_id,

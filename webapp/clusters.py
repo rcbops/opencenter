@@ -167,11 +167,9 @@ def config_by_cluster_id(cluster_id):
         return resp
 
 
-@clusters.route('/<cluster_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
+@clusters.route('/<cluster_id>', methods=['GET', 'PUT', 'DELETE'])
 def cluster_by_id(cluster_id):
-    if request.method == 'PATCH' or request.method == 'POST':
-        return http_not_implemented()
-    elif request.method == 'PUT':
+    if request.method == 'PUT':
         # FIXME(shep): currently breaks badly on an empty put
         r = Clusters.query.filter_by(id=cluster_id).first()
         # FIXME(rp): renames break the backend association
