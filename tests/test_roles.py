@@ -17,8 +17,8 @@ def _randomStr(size):
 class RoleCRUDTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        foo = webapp.Thing("roush", configfile='local.conf', debug=True)
-        self.app = foo.test_client()
+        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        self.app = self.foo.test_client()
 
         self.role_name = _randomStr(10)
         self.role_desc = _randomStr(30)
