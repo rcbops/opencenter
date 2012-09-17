@@ -63,8 +63,9 @@ def role_by_id(role_id):
             r.description = request.json['description']
         #TODO(shep): this is an un-excepted db call
         db_session.commit()
-        resp = jsonify(dict((c, getattr(r, c))
-                       for c in r.__table__.columns.keys()))
+        resp = jsonify(
+            {'role': dict((c, getattr(r, c))
+                          for c in r.__table__.columns.keys())})
     elif request.method == 'DELETE':
         r = Roles.query.filter_by(id=role_id).first()
         try:
@@ -80,6 +81,7 @@ def role_by_id(role_id):
         if r is None:
             return http_not_found()
         else:
-            resp = jsonify(dict((c, getattr(r, c))
-                           for c in r.__table__.columns.keys()))
+            resp = jsonify(
+                {'role': dict((c, getattr(r, c))
+                              for c in r.__table__.columns.keys())})
     return resp
