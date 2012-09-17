@@ -29,7 +29,6 @@ def list_clusters():
                 desc = request.json['description']
             config = None
             if 'config' in request.json:
-                # config = json.dumps(request.json['config'])
                 config = request.json['config']
             cluster = Clusters(name=name, description=desc, config=config)
             try:
