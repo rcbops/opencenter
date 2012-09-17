@@ -130,7 +130,7 @@ def node_by_id(node_id):
                 node[col] = val if (val is None) else json.loads(val)
             else:
                 node[col] = getattr(r, col)
-        resp = jsonify(node)
+        resp = jsonify({'node': node})
     elif request.method == 'DELETE':
         r = Nodes.query.filter_by(id=node_id).first()
         try:
@@ -157,5 +157,5 @@ def node_by_id(node_id):
                     node[col] = val if (val is None) else json.loads(val)
                 else:
                     node[col] = getattr(row, col)
-            resp = jsonify(node)
+            resp = jsonify({'node': node})
     return resp
