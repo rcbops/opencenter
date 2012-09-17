@@ -23,7 +23,7 @@ class ClusterCreateTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='local.conf', debug=True)
+        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
         self.app.testing = True
@@ -160,7 +160,7 @@ class ClusterCreateTests(unittest.TestCase):
 class ClusterUpdateTests(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='local.conf', debug=True)
+        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
 
@@ -256,11 +256,10 @@ class ClusterUpdateTests(unittest.TestCase):
         tmp_resp = self.app.delete('/clusters/%s' % self.cluster_id,
                                    content_type=self.content_type)
 
-
 class ClusterAttributeTests(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='local.conf', debug=True)
+        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
 
@@ -337,6 +336,51 @@ class ClusterAttributeTests(unittest.TestCase):
                             content_type=self.content_type)
         self.assertEquals(resp.status_code, 400)
 
+    def test_update_cluster_name_returns_a_400(self):
+        data = {'name': _randomStr(10)}
+        resp = self.app.put('/clusters/%s/name' % self.cluster_id,
+                            data=json.dumps(data),
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 400)
+
+    def test_patch_on_cluster_attribute_config(self):
+        tmp_attribs = {'monitoring': {'metric_provider': 'collectd'}}
+        resp = self.app.patch('/clusters/%s/config' % self.cluster_id,
+                              data=json.dumps(tmp_attribs),
+                              content_type=self.content_type)
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 200)
+        self.assertEquals(out['cluster']['config']['monitoring'],
+                          tmp_attribs['monitoring'])
+        self.assertNotEquals(out['cluster']['config']['monitoring'],
+                             self.attribs['monitoring'])
+
+
     def tearDown(self):
         tmp_resp = self.app.delete('/clusters/%s' % self.cluster_id,
                                    content_type=self.content_type)
+
+
+class ClusterMethodTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(self):
+        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        init_db(self.foo.config['database_uri'])
+        self.app = self.foo.test_client()
+        self.content_type = 'application/json'
+
+    def test_patch_on_cluster_attribute_id_returns_a_405(self):
+        resp = self.app.patch('/clusters/1/id',
+                              content_type=self.content_type)
+        self.assertEquals(resp.status_code, 405)
+
+    def test_patch_on_cluster_attribute_name_returns_a_405(self):
+        resp = self.app.patch('/clusters/1/name',
+                              content_type=self.content_type)
+        self.assertEquals(resp.status_code, 405)
+
+    def test_patch_on_cluster_attribute_description_returns_a_405(self):
+        resp = self.app.patch('/clusters/1/description',
+                              content_type=self.content_type)
+        self.assertEquals(resp.status_code, 405)

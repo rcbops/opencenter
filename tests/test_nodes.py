@@ -23,7 +23,7 @@ class NodeCreateTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='local.conf', debug=True)
+        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
         self.hostname = _randomStr(10)
@@ -184,7 +184,7 @@ class NodeCreateTests(unittest.TestCase):
 class NodeUpdateTests(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='local.conf', debug=True)
+        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
 
