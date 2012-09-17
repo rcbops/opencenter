@@ -194,12 +194,14 @@ class ClusterUpdateTests(unittest.TestCase):
                             data=json.dumps(data))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
-        self.assertEquals(out['id'], self.cluster_id)
-        self.assertEquals(out['name'], self.name)
-        self.assertEquals(out['description'], tmp_desc)
-        self.assertNotEquals(out['description'], self.desc)
-        self.assertEquals(out['config'], tmp_attribs)
-        self.assertNotEquals(out['config'], self.attribs)
+        self.assertEquals(out['cluster']['id'], self.cluster_id)
+        self.assertEquals(out['cluster']['name'], self.name)
+        self.assertEquals(out['cluster']['description'], tmp_desc)
+        self.assertNotEquals(out['cluster']['description'], self.desc)
+        self.assertEquals(out['cluster']['config'],
+                          json.dumps(tmp_attribs))
+        self.assertNotEquals(out['cluster']['config'],
+                             json.dumps(self.attribs))
 
     def test_update_cluster_with_description_and_no_override_attributes(self):
         tmp_desc = _randomStr(30)
@@ -210,11 +212,11 @@ class ClusterUpdateTests(unittest.TestCase):
                             data=json.dumps(data))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
-        self.assertEquals(out['id'], self.cluster_id)
-        self.assertEquals(out['name'], self.name)
-        self.assertEquals(out['description'], tmp_desc)
-        self.assertNotEquals(out['description'], self.desc)
-        self.assertEquals(out['config'], self.attribs)
+        self.assertEquals(out['cluster']['id'], self.cluster_id)
+        self.assertEquals(out['cluster']['name'], self.name)
+        self.assertEquals(out['cluster']['description'], tmp_desc)
+        self.assertNotEquals(out['cluster']['description'], self.desc)
+        self.assertEquals(out['cluster']['config'], self.attribs)
 
     def test_update_cluster_with_override_attributes_and_no_description(self):
         tmp_attribs = {'package_component': 'grizzly-final',
@@ -226,11 +228,13 @@ class ClusterUpdateTests(unittest.TestCase):
                             data=json.dumps(data))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
-        self.assertEquals(out['id'], self.cluster_id)
-        self.assertEquals(out['name'], self.name)
-        self.assertEquals(out['description'], self.desc)
-        self.assertEquals(out['config'], tmp_attribs)
-        self.assertNotEquals(out['config'], self.attribs)
+        self.assertEquals(out['cluster']['id'], self.cluster_id)
+        self.assertEquals(out['cluster']['name'], self.name)
+        self.assertEquals(out['cluster']['description'], self.desc)
+        self.assertEquals(out['cluster']['config'],
+                          json.dumps(tmp_attribs))
+        self.assertNotEquals(out['cluster']['config'],
+                             json.dumps(self.attribs))
 
     def test_update_cluster_with_no_data(self):
         resp = self.app.put('/clusters/%s' % self.cluster_id,
@@ -243,12 +247,10 @@ class ClusterUpdateTests(unittest.TestCase):
                              content_type=self.content_type)
         self.assertEquals(resp.status_code, 405)
 
-    # TODO(shep): this method probably should not be part of the
-    #             allowed method list.
-    def test_verify_patch_method_returns_a_501_on_clusters_with_id(self):
+    def test_verify_patch_method_returns_a_405_on_clusters_with_id(self):
         resp = self.app.patch('/clusters/%s' % self.cluster_id,
                               content_type=self.content_type)
-        self.assertEquals(resp.status_code, 501)
+        self.assertEquals(resp.status_code, 405)
 
     def tearDown(self):
         tmp_resp = self.app.delete('/clusters/%s' % self.cluster_id,
@@ -328,59 +330,13 @@ class ClusterAttributeTests(unittest.TestCase):
         self.assertEquals(out['status'], 200)
         self.assertEquals(out['message'], 'Node deleted')
 
+    def test_update_cluster_id_returns_a_400(self):
+        data = {'id': 99}
+        resp = self.app.put('/clusters/%s/id' % self.cluster_id,
+                            data=json.dumps(data),
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 400)
+
     def tearDown(self):
         tmp_resp = self.app.delete('/clusters/%s' % self.cluster_id,
                                    content_type=self.content_type)
-#class ClusterTestCase(RoushTest):
-#
-#    @classmethod
-#    def setup(cls):
-#         # Create a cluster
-#        cls.cluster_name = _randomStr(10)
-#        cls.cluster_desc = _randomStr(30)
-#        cluster_data = {"name": cls.cluster_name,
-#                            "description": cls.cluster_desc}
-#        tmp = cls.app.post('/clusters/', data=json.dumps(cluster_data),
-#                            content_type='application/json')
-#        assert tmp.status_code == 201,\
-#            "Unable to create cluster %s" % cluster_name
-#        cls.cluster_json = json.loads(tmp.data)
-#        cls.cluster_id = cls.cluster_json['cluster']['id']
-#
-#    @classmethod
-#    def cleanup(cls):
-#        # Delete our test cluster
-#        tmp = cls.app.delete('/clusters/%s' % cls.cluster_id)
-#        assert tmp.status_code == 200, "Status code %s is not 200" % (
-#            tmp.status_code)
-#        data = json.loads(tmp.data)
-#        assert data['status'] == tmp.status_code,\
-#            "Status %s returned in data does not match response code %s" % (
-#                data['status'], tmp.status_code)
-#        assert data['message'] == 'Cluster deleted',\
-#            "Message %s is not Cluster deleted" % (data['message'])
-#
-#    def test_create_cluster(self):
-#        #cluster is created in setup.  We should verify it is created
-#        #as expected.
-#        response = self.app.get("/clusters/%s" % (self.cluster_id))
-#        cluster = json.loads(response.data)
-#        self.assertEqual(response.status_code, 200)
-#        self.assertEqual(self.cluster_id, cluster['id'])
-#        self.assertEqual(self.cluster_name, cluster['name'])
-#        self.assertEqual(self.cluster_desc, cluster['description'])
-#
-#    def test_update_cluster(self):
-#        # update cluster attributes
-#        new_desc = "updated description"
-#        new_cluster = {"description": new_desc}
-#        resp = self.app.put('/clusters/%s' % self.cluster_id,
-#                            data=json.dumps(new_cluster),
-#                            content_type='application/json')
-#        self.assertEqual(resp.status_code, 200)
-#        tmp_data = json.loads(resp.data)
-#        self.assertEqual(tmp_data['description'], new_desc)
-#
-#
-#if __name__ == '__main__':
-#    unittest.main()

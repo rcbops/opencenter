@@ -29,30 +29,22 @@ def list_clusters():
                 desc = request.json['description']
             config = None
             if 'config' in request.json:
-                config = json.dumps(request.json['config'])
+                # config = json.dumps(request.json['config'])
+                config = request.json['config']
             cluster = Clusters(name=name, description=desc, config=config)
             try:
                 db_session.add(cluster)
                 # FIXME(rp): Transactional problem
                 # NOTE(shep): setting override_attributes as part of
                 #  the create, due to the lag time of chef.search
-                current_app.backend.create_cluster(
-                    name,
-                    desc,
-                    config if (config is None) else json.loads(config))
+                current_app.backend.create_cluster(name, desc, config)
                 db_session.commit()
-                # have to unravel json object from the db
-                cls = dict()
-                for col in cluster.__table__.columns.keys():
-                    if col == 'config':
-                        tmp = getattr(cluster, col)
-                        cls[col] = tmp if (tmp is None) else json.loads(tmp)
-                    else:
-                        cls[col] = getattr(cluster, col)
                 href = request.base_url + str(cluster.id)
                 msg = {'status': 201,
                        'message': 'Cluster Created',
-                       'cluster': cls,
+                       'cluster': dict(
+                           (c, getattr(cluster, c))
+                           for c in cluster.__table__.columns.keys()),
                        'ref': href}
                 resp = jsonify(msg)
                 resp.headers['Location'] = href
@@ -61,23 +53,16 @@ def list_clusters():
                 # This is thrown on duplicate rows
                 db_session.rollback()
                 return http_conflict(e)
-            except BackendError, e:
-                # This is thrown on duplicate environments
-                db_session.rollback()
-                return http_conflict(e)
+            #except BackendError, e:
+            #    # This is thrown on duplicate environments
+            #    db_session.rollback()
+            #    return http_conflict(e)
         else:
             return http_bad_request('name')
     else:
-        cluster_list = {"clusters": []}
-        for row in Clusters.query.all():
-            tmp = dict()
-            for col in row.__table__.columns.keys():
-                if col == 'config':
-                    val = getattr(row, col)
-                    tmp[col] = val if (val is None) else json.loads(val)
-                else:
-                    tmp[col] = getattr(row, col)
-            cluster_list['clusters'].append(tmp)
+        cluster_list = dict(clusters=[dict((c, getattr(r, c))
+                            for c in r.__table__.columns.keys())
+                            for r in Clusters.query.all()])
         resp = jsonify(cluster_list)
     return resp
 
@@ -129,31 +114,14 @@ def attributes_by_cluster_id(cluster_id, key):
         return resp
 
 
-@clusters.route('/<cluster_id>/config', methods=['GET', 'PUT', 'PATCH'])
+@clusters.route('/<cluster_id>/config', methods=['PATCH'])
 def config_by_cluster_id(cluster_id):
     r = Clusters.query.filter_by(id=cluster_id).first()
     if r is None:
         return http_not_found()
     else:
-        if request.method == 'PUT':
-            if 'config' not in request.json:
-                msg = "Empty body"
-                return http_bad_request(msg)
-            else:
-                r.config = json.dumps(request.json['config'])
-                try:
-                    db_session.commit()
-                    msg = {'status': 200,
-                           'message': 'Updated Attribute: config'}
-                    resp = jsonify(msg)
-                    resp.status_code = 200
-                except Exception, e:
-                    return http_conflict(e)
-        elif request.method == 'PATCH':
-            config = json.loads(r.config)
-            for k,v in request.json.iteritems():
-                config[k] = v
-            r.config = json.dumps(config)
+        if request.method == 'PATCH':
+            r.config = dict((k, v) for k, v in request.json.iteritems())
             try:
                 db_session.commit()
                 msg = {'status': 200,
@@ -161,17 +129,14 @@ def config_by_cluster_id(cluster_id):
                 resp = jsonify(msg)
                 resp.status_code = 200
             except Exception, e:
+                db_session.rollback()
                 return http_conflict(e)
-        else:
-            resp = jsonify(json.loads(r.config))
         return resp
 
 
-@clusters.route('/<cluster_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
+@clusters.route('/<cluster_id>', methods=['GET', 'PUT', 'DELETE'])
 def cluster_by_id(cluster_id):
-    if request.method == 'PATCH' or request.method == 'POST':
-        return http_not_implemented()
-    elif request.method == 'PUT':
+    if request.method == 'PUT':
         # FIXME(shep): currently breaks badly on an empty put
         r = Clusters.query.filter_by(id=cluster_id).first()
         # FIXME(rp): renames break the backend association
@@ -193,13 +158,8 @@ def cluster_by_id(cluster_id):
             db_session.rollback()
             # FIXME(shep): this is not the correct return code/action
             return http_conflict(e)
-        cls = dict()
-        for c in r.__table__.columns.keys():
-            if c == 'config':
-                val = getattr(r, c)
-                cls[c] = val if (val is None) else json.loads(val)
-            else:
-                cls[c] = getattr(r, c)
+        cls = dict(cluster=dict((c, getattr(r, c))
+                                for c in r.__table__.columns.keys()))
         resp = jsonify(cls)
     elif request.method == 'DELETE':
         r = Clusters.query.filter_by(id=cluster_id).first()
@@ -221,12 +181,7 @@ def cluster_by_id(cluster_id):
         if r is None:
             return http_not_found()
         else:
-            cls = dict(cluster=dict())
-            for c in r.__table__.columns.keys():
-                if c == 'config':
-                    val = getattr(r, c)
-                    cls['cluster'][c] = val if (val is None) else json.loads(val)
-                else:
-                    cls['cluster'][c] = getattr(r, c)
+            cls = dict(cluster=dict((c, getattr(r, c))
+                                    for c in r.__table__.columns.keys()))
             resp = jsonify(cls)
     return resp

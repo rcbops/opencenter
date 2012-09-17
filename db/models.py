@@ -1,7 +1,23 @@
+import json
+
 from sqlalchemy import (Column, Integer, String, ForeignKey,
                         Text, Enum, DateTime)
 from sqlalchemy.orm import relationship, backref
+import sqlalchemy.types as types
+
 from database import Base
+
+
+# Special Fields
+class JsonBlob(types.TypeDecorator):
+
+    impl = types.Text
+
+    def process_bind_param(self, value, dialect):
+        return json.dumps(value)
+
+    def process_result_value(self, value, dialect):
+        return json.loads(value)
 
 
 class Nodes(Base):
@@ -20,7 +36,7 @@ class Nodes(Base):
                          uselist=False,
                          lazy='dynamic'))
     type_state = Column(Integer, ForeignKey('typestates.id'))
-    config = Column(Text)
+    config = Column(JsonBlob)
 
     def __init__(self, hostname, role_id=None, cluster_id=None, config=None,
                  type_id=None, typestate=None):
@@ -87,7 +103,8 @@ class Clusters(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(20), unique=True)
     description = Column(String(80))
-    config = Column(Text)
+    # config = Column(Text)
+    config = Column(JsonBlob)
     node = relationship('Nodes', backref=backref('cluster',
                                                  uselist=False,
                                                  lazy='dynamic'))
