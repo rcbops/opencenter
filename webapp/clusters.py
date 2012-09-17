@@ -43,8 +43,8 @@ def list_clusters():
                 msg = {'status': 201,
                        'message': 'Cluster Created',
                        'cluster': dict(
-                            (c, getattr(cluster, c))
-                            for c in cluster.__table__.columns.keys()),
+                           (c, getattr(cluster, c))
+                           for c in cluster.__table__.columns.keys()),
                        'ref': href}
                 resp = jsonify(msg)
                 resp.headers['Location'] = href
@@ -121,10 +121,7 @@ def config_by_cluster_id(cluster_id):
         return http_not_found()
     else:
         if request.method == 'PATCH':
-            config = json.loads(r.config)
-            for k,v in request.json.iteritems():
-                config[k] = v
-            r.config = json.dumps(config)
+            r.config = dict((k, v) for k, v in request.json.iteritems())
             try:
                 db_session.commit()
                 msg = {'status': 200,
@@ -132,6 +129,7 @@ def config_by_cluster_id(cluster_id):
                 resp = jsonify(msg)
                 resp.status_code = 200
             except Exception, e:
+                db_session.rollback()
                 return http_conflict(e)
         return resp
 
@@ -160,13 +158,8 @@ def cluster_by_id(cluster_id):
             db_session.rollback()
             # FIXME(shep): this is not the correct return code/action
             return http_conflict(e)
-        cls = dict()
-        for c in r.__table__.columns.keys():
-            if c == 'config':
-                val = getattr(r, c)
-                cls[c] = val if (val is None) else json.loads(val)
-            else:
-                cls[c] = getattr(r, c)
+        cls = dict(cluster=dict((c, getattr(r, c))
+                                for c in r.__table__.columns.keys()))
         resp = jsonify(cls)
     elif request.method == 'DELETE':
         r = Clusters.query.filter_by(id=cluster_id).first()
@@ -188,12 +181,7 @@ def cluster_by_id(cluster_id):
         if r is None:
             return http_not_found()
         else:
-            cls = dict(cluster=dict())
-            for c in r.__table__.columns.keys():
-                if c == 'config':
-                    val = getattr(r, c)
-                    cls['cluster'][c] = val if (val is None) else json.loads(val)
-                else:
-                    cls['cluster'][c] = getattr(r, c)
+            cls = dict(cluster=dict((c, getattr(r, c))
+                                    for c in r.__table__.columns.keys()))
             resp = jsonify(cls)
     return resp

@@ -194,12 +194,14 @@ class ClusterUpdateTests(unittest.TestCase):
                             data=json.dumps(data))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
-        self.assertEquals(out['id'], self.cluster_id)
-        self.assertEquals(out['name'], self.name)
-        self.assertEquals(out['description'], tmp_desc)
-        self.assertNotEquals(out['description'], self.desc)
-        self.assertEquals(out['config'], tmp_attribs)
-        self.assertNotEquals(out['config'], self.attribs)
+        self.assertEquals(out['cluster']['id'], self.cluster_id)
+        self.assertEquals(out['cluster']['name'], self.name)
+        self.assertEquals(out['cluster']['description'], tmp_desc)
+        self.assertNotEquals(out['cluster']['description'], self.desc)
+        self.assertEquals(out['cluster']['config'],
+                          json.dumps(tmp_attribs))
+        self.assertNotEquals(out['cluster']['config'],
+                             json.dumps(self.attribs))
 
     def test_update_cluster_with_description_and_no_override_attributes(self):
         tmp_desc = _randomStr(30)
@@ -210,11 +212,11 @@ class ClusterUpdateTests(unittest.TestCase):
                             data=json.dumps(data))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
-        self.assertEquals(out['id'], self.cluster_id)
-        self.assertEquals(out['name'], self.name)
-        self.assertEquals(out['description'], tmp_desc)
-        self.assertNotEquals(out['description'], self.desc)
-        self.assertEquals(out['config'], self.attribs)
+        self.assertEquals(out['cluster']['id'], self.cluster_id)
+        self.assertEquals(out['cluster']['name'], self.name)
+        self.assertEquals(out['cluster']['description'], tmp_desc)
+        self.assertNotEquals(out['cluster']['description'], self.desc)
+        self.assertEquals(out['cluster']['config'], self.attribs)
 
     def test_update_cluster_with_override_attributes_and_no_description(self):
         tmp_attribs = {'package_component': 'grizzly-final',
@@ -226,11 +228,13 @@ class ClusterUpdateTests(unittest.TestCase):
                             data=json.dumps(data))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
-        self.assertEquals(out['id'], self.cluster_id)
-        self.assertEquals(out['name'], self.name)
-        self.assertEquals(out['description'], self.desc)
-        self.assertEquals(out['config'], tmp_attribs)
-        self.assertNotEquals(out['config'], self.attribs)
+        self.assertEquals(out['cluster']['id'], self.cluster_id)
+        self.assertEquals(out['cluster']['name'], self.name)
+        self.assertEquals(out['cluster']['description'], self.desc)
+        self.assertEquals(out['cluster']['config'],
+                          json.dumps(tmp_attribs))
+        self.assertNotEquals(out['cluster']['config'],
+                             json.dumps(self.attribs))
 
     def test_update_cluster_with_no_data(self):
         resp = self.app.put('/clusters/%s' % self.cluster_id,
