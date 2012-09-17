@@ -140,7 +140,6 @@ class ClusterCreateTests(unittest.TestCase):
         self.assertEquals(resp.status_code, 400)
         out = json.loads(resp.data)
         self.assertEquals(out['status'], 400)
-        self.assertTrue('was not provided' in out['message'])
 
     def test_verify_delete_method_returns_a_405_on_clusters(self):
         resp = self.app.delete('/clusters/',
