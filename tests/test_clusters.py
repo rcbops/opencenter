@@ -13,7 +13,6 @@ from setup import RoushTest
 
 from db.database import init_db
 import webapp
-from pprint import pprint
 
 
 def _randomStr(size):
