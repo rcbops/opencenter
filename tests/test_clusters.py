@@ -252,7 +252,7 @@ class ClusterUpdateTests(unittest.TestCase):
         self.assertEquals(resp.status_code, 501)
 
     def tearDown(self):
-        tmp_resp = self.app.delete('/clusters/%s' + str(self.cluster_id),
+        tmp_resp = self.app.delete('/clusters/%s' % self.cluster_id,
                                    content_type=self.content_type)
 
 
@@ -330,7 +330,7 @@ class ClusterAttributeTests(unittest.TestCase):
         self.assertEquals(out['message'], 'Node deleted')
 
     def tearDown(self):
-        tmp_resp = self.app.delete('/clusters/%s' + str(self.cluster_id),
+        tmp_resp = self.app.delete('/clusters/%s' % self.cluster_id,
                                    content_type=self.content_type)
 #class ClusterTestCase(RoushTest):
 #
