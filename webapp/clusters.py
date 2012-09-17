@@ -150,8 +150,18 @@ def config_by_cluster_id(cluster_id):
                 except Exception, e:
                     return http_conflict(e)
         elif request.method == 'PATCH':
-            #TODO(shep): need to implement this
-            return http_not_implemented()
+            config = json.loads(r.config)
+            for k,v in request.json.iteritems():
+                config[k] = v
+            r.config = json.dumps(config)
+            try:
+                db_session.commit()
+                msg = {'status': 200,
+                       'message': 'Updated Attribute: config'}
+                resp = jsonify(msg)
+                resp.status_code = 200
+            except Exception, e:
+                return http_conflict(e)
         else:
             resp = jsonify(json.loads(r.config))
         return resp
@@ -211,12 +221,12 @@ def cluster_by_id(cluster_id):
         if r is None:
             return http_not_found()
         else:
-            cls = dict()
+            cls = dict(cluster=dict())
             for c in r.__table__.columns.keys():
                 if c == 'config':
                     val = getattr(r, c)
-                    cls[c] = val if (val is None) else json.loads(val)
+                    cls['cluster'][c] = val if (val is None) else json.loads(val)
                 else:
-                    cls[c] = getattr(r, c)
+                    cls['cluster'][c] = getattr(r, c)
             resp = jsonify(cls)
     return resp

@@ -111,7 +111,7 @@ def task_by_id(task_id):
                 task[col] = val if (val is None) else json.loads(val)
             else:
                 task[col] = getattr(r, col)
-        resp = jsonify(task)
+        resp = jsonify({'task': task})
     else:
         row = Tasks.query.filter_by(id=task_id).first()
         if row is None:
@@ -125,5 +125,5 @@ def task_by_id(task_id):
                 else:
                     task[col] = getattr(row, col)
 
-            resp = jsonify(task)
+            resp = jsonify({'task': task})
     return resp
