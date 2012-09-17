@@ -91,7 +91,7 @@ def attributes_by_cluster_id(cluster_id, key):
         return http_not_found()
     else:
         if request.method == 'PUT':
-            if key in ['id']:
+            if key in ['id', 'name']:
                 msg = "Attribute %s is not modifiable" % key
                 return http_bad_request(msg)
             else:
@@ -103,6 +103,9 @@ def attributes_by_cluster_id(cluster_id, key):
                     try:
                         db_session.commit()
                         msg = {'status': 200,
+                               'cluster': dict(
+                                   (c, getattr(r, c))
+                                   for c in r.__table__.columns.keys()),
                                'message': 'Updated Attribute: %s' % key}
                         resp = jsonify(msg)
                         resp.status_code = 200
@@ -124,6 +127,9 @@ def config_by_cluster_id(cluster_id):
             try:
                 db_session.commit()
                 msg = {'status': 200,
+                       'cluster': dict(
+                           (c, getattr(r, c))
+                           for c in r.__table__.columns.keys()),
                        'message': 'Updated Attribute: config'}
                 resp = jsonify(msg)
                 resp.status_code = 200
