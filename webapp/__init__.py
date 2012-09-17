@@ -40,7 +40,7 @@ class PidFile(object):
         self.pidfile.seek(0)
         return self.pidfile
 
-    def __exit__(self, exc_type = None, exc_value = None, exc_tb = None):
+    def __exit__(self, exc_type=None, exc_value=None, exc_tb=None):
         try:
             self.pidfile.close()
         except IOError as err:
@@ -50,19 +50,20 @@ class PidFile(object):
 
 
 class Thing(Flask):
-    def __init__(self, name, argv=None, configfile=None, confighash=None, debug=False):
+    def __init__(self, name, argv=None, \
+            configfile=None, confighash=None, debug=False):
         daemonize = False
 
         super(Thing, self).__init__(name)
 
         if argv:
             try:
-                opts,args = getopt.getopt(argv, 'c:vd')
+                opts, args = getopt.getopt(argv, 'c:vd')
             except getopt.GetoptError as err:
                 print str(err)
                 sys.exit(1)
 
-            for o,a in opts:
+            for o, a in opts:
                 if o == '-c':
                     configfile = a
                 elif o == '-v':
@@ -73,7 +74,8 @@ class Thing(Flask):
                     print "Bad option"
                     sys.exit(1)
 
-        print("daemonize: %s, debug: %s, configfile %s" % (daemonize, debug, configfile))
+        print("daemonize: %s, debug: %s, configfile %s" \
+                % (daemonize, debug, configfile))
 
         defaults = {'main':
                     {'bind_address': '0.0.0.0',
@@ -82,7 +84,7 @@ class Thing(Flask):
                      'loglevel': 'WARNING',
                      'database_uri': 'sqlite:///',
                      'daemonize': False,
-                     'pidfile': None },
+                     'pidfile': None},
                     'opscodechef_backend':
                     {'role_location': '/etc/roush/roles.d'},
                     'null_backend': {}}
@@ -147,11 +149,9 @@ class Thing(Flask):
                 pidfile = PidFile(self.config['pidfile'])
 
             context = daemon.DaemonContext(
-                working_directory = '/',
-                umask = 0o022,
-                pidfile = pidfile)
-
-
+                working_directory='/',
+                umask=0o022,
+                pidfile=pidfile)
 
         try:
             if context:
