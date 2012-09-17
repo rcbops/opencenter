@@ -118,11 +118,9 @@ class Thing(Flask):
         else:
             LOG.setLevel(logging.WARNING)
 
-        print("daemonize: %s, debug: %s, configfile: %s, loglevel: %s " \
-                % (daemonize,
-                   debug,
-                   configfile,
-                   logging.getLevelName(LOG.getEffectiveLevel())))
+        print("daemonize: %s, debug: %s, configfile: %s, loglevel: %s " %
+              (daemonize, debug, configfile,
+               logging.getLevelName(LOG.getEffectiveLevel())))
 
         if 'logfile' in defaults['main']:
             for handler in LOG.handlers:
