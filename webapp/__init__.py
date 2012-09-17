@@ -145,6 +145,8 @@ class Thing(Flask):
     def run(self):
         context = None
 
+        LOG = logging.getLogger()
+
         if self.config['daemonize']:
             pidfile = None
             if self.config['pidfile']:
@@ -174,12 +176,12 @@ class Thing(Flask):
                               tb_lineno, tb_func)
             else:  # string exception
                 logging.error(exc_info[0])
-            if logging.isEnabledFor(logging.DEBUG):
+            if LOG.isEnabledFor(logging.DEBUG):
                 print ''
                 traceback.print_exception(*exc_info)
                 sys.exit(1)
             else:
-                sys.exit(retval)
+                sys.exit(1)
         finally:
             if context:
                 context.close()
