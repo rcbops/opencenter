@@ -18,6 +18,7 @@ def upgrade(migrate_engine):
     types = Table('types', meta, autoload=True)
     types.insert().values(name='Unprovisioned').execute()
 
+
 def downgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
 
