@@ -123,7 +123,7 @@ def attributes_by_cluster_id(cluster_id, key):
                         resp = jsonify(msg)
                         resp.status_code = 200
                     except Exception, e:
-                       return http_conflict(e)
+                        return http_conflict(e)
         else:
             resp = jsonify({key: r.__getattribute__(key)})
         return resp
@@ -148,7 +148,7 @@ def config_by_cluster_id(cluster_id):
                     resp = jsonify(msg)
                     resp.status_code = 200
                 except Exception, e:
-                   return http_conflict(e)
+                    return http_conflict(e)
         elif request.method == 'PATCH':
             #TODO(shep): need to implement this
             return http_not_implemented()
