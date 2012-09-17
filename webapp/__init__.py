@@ -171,7 +171,7 @@ class Thing(Flask):
                 exc_class, exc, tb = exc_info
                 tb_path, tb_lineno, tb_func = traceback.extract_tb(tb)[-1][:3]
                 logging.error("%s (%s:%s in %s)", exc_info[1], tb_path,
-                          tb_lineno, tb_func)
+                              tb_lineno, tb_func)
             else:  # string exception
                 logging.error(exc_info[0])
             if logging.isEnabledFor(logging.DEBUG):
