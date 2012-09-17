@@ -39,9 +39,9 @@ class RoleCRUDTestCase(unittest.TestCase):
 
         tmp = json.loads(resp.data)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(tmp['id'], data['role']['id'])
-        self.assertEqual(tmp['name'], self.role_name)
-        self.assertEqual(tmp['description'], self.role_desc)
+        self.assertEqual(tmp['role']['id'], data['role']['id'])
+        self.assertEqual(tmp['role']['name'], self.role_name)
+        self.assertEqual(tmp['role']['description'], self.role_desc)
 
         # update role attributes
         new_desc = _randomStr(30)
@@ -51,8 +51,8 @@ class RoleCRUDTestCase(unittest.TestCase):
                             content_type=self.content_type)
         self.assertEqual(resp.status_code, 200)
         tmp_data = json.loads(resp.data)
-        self.assertEqual(tmp_data['description'], new_desc)
-        self.assertNotEqual(tmp_data['description'], self.role_desc)
+        self.assertEqual(tmp_data['role']['description'], new_desc)
+        self.assertNotEqual(tmp_data['role']['description'], self.role_desc)
 
         # clean up the role
         resp = self.app.delete("/roles/%d" % data['role']['id'],
