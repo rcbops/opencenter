@@ -35,7 +35,7 @@ def list_nodes():
 
             config = None
             if 'config' in request.json:
-                config = json.dumps(request.json['config'])
+                config = request.json['config']
 
             # This should probably check against Roles.id and Clusters.id
             node = Nodes(hostname=hostname, role_id=role_id,
@@ -49,19 +49,14 @@ def list_nodes():
                     node.hostname,
                     role=node.role_id,
                     cluster=node.cluster_id,
-                    node_settings=config)
+                    node_settings=node.config)
                 db_session.commit()
-                n = dict()
-                for col in node.__table__.columns.keys():
-                    if col == 'config':
-                        tmp = getattr(node, col)
-                        n[col] = tmp if (tmp is None) else json.loads(tmp)
-                    else:
-                        n[col] = getattr(node, col)
                 href = request.base_url + str(node.id)
                 msg = {'status': 201,
                        'message': 'Node Created',
-                       'node': n,
+                       'node': dict(
+                           (c, getattr(node, c))
+                           for c in node.__table__.columns.keys()),
                        'ref': href}
                 resp = jsonify(msg)
                 resp.headers['Location'] = href
@@ -70,18 +65,11 @@ def list_nodes():
                 db_session.rollback()
                 return http_conflict(e)
         else:
-            return http_bad_request('hostname')
+            return http_bad_request('Attribute hostname not provided')
     else:
-        node_list = {"nodes": []}
-        for row in Nodes.query.all():
-            tmp = dict()
-            for col in row.__table__.columns.keys():
-                if col == 'config':
-                    val = getattr(row, col)
-                    tmp[col] = val if (val is None) else json.loads(val)
-                else:
-                    tmp[col] = getattr(row, col)
-            node_list['nodes'].append(tmp)
+        node_list = dict(nodes=[dict((c, getattr(r, c))
+                         for c in r.__table__.columns.keys())
+                         for r in Nodes.query.all()])
         resp = jsonify(node_list)
     return resp
 
@@ -120,17 +108,12 @@ def node_by_id(node_id):
         if 'role_id' in request.json:
             r.role_id = request.json['role_id']
         if 'config' in request.json:
-            r.config = json.dumps(request.json['config'])
+            r.config = request.json['config']
         #TODO(shep): this is an un-excepted db call
         db_session.commit()
-        node = dict()
-        for col in r.__table__.columns.keys():
-            if col == 'config':
-                val = getattr(r, col)
-                node[col] = val if (val is None) else json.loads(val)
-            else:
-                node[col] = getattr(r, col)
-        resp = jsonify({'node': node})
+        node = dict(node=dict((c, getattr(r, c))
+                              for c in r.__table__.columns.keys()))
+        resp = jsonify(node)
     elif request.method == 'DELETE':
         r = Nodes.query.filter_by(id=node_id).first()
         try:
@@ -146,16 +129,11 @@ def node_by_id(node_id):
         except UnmappedInstanceError, e:
             return http_not_found()
     else:
-        row = Nodes.query.filter_by(id=node_id).first()
-        if row is None:
+        r = Nodes.query.filter_by(id=node_id).first()
+        if r is None:
             return http_not_found()
         else:
-            node = dict()
-            for col in row.__table__.columns.keys():
-                if col == 'config':
-                    val = getattr(row, col)
-                    node[col] = val if (val is None) else json.loads(val)
-                else:
-                    node[col] = getattr(row, col)
-            resp = jsonify({'node': node})
+            node = dict(node=dict((c, getattr(r, c))
+                                  for c in r.__table__.columns.keys()))
+            resp = jsonify(node)
     return resp
