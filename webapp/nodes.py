@@ -8,6 +8,9 @@ from flask import session, jsonify, url_for, current_app
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
+# import db.api as api
+from db import api as api
+from db import exceptions as exc
 from db.database import db_session
 from db.models import Nodes, Roles, Clusters, Tasks
 from errors import (
@@ -67,10 +70,8 @@ def list_nodes():
         else:
             return http_bad_request('Attribute hostname not provided')
     else:
-        node_list = dict(nodes=[dict((c, getattr(r, c))
-                         for c in r.__table__.columns.keys())
-                         for r in Nodes.query.all()])
-        resp = jsonify(node_list)
+        nodes = api.nodes_get_all()
+        resp = jsonify({'nodes': nodes})
     return resp
 
 
@@ -115,25 +116,22 @@ def node_by_id(node_id):
                               for c in r.__table__.columns.keys()))
         resp = jsonify(node)
     elif request.method == 'DELETE':
-        r = Nodes.query.filter_by(id=node_id).first()
         try:
-            db_session.delete(r)
-            db_session.commit()
-
-            # FIXME(rp): transaction
-            current_app.backend.delete_node(r.hostname)
-
-            msg = {'status': 200, 'message': 'Node deleted'}
-            resp = jsonify(msg)
-            resp.status_code = 200
-        except UnmappedInstanceError, e:
+            # NOTE: This is a transactional problem
+            # node = api.node_get_by_filter('id', node_id)
+            node = api.node_get_by_id(node_id)
+            if api.node_delete_by_id(node_id):
+                current_app.backend.delete_node(node['hostname'])
+                msg = {'status': 200, 'message': 'Node deleted'}
+                resp = jsonify(msg)
+                resp.status_code = 200
+        except exc.NodeNotFound, e:
             return http_not_found()
     else:
-        r = Nodes.query.filter_by(id=node_id).first()
-        if r is None:
+        # node = api.node_get_by_filter('id', node_id)
+        node = api.node_get_by_id(node_id)
+        if not node:
             return http_not_found()
         else:
-            node = dict(node=dict((c, getattr(r, c))
-                                  for c in r.__table__.columns.keys()))
-            resp = jsonify(node)
+            resp = jsonify({'node': node})
     return resp
