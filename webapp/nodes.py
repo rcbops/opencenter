@@ -78,20 +78,11 @@ def list_nodes():
 @nodes.route('/<node_id>/tasks', methods=['GET', 'PUT'])
 def tasks_by_node_id(node_id):
     # Display only tasks with state=pending
-    row = Tasks.query.filter_by(node_id=node_id,
-                                state='pending').first()
-    if row is None:
+    task = api.task_get_by_filter({'node_id': node_id, 'state': 'pending'})
+    if not task:
         return http_not_found()
     else:
-        task = dict()
-        for col in row.__table__.columns.keys():
-            if col == 'payload' or col == 'result':
-                val = getattr(row, col)
-                task[col] = val if (val is None) else json.loads(val)
-            else:
-                task[col] = getattr(row, col)
-
-        resp = jsonify(task)
+        resp = jsonify({'task': task})
         return resp
 
 
@@ -128,7 +119,7 @@ def node_by_id(node_id):
         except exc.NodeNotFound, e:
             return http_not_found()
     else:
-        # node = api.node_get_by_filter('id', node_id)
+        # node = api.node_get_by_filter({'id': node_id})
         node = api.node_get_by_id(node_id)
         if not node:
             return http_not_found()
