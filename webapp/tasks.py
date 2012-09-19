@@ -88,7 +88,7 @@ def task_by_id(task_id):
         if 'action' in request.json:
             r.action = request.json['action']
         if 'payload' in request.json:
-            r.payload = jason.dumps(request.json['payload'])
+            r.payload = json.dumps(request.json['payload'])
         if 'state' in request.json:
             r.state = request.json['state']
         if 'result' in request.json:
