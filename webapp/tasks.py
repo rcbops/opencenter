@@ -52,7 +52,7 @@ def list_tasks():
             msg = {'status': 201, 'message': 'Task Created',
                    'ref': href,
                    'task': dict((c, getattr(task, c))
-                                 for c in task.__table__.columns.keys())}
+                                for c in task.__table__.columns.keys())}
         except IntegrityError, e:
             db_session.rollback()
             return http_conflict(e)

@@ -86,6 +86,10 @@ def tasks_by_node_id(node_id):
         return resp
 
 
+@nodes.route('/<node_id>/adventures', methods=['GET'])
+def adventures_by_node_id(node_id):
+    return http_not_implemented
+
 @nodes.route('/<node_id>', methods=['GET', 'PUT', 'DELETE'])
 def node_by_id(node_id):
     if request.method == 'PUT':

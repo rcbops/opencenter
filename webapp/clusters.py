@@ -8,6 +8,8 @@ from flask import session, jsonify, url_for, current_app
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
+from db import api as api
+from db import exceptions as exc
 from db.database import db_session
 from db.models import Nodes, Roles, Clusters
 from errors import (
@@ -59,10 +61,8 @@ def list_clusters():
         else:
             return http_bad_request('name')
     else:
-        cluster_list = dict(clusters=[dict((c, getattr(r, c))
-                            for c in r.__table__.columns.keys())
-                            for r in Clusters.query.all()])
-        resp = jsonify(cluster_list)
+        cluster_list = api.clusters_get_all()
+        resp = jsonify({'clusters': cluster_list})
     return resp
 
 
