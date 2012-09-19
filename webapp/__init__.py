@@ -10,6 +10,7 @@ import traceback
 
 from ConfigParser import ConfigParser
 from flask import Flask
+from adventures import adventures
 from clusters import clusters
 from nodes import nodes
 from roles import roles
@@ -134,6 +135,7 @@ class Thing(Flask):
         self.register_blueprint(nodes, url_prefix='/nodes')
         self.register_blueprint(roles, url_prefix='/roles')
         self.register_blueprint(tasks, url_prefix='/tasks')
+        self.register_blueprint(adventures, url_prefix='/adventures')
         self.testing = debug
 
         if debug:

@@ -30,55 +30,41 @@ class Nodes(Base):
                             backref=backref('nodes',
                             uselist=False,
                             lazy='dynamic'))
-    type_id = Column(Integer, ForeignKey('types.id'))
-    types = relationship('Types',
-                         backref=backref('nodes',
-                         uselist=False,
-                         lazy='dynamic'))
-    type_state = Column(Integer, ForeignKey('typestates.id'))
+    backend = Column(String(30)) # Adventures.backend
+    backend_state = Column(String(30)) # Adventures.backend_state
     config = Column(JsonBlob)
 
     def __init__(self, hostname, role_id=None, cluster_id=None, config=None,
-                 type_id=None, typestate=None):
+                 backend=None, backend_state=None):
         self.hostname = hostname
-        self.type_id = type_id
         self.role_id = role_id
         self.cluster_id = cluster_id
         self.config = config
-        self.typestate = typestate
+        self.backend = backend
+        self.backend_state = backend_state
 
     def __repr__(self):
         return '<Nodes %r>' % (self.hostname)
 
 
-class Types(Base):
-    __tablename__ = 'types'
+class Adventures(Base):
+    __tablename__ = 'adventures'
     id = Column(Integer, primary_key=True)
-    name = Column(String(30), unique=True)
+    name = Column(String(30))
+    language = Column(String(30))
+    dsl = Column(Text)
+    backend = Column(String(30))
+    backend_state = Column(String(30))
 
-    def __init__(self, name):
+    def __init__(self, name, language, dsl, backend=None, backend_state=None):
         self.name = name
+        self.language = language
+        self.dsl = dsl
+        self.backend = backend
+        self.backend_state = backend_state
 
     def __repr__(self):
-        return '<Types %r>' % (self.name)
-
-
-class TypeStates(Base):
-    __tablename__ = 'typestates'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(30), unique=True)
-    type_id = Column(Integer, ForeignKey('types.id'))
-    types = relationship('Types',
-                         backref=backref('states',
-                         uselist=False,
-                         lazy='dynamic'))
-
-    def __init__(self, name, type_id):
-        self.name = name
-        self.type_id = type_id
-
-    def __repr__(self):
-        return '<TypeStates %r>' % (self.name)
+        return '<Adventures %r>' % (self.name)
 
 
 class Roles(Base):
