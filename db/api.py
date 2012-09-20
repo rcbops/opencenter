@@ -42,6 +42,27 @@ def _model_delete_by_id(model, pk_id):
         msg = "%s id does not exist" % (model.title())
         raise exc.IdNotFound(message=msg)
 
+def _model_get_by_id(model, pk_id):
+    """Query helper for getting a node
+
+    :param model: name of the table model
+    :param pk_id: id to delete
+    """
+    tables = {'adventures': Adventures,
+              'clusters': Clusters,
+              'nodes': Nodes,
+              'roles': Roles,
+              'tasks': Tasks}
+    r = tables[model].query.filter_by(id=pk_id).first()
+
+    if not r:
+        return None
+
+    result = [dict((c, getattr(r, c))
+                   for c in r.__table__.columns.keys())
+              for r in tables[model].query.all()]
+
+    return result[0]
 
 def adventures_get_all():
     """Query helper that returns a dict of all adventures"""
