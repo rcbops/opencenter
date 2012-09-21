@@ -20,6 +20,20 @@ def _model_get_all(model):
               for r in tables[model].query.all()]
     return result
 
+def _model_get_schema(model):
+    obj = globals()[model.capitalize()]
+    cols = obj.__table__.columns
+
+    fields = {}
+    for k in cols.keys():
+        fields[k] = {}
+        fields[k]['type'] = str(cols[k].type)
+        fields[k]['unique'] = cols[k].unique or cols[k].primary_key
+
+        if len(cols[k].foreign_keys) > 0:
+            fields[k]['fk'] = cols[k].foreign_keys.pop().name
+
+    return {'schema': fields }
 
 def _model_delete_by_id(model, pk_id):
     """Query helper for deleting a node

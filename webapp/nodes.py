@@ -83,6 +83,9 @@ def filter_nodes():
                          'nodes: %s' % request.json['filter'])
     return jsonify({'nodes': builder.eval()})
 
+@nodes.route('/schema', methods=['GET'])
+def schema():
+    return jsonify(api._model_get_schema('nodes'))
 
 @nodes.route('/<node_id>/tasks', methods=['GET', 'PUT'])
 def tasks_by_node_id(node_id):

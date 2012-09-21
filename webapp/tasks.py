@@ -86,6 +86,10 @@ def filter_tasks():
                          'tasks: %s' % request.json['filter'])
     return jsonify({'tasks': builder.eval()})
 
+@tasks.route('/schema', methods=['GET'])
+def schema():
+    return jsonify(api._model_get_schema('tasks'))
+
 @tasks.route('/<task_id>', methods=['GET', 'PUT'])
 def task_by_id(task_id):
     if request.method == 'PUT':
