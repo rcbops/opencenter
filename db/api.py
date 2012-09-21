@@ -104,7 +104,7 @@ def adventure_delete_by_id(adventure_id):
     :param adventure_id: id of adventure to delete
     """
     try:
-        _model_delete_by_id('adventures', adventure_id)
+        return _model_delete_by_id('adventures', adventure_id)
     except exc.IdNotFound, e:
         raise exc.AdventureNotFound(e.message)
 
@@ -152,7 +152,7 @@ def node_delete_by_id(node_id):
     :param node_id: id of node to delete
     """
     try:
-        _model_delete_by_id('nodes', node_id)
+        return _model_delete_by_id('nodes', node_id)
     except exc.IdNotFound, e:
         raise exc.NodeNotFound()
 

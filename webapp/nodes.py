@@ -104,6 +104,8 @@ def adventures_by_node_id(node_id):
 
 @nodes.route('/<node_id>', methods=['GET', 'PUT', 'DELETE'])
 def node_by_id(node_id):
+    resp = ''
+
     if request.method == 'PUT':
         # NOTE: We probably can't rename hosts -- it affect chef...
         # Think on this.  Also, probably should do a get_node_status
