@@ -18,6 +18,8 @@ from errors import (
     http_not_found,
     http_not_implemented)
 
+from filters import AstBuilder, FilterTokenizer
+
 clusters = Blueprint('clusters', __name__)
 
 
@@ -64,6 +66,12 @@ def list_clusters():
         cluster_list = api.clusters_get_all()
         resp = jsonify({'clusters': cluster_list})
     return resp
+
+@clusters.route('/filter', methods=['POST'])
+def filter_clusters():
+    builder = AstBuilder(FilterTokenizer(),
+                         'clusters: %s' % request.json['filter'])
+    return jsonify({'clusters': builder.eval()})
 
 
 @clusters.route('/<cluster_id>/nodes', methods=['GET'])

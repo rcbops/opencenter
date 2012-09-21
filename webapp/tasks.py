@@ -18,6 +18,8 @@ from errors import (
     http_not_found,
     http_not_implemented)
 
+from filters import AstBuilder, FilterTokenizer
+
 tasks = Blueprint('tasks', __name__)
 
 
@@ -77,6 +79,12 @@ def list_tasks():
         resp = jsonify(task_list)
     return resp
 
+
+@tasks.route('/filter', methods=['POST'])
+def filter_tasks():
+    builder = AstBuilder(FilterTokenizer(),
+                         'tasks: %s' % request.json['filter'])
+    return jsonify({'tasks': builder.eval()})
 
 @tasks.route('/<task_id>', methods=['GET', 'PUT'])
 def task_by_id(task_id):

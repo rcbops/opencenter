@@ -13,11 +13,14 @@ from db import api as api
 from db import exceptions as exc
 from db.database import db_session
 from db.models import Nodes, Roles, Clusters, Tasks
+
 from errors import (
     http_bad_request,
     http_conflict,
     http_not_found,
     http_not_implemented)
+
+from filters import AstBuilder, FilterTokenizer
 
 nodes = Blueprint('nodes', __name__)
 
@@ -73,6 +76,12 @@ def list_nodes():
         nodes = api.nodes_get_all()
         resp = jsonify({'nodes': nodes})
     return resp
+
+@nodes.route('/filter', methods=['POST'])
+def filter_nodes():
+    builder = AstBuilder(FilterTokenizer(),
+                         'nodes: %s' % request.json['filter'])
+    return jsonify({'nodes': builder.eval()})
 
 
 @nodes.route('/<node_id>/tasks', methods=['GET', 'PUT'])
