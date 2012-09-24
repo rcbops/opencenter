@@ -24,12 +24,12 @@ class NullBackend(backends.ConfigurationBackend):
     def set_cluster_settings(self, cluster_name, cluster_desc=None,
                              cluster_settings=None):
         self.cluster_descriptions[cluster_name] = cluster_desc
-        self.cluster_settings[cluster_name] =  cluster_settings
+        self.cluster_settings[cluster_name] = cluster_settings
 
     def create_cluster(self, cluster_name, cluster_desc=None,
                        cluster_settings=None):
         self.cluster_descriptions[cluster_name] = cluster_desc
-        self.cluster_settings[cluster_name] =  cluster_settings
+        self.cluster_settings[cluster_name] = cluster_settings
 
     def delete_cluster(self, cluster_name):
         del self.cluster_settings[cluster_name]

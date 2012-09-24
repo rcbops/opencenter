@@ -5,6 +5,7 @@ import chef
 
 import backends
 
+
 LOG = logging.getLogger('backend.driver')
 
 
@@ -22,7 +23,7 @@ class OpscodechefBackend(backends.ConfigurationBackend):
         if api:
             self.api = api
         else:
-            raise BackendError
+            raise backends.BackendError
 
         self.role_map = {}
 
@@ -65,14 +66,14 @@ class OpscodechefBackend(backends.ConfigurationBackend):
 
     def get_cluster_settings(self, cluster_name):
         if not self._cluster_exists(cluster_name):
-            raise ClusterDoesNotExist
+            raise backends.ClusterDoesNotExist
 
         return chef.Environment(cluster_name, self.api).override_attributes
 
     def set_cluster_settings(self, cluster_name, cluster_desc=None,
                              cluster_settings=None):
         if not self._cluster_exists(cluster_name):
-            raise ClusterDoesNotExist
+            raise backends.ClusterDoesNotExist
 
         env = chef.Environment(cluster_name, self.api)
         if cluster_desc is not None:
@@ -83,15 +84,19 @@ class OpscodechefBackend(backends.ConfigurationBackend):
 
     def create_cluster(self, cluster_name, cluster_desc=None,
                        cluster_settings=None):
-        env = chef.Environment.create(cluster_name,
-                                      self.api,
-                                      description=cluster_desc,
-                                      override_attributes=cluster_settings)
-        env.save()
+            env = chef.Environment.create(cluster_name,
+                                          self.api,
+                                          description=cluster_desc,
+                                          override_attributes=cluster_settings)
+
+            try:
+                env.save()
+            except chef.ChefServerError as e:
+                raise backends.BackendError(e)
 
     def delete_cluster(self, cluster_name):
         if not self._cluster_exists(cluster_name):
-            raise ClusterDoesNotExist
+            raise backends.ClusterDoesNotExist
 
         env = chef.Environment(cluster_name, self.api)
         env.delete()
@@ -102,10 +107,10 @@ class OpscodechefBackend(backends.ConfigurationBackend):
 
     def set_cluster_for_node(self, node, cluster):
         if not self._cluster_exists(cluster):
-            raise ClusterDoesNotExist
+            raise backends.ClusterDoesNotExist
 
         if not self._host_exists(node):
-            raise NodeDoesNotExist
+            raise backends.NodeDoesNotExist
 
         node = chef.Node(node, self.api)
         node.chef_environment = cluster
@@ -113,38 +118,38 @@ class OpscodechefBackend(backends.ConfigurationBackend):
 
     def get_cluster_for_node(self, node):
         if not self._host_exists(node):
-            raise NodeDoesNotExist
+            raise backends.NodeDoesNotExist
 
         return chef.Node(node, self.api).chef_environment
 
     def get_node_settings(self, node):
         if not self._host_exists(node):
-            raise NodeDoesNotExist
+            raise backends.NodeDoesNotExist
 
         return chef.Node(node, self.api).override
 
     def set_node_settings(self, node, settings):
         if not self._host_exists(node):
-            raise NodeDoesNotExist
+            raise backends.NodeDoesNotExist
 
         node = chef.Node(node, self.api)
         node.override = settings
         node.save()
 
-   def create_node(self, node, role=None,                            
-                    cluster=None, node_settings=None):                     
+    def create_node(self, node, role=None,
+                    cluster=None, node_settings=None):
         pass
 
     def get_node_status(self, node):
         if not self._host_exists(node):
-            raise NodeDoesNotExist
+            raise backends.NodeDoesNotExist
 
         # What does this do?!?!
         return True
 
     def delete_node(self, node):
         if not self._host_exists(node):
-            raise NodeDoesNotExist
+            raise backends.NodeDoesNotExist
 
         node = chef.Node(node, self.api)
         node.delete
@@ -155,10 +160,10 @@ class OpscodechefBackend(backends.ConfigurationBackend):
 
     def set_role_for_node(self, node, role):
         if not role in self.role_map:
-            raise RoleDoesNotExist
+            raise backends.RoleDoesNotExist
 
         if not self._host_exists(node):
-            raise RoleDoesNotExist
+            raise backends.RoleDoesNotExist
 
         node = chef.Node(node, self.api)
         node.run_list = self.role_map[role]

@@ -2,3 +2,4 @@ flask
 sqlalchemy
 sqlalchemy-migrate
 pychef
+python-daemon

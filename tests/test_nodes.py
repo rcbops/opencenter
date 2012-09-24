@@ -23,7 +23,7 @@ class NodeCreateTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='local.conf', debug=True)
+        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
         self.hostname = _randomStr(10)
@@ -40,8 +40,8 @@ class NodeCreateTests(unittest.TestCase):
                            'description': self.clus1_desc,
                            'config': self.clus1_config}
         tmp = self.app.post('/clusters/',
-                             content_type=self.content_type,
-                             data=json.dumps(self.clus1_data))
+                            content_type=self.content_type,
+                            data=json.dumps(self.clus1_data))
         out = json.loads(tmp.data)
         self.clus1_id = out['cluster']['id']
         # neet to create a test role
@@ -164,7 +164,6 @@ class NodeCreateTests(unittest.TestCase):
         self.assertEquals(resp.status_code, 400)
         out = json.loads(resp.data)
         self.assertEquals(out['status'], 400)
-        self.assertTrue('was not provided' in out['message'])
 
     def test_verify_delete_method_returns_a_405_on_nodes(self):
         resp = self.app.delete('/nodes/',
@@ -185,7 +184,7 @@ class NodeCreateTests(unittest.TestCase):
 class NodeUpdateTests(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='local.conf', debug=True)
+        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
 

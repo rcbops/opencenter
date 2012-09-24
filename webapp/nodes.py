@@ -8,13 +8,19 @@ from flask import session, jsonify, url_for, current_app
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
+# import db.api as api
+from db import api as api
+from db import exceptions as exc
 from db.database import db_session
 from db.models import Nodes, Roles, Clusters, Tasks
+
 from errors import (
     http_bad_request,
     http_conflict,
     http_not_found,
     http_not_implemented)
+
+from filters import AstBuilder, FilterTokenizer
 
 nodes = Blueprint('nodes', __name__)
 
@@ -35,7 +41,7 @@ def list_nodes():
 
             config = None
             if 'config' in request.json:
-                config = json.dumps(request.json['config'])
+                config = request.json['config']
 
             # This should probably check against Roles.id and Clusters.id
             node = Nodes(hostname=hostname, role_id=role_id,
@@ -49,19 +55,14 @@ def list_nodes():
                     node.hostname,
                     role=node.role_id,
                     cluster=node.cluster_id,
-                    node_settings=config)
+                    node_settings=node.config)
                 db_session.commit()
-                n = dict()
-                for col in node.__table__.columns.keys():
-                    if col == 'config':
-                        tmp = getattr(node, col)
-                        n[col] = tmp if (tmp is None) else json.loads(tmp)
-                    else:
-                        n[col] = getattr(node, col)
                 href = request.base_url + str(node.id)
                 msg = {'status': 201,
                        'message': 'Node Created',
-                       'node': n,
+                       'node': dict(
+                           (c, getattr(node, c))
+                           for c in node.__table__.columns.keys()),
                        'ref': href}
                 resp = jsonify(msg)
                 resp.headers['Location'] = href
@@ -70,44 +71,41 @@ def list_nodes():
                 db_session.rollback()
                 return http_conflict(e)
         else:
-            return http_bad_request('hostname')
+            return http_bad_request('Attribute hostname not provided')
     else:
-        node_list = {"nodes": []}
-        for row in Nodes.query.all():
-            tmp = dict()
-            for col in row.__table__.columns.keys():
-                if col == 'config':
-                    val = getattr(row, col)
-                    tmp[col] = val if (val is None) else json.loads(val)
-                else:
-                    tmp[col] = getattr(row, col)
-            node_list['nodes'].append(tmp)
-        resp = jsonify(node_list)
+        nodes = api.nodes_get_all()
+        resp = jsonify({'nodes': nodes})
     return resp
 
+@nodes.route('/filter', methods=['POST'])
+def filter_nodes():
+    builder = AstBuilder(FilterTokenizer(),
+                         'nodes: %s' % request.json['filter'])
+    return jsonify({'nodes': builder.eval()})
+
+@nodes.route('/schema', methods=['GET'])
+def schema():
+    return jsonify(api._model_get_schema('nodes'))
 
 @nodes.route('/<node_id>/tasks', methods=['GET', 'PUT'])
 def tasks_by_node_id(node_id):
     # Display only tasks with state=pending
-    row = Tasks.query.filter_by(node_id=node_id,
-                                state='pending').first()
-    if row is None:
+    task = api.task_get_by_filter({'node_id': node_id, 'state': 'pending'})
+    if not task:
         return http_not_found()
     else:
-        task = dict()
-        for col in row.__table__.columns.keys():
-            if col == 'payload' or col == 'result':
-                val = getattr(row, col)
-                task[col] = val if (val is None) else json.loads(val)
-            else:
-                task[col] = getattr(row, col)
-
-        resp = jsonify(task)
+        resp = jsonify({'task': task})
         return resp
 
 
+@nodes.route('/<node_id>/adventures', methods=['GET'])
+def adventures_by_node_id(node_id):
+    return http_not_implemented
+
 @nodes.route('/<node_id>', methods=['GET', 'PUT', 'DELETE'])
 def node_by_id(node_id):
+    resp = ''
+
     if request.method == 'PUT':
         # NOTE: We probably can't rename hosts -- it affect chef...
         # Think on this.  Also, probably should do a get_node_status
@@ -120,42 +118,29 @@ def node_by_id(node_id):
         if 'role_id' in request.json:
             r.role_id = request.json['role_id']
         if 'config' in request.json:
-            r.config = json.dumps(request.json['config'])
+            r.config = request.json['config']
         #TODO(shep): this is an un-excepted db call
         db_session.commit()
-        node = dict()
-        for col in r.__table__.columns.keys():
-            if col == 'config':
-                val = getattr(r, col)
-                node[col] = val if (val is None) else json.loads(val)
-            else:
-                node[col] = getattr(r, col)
+        node = dict(node=dict((c, getattr(r, c))
+                              for c in r.__table__.columns.keys()))
         resp = jsonify(node)
     elif request.method == 'DELETE':
-        r = Nodes.query.filter_by(id=node_id).first()
         try:
-            db_session.delete(r)
-            db_session.commit()
-
-            # FIXME(rp): transaction
-            current_app.backend.delete_node(r.hostname)
-
-            msg = {'status': 200, 'message': 'Node deleted'}
-            resp = jsonify(msg)
-            resp.status_code = 200
-        except UnmappedInstanceError, e:
+            # NOTE: This is a transactional problem
+            # node = api.node_get_by_filter('id', node_id)
+            node = api.node_get_by_id(node_id)
+            if api.node_delete_by_id(node_id):
+                current_app.backend.delete_node(node['hostname'])
+                msg = {'status': 200, 'message': 'Node deleted'}
+                resp = jsonify(msg)
+                resp.status_code = 200
+        except exc.NodeNotFound, e:
             return http_not_found()
     else:
-        row = Nodes.query.filter_by(id=node_id).first()
-        if row is None:
+        # node = api.node_get_by_filter({'id': node_id})
+        node = api.node_get_by_id(node_id)
+        if not node:
             return http_not_found()
         else:
-            node = dict()
-            for col in row.__table__.columns.keys():
-                if col == 'config':
-                    val = getattr(row, col)
-                    node[col] = val if (val is None) else json.loads(val)
-                else:
-                    node[col] = getattr(row, col)
-            resp = jsonify(node)
+            resp = jsonify({'node': node})
     return resp

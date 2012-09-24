@@ -1,7 +1,23 @@
+import json
+
 from sqlalchemy import (Column, Integer, String, ForeignKey,
                         Text, Enum, DateTime)
 from sqlalchemy.orm import relationship, backref
+import sqlalchemy.types as types
+
 from database import Base
+
+
+# Special Fields
+class JsonBlob(types.TypeDecorator):
+
+    impl = types.Text
+
+    def process_bind_param(self, value, dialect):
+        return json.dumps(value)
+
+    def process_result_value(self, value, dialect):
+        return json.loads(value)
 
 
 class Nodes(Base):
@@ -10,17 +26,45 @@ class Nodes(Base):
     hostname = Column(String(64), unique=True)
     role_id = Column(Integer, ForeignKey('roles.id'))
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
-    config = Column(Text)
+    clusters = relationship('Clusters',
+                            backref=backref('nodes',
+                            uselist=False,
+                            lazy='dynamic'))
+    backend = Column(String(30)) # Adventures.backend
+    backend_state = Column(String(30)) # Adventures.backend_state
+    config = Column(JsonBlob)
 
-    def __init__(self, hostname=None, role_id=None,
-                 cluster_id=None, config=None):
+    def __init__(self, hostname, role_id=None, cluster_id=None, config=None,
+                 backend=None, backend_state=None):
         self.hostname = hostname
         self.role_id = role_id
         self.cluster_id = cluster_id
         self.config = config
+        self.backend = backend
+        self.backend_state = backend_state
 
     def __repr__(self):
         return '<Nodes %r>' % (self.hostname)
+
+
+class Adventures(Base):
+    __tablename__ = 'adventures'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(30))
+    language = Column(String(30))
+    dsl = Column(Text)
+    backend = Column(String(30))
+    backend_state = Column(String(30))
+
+    def __init__(self, name, language, dsl, backend=None, backend_state=None):
+        self.name = name
+        self.language = language
+        self.dsl = dsl
+        self.backend = backend
+        self.backend_state = backend_state
+
+    def __repr__(self):
+        return '<Adventures %r>' % (self.name)
 
 
 class Roles(Base):
@@ -45,7 +89,8 @@ class Clusters(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(20), unique=True)
     description = Column(String(80))
-    config = Column(Text)
+    # config = Column(Text)
+    config = Column(JsonBlob)
     node = relationship('Nodes', backref=backref('cluster',
                                                  uselist=False,
                                                  lazy='dynamic'))
@@ -64,9 +109,9 @@ class Tasks(Base):
     id = Column(Integer, primary_key=True)
     node_id = Column(Integer, ForeignKey('nodes.id'))
     action = Column(String(40))
-    payload = Column(Text)
+    payload = Column(JsonBlob)
     state = Column(Enum('pending', 'running', 'done', 'timeout', 'cancelled'))
-    result = Column(Text)
+    result = Column(JsonBlob)
     submitted = Column(Integer)
     completed = Column(Integer)
     expires = Column(Integer)

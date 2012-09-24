@@ -21,12 +21,14 @@ def http_not_implemented(error=None):
     resp.status_code = 501
     return resp
 
-def http_bad_request(error=None):
+
+def http_bad_request(msg):
     msg = {'status': 400,
-           'message': "Attribute '%s' was not provided" % error}
+           'message': msg}
     resp = jsonify(msg)
     resp.status_code = 400
     return resp
+
 
 def http_conflict(error):
     msg = {'status': 409, "message": error.message}

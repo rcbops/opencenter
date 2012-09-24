@@ -6,6 +6,10 @@ from flask import session, jsonify, url_for, current_app
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
+# import db.api as api
+from db import api as api
+from db import exceptions as exc
+
 from db.database import db_session
 from db.models import Nodes, Roles, Clusters
 from errors import (
@@ -50,6 +54,17 @@ def list_roles():
         resp = jsonify(role_list)
         return resp
 
+@roles.route('/filter', methods=['POST'])
+def filter_roles():
+    builder = AstBuilder(FilterTokenizer(),
+                         'roles: %s' % request.json['filter'])
+    return jsonify({'roles': builder.eval()})
+
+@roles.route('/schema', methods=['GET'])
+def schema():
+    return jsonify(api._model_get_schema('roles'))
+
+
 
 @roles.route('/<role_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def role_by_id(role_id):
@@ -63,8 +78,9 @@ def role_by_id(role_id):
             r.description = request.json['description']
         #TODO(shep): this is an un-excepted db call
         db_session.commit()
-        resp = jsonify(dict((c, getattr(r, c))
-                       for c in r.__table__.columns.keys()))
+        resp = jsonify(
+            {'role': dict((c, getattr(r, c))
+                          for c in r.__table__.columns.keys())})
     elif request.method == 'DELETE':
         r = Roles.query.filter_by(id=role_id).first()
         try:
@@ -80,6 +96,7 @@ def role_by_id(role_id):
         if r is None:
             return http_not_found()
         else:
-            resp = jsonify(dict((c, getattr(r, c))
-                           for c in r.__table__.columns.keys()))
+            resp = jsonify(
+                {'role': dict((c, getattr(r, c))
+                              for c in r.__table__.columns.keys())})
     return resp

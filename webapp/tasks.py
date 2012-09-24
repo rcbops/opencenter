@@ -18,6 +18,8 @@ from errors import (
     http_not_found,
     http_not_implemented)
 
+from filters import AstBuilder, FilterTokenizer
+
 tasks = Blueprint('tasks', __name__)
 
 
@@ -33,15 +35,11 @@ def list_tasks():
                   'completed': None,
                   'expires': None}
 
-        for k,v in fields.iteritems():
-            if v == 'json':
-                if k in request.json:
-                    fields[k] = json.dumps(request.json[k])
-                else:
-                    fields[k] = None
+        for k, v in fields.iteritems():
+            if k in request.json:
+                fields[k] = request.json[k]
             else:
-                if k in request.json:
-                    fields[k] = request.json[k]
+                fields[k] = None
 
         task = Tasks(node_id=fields['node_id'], action=fields['action'],
                      payload=fields['payload'], state=fields['state'],
@@ -53,15 +51,10 @@ def list_tasks():
             db_session.commit()
             # FIXME(shep): add a ref
             href = request.base_url + str(task.id)
-            tmp = dict()
-            for col in task.__table__.columns.keys():
-                if col == 'payload' or col == 'result':
-                    val = getattr(task, col)
-                    tmp[col] = val if (val is None) else json.loads(val)
-                else:
-                    tmp[col] = getattr(task, col)
             msg = {'status': 201, 'message': 'Task Created',
-                   'ref': href, 'task': tmp}
+                   'ref': href,
+                   'task': dict((c, getattr(task, c))
+                                for c in task.__table__.columns.keys())}
         except IntegrityError, e:
             db_session.rollback()
             return http_conflict(e)
@@ -87,6 +80,16 @@ def list_tasks():
     return resp
 
 
+@tasks.route('/filter', methods=['POST'])
+def filter_tasks():
+    builder = AstBuilder(FilterTokenizer(),
+                         'tasks: %s' % request.json['filter'])
+    return jsonify({'tasks': builder.eval()})
+
+@tasks.route('/schema', methods=['GET'])
+def schema():
+    return jsonify(api._model_get_schema('tasks'))
+
 @tasks.route('/<task_id>', methods=['GET', 'PUT'])
 def task_by_id(task_id):
     if request.method == 'PUT':
@@ -97,7 +100,7 @@ def task_by_id(task_id):
         if 'action' in request.json:
             r.action = request.json['action']
         if 'payload' in request.json:
-            r.payload = jason.dumps(request.json['payload'])
+            r.payload = json.dumps(request.json['payload'])
         if 'state' in request.json:
             r.state = request.json['state']
         if 'result' in request.json:
@@ -111,7 +114,7 @@ def task_by_id(task_id):
                 task[col] = val if (val is None) else json.loads(val)
             else:
                 task[col] = getattr(r, col)
-        resp = jsonify(task)
+        resp = jsonify({'task': task})
     else:
         row = Tasks.query.filter_by(id=task_id).first()
         if row is None:
@@ -125,5 +128,5 @@ def task_by_id(task_id):
                 else:
                     task[col] = getattr(row, col)
 
-            resp = jsonify(task)
+            resp = jsonify({'task': task})
     return resp
