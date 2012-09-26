@@ -23,7 +23,7 @@ class JsonBlob(types.TypeDecorator):
 class Nodes(Base):
     __tablename__ = 'nodes'
     id = Column(Integer, primary_key=True)
-    hostname = Column(String(64), unique=True)
+    hostname = Column(String(64), unique=True, nullable=False)
     role_id = Column(Integer, ForeignKey('roles.id'))
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
     clusters = relationship('Clusters',
