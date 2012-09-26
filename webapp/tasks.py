@@ -18,6 +18,8 @@ from errors import (
     http_not_found,
     http_not_implemented)
 
+from filters import AstBuilder, FilterTokenizer
+
 tasks = Blueprint('tasks', __name__)
 
 
@@ -52,7 +54,7 @@ def list_tasks():
             msg = {'status': 201, 'message': 'Task Created',
                    'ref': href,
                    'task': dict((c, getattr(task, c))
-                                 for c in task.__table__.columns.keys())}
+                                for c in task.__table__.columns.keys())}
         except IntegrityError, e:
             db_session.rollback()
             return http_conflict(e)
@@ -78,6 +80,16 @@ def list_tasks():
     return resp
 
 
+@tasks.route('/filter', methods=['POST'])
+def filter_tasks():
+    builder = AstBuilder(FilterTokenizer(),
+                         'tasks: %s' % request.json['filter'])
+    return jsonify({'tasks': builder.eval()})
+
+@tasks.route('/schema', methods=['GET'])
+def schema():
+    return jsonify(api._model_get_schema('tasks'))
+
 @tasks.route('/<task_id>', methods=['GET', 'PUT'])
 def task_by_id(task_id):
     if request.method == 'PUT':
@@ -88,7 +100,7 @@ def task_by_id(task_id):
         if 'action' in request.json:
             r.action = request.json['action']
         if 'payload' in request.json:
-            r.payload = jason.dumps(request.json['payload'])
+            r.payload = json.dumps(request.json['payload'])
         if 'state' in request.json:
             r.state = request.json['state']
         if 'result' in request.json:
