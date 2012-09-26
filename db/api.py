@@ -114,6 +114,22 @@ def clusters_get_all():
     return _model_get_all('clusters')
 
 
+def node_create(fields):
+    field_list = [c for c in Nodes.__table__.columns.keys()]
+    field_list.remove('id')
+    a = Nodes(**dict((field,fields[field])
+                     for field in field_list if fields.has_key(field)))
+    db_session.add(a)
+    try:
+        db_session.commit()
+        return dict((c, getattr(a, c))
+                    for c in a.__table__.columns.keys())
+    except IntegrityError, e:
+        db_session.rollback()
+        msg = "Unable to create Node, duplicate entry"
+        raise exc.CreateError(message=msg)
+
+
 def nodes_get_all():
     """Query helper that returns a dict of all nodes"""
     return _model_get_all('nodes')
