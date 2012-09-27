@@ -41,6 +41,11 @@ def list_nodes():
                 role=node['role_id'],
                 cluster=node['cluster_id'],
                 node_settings=node['config'])
+            if node['cluster_id'] is not None:
+                cluster = api.cluster_get_by_id(node['cluster_id'])
+                current_app.backend.set_cluster_for_node(
+                    node=node['hostname'],
+                    cluster=cluster['name'])
             href = request.base_url + str(node['id'])
             msg = {'status': 201,
                    'message': 'Node Created',
