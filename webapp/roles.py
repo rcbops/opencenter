@@ -60,12 +60,6 @@ def filter_roles():
                          'roles: %s' % request.json['filter'])
     return jsonify({'roles': builder.eval()})
 
-@roles.route('/schema', methods=['GET'])
-def schema():
-    return jsonify(api._model_get_schema('roles'))
-
-
-
 @roles.route('/<role_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH'])
 def role_by_id(role_id):
     if request.method == 'PATCH' or request.method == 'POST':

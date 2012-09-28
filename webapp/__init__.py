@@ -9,13 +9,15 @@ import sys
 import traceback
 
 from ConfigParser import ConfigParser
-from flask import Flask
+from flask import Flask, jsonify
 from adventures import adventures
 from clusters import clusters
 from nodes import nodes
 from roles import roles
 from index import index
 from tasks import tasks
+
+from db import api, models, database
 
 import backends
 
@@ -56,6 +58,7 @@ class Thing(Flask):
     def __init__(self, name, argv=None, configfile=None,
                  confighash=None, debug=False):
         daemonize = False
+        self.registered_models = []
 
         super(Thing, self).__init__(name)
 
@@ -143,6 +146,31 @@ class Thing(Flask):
 
         if daemonize:
             self.config['daemonize'] = True
+
+    def register_blueprint(self, blueprint, url_prefix='/', **kwargs):
+        super(Thing, self).register_blueprint(blueprint, url_prefix=url_prefix, **kwargs)
+
+        # auto-register the schema url
+        def schema_details(what):
+            def f():
+                return jsonify(api._model_get_schema(what))
+            return f
+
+        def root_schema():
+            schema = {'schema': {'objects': self.registered_models}}
+            return jsonify(schema)
+
+        if url_prefix != '/' and hasattr(models, blueprint.name.capitalize()):
+            self.registered_models.append(blueprint.name)
+            url = '/%s/schema' % (blueprint.name)
+            self.add_url_rule(url, '%s.schema' % blueprint.name,
+                              schema_details(blueprint.name),
+                              methods=['GET'])
+        elif url_prefix == '/':
+            self.add_url_rule('/schema', 'root.schema',
+                              root_schema,
+                              methods=['GET'])
+
 
     def run(self):
         context = None

@@ -73,10 +73,6 @@ def filter_clusters():
                          'clusters: %s' % request.json['filter'])
     return jsonify({'clusters': builder.eval()})
 
-@clusters.route('/schema', methods=['GET'])
-def schema():
-    return jsonify(api._model_get_schema('clusters'))
-
 @clusters.route('/<cluster_id>/nodes', methods=['GET'])
 def nodes_by_cluster_id(cluster_id):
     if request.method == 'GET':
