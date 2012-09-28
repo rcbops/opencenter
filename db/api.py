@@ -1,5 +1,7 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
+from itertools import islice
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.sql import and_, or_
@@ -31,7 +33,7 @@ def _model_get_schema(model):
         fields[k]['unique'] = cols[k].unique or cols[k].primary_key
 
         if len(cols[k].foreign_keys) > 0:
-            fields[k]['fk'] = cols[k].foreign_keys.pop().name
+            fields[k]['fk'] = list(cols[k].foreign_keys)[0].target_fullname
 
     return {'schema': fields }
 
