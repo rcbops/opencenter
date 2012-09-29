@@ -30,6 +30,9 @@ def _model_get_schema(model):
     for k in cols.keys():
         fields[k] = {}
         fields[k]['type'] = str(cols[k].type)
+        if repr(cols[k].type) == 'JsonBlob()':
+            fields[k]['type'] = 'JSON'
+
         fields[k]['unique'] = cols[k].unique or cols[k].primary_key
 
         if len(cols[k].foreign_keys) > 0:
