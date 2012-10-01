@@ -61,11 +61,13 @@ def list_nodes():
         resp = jsonify({'nodes': nodes})
     return resp
 
+
 @nodes.route('/filter', methods=['POST'])
 def filter_nodes():
     builder = AstBuilder(FilterTokenizer(),
                          'nodes: %s' % request.json['filter'])
     return jsonify({'nodes': builder.eval()})
+
 
 @nodes.route('/<node_id>/tasks', methods=['GET', 'PUT'])
 def tasks_by_node_id(node_id):
@@ -81,6 +83,7 @@ def tasks_by_node_id(node_id):
 @nodes.route('/<node_id>/adventures', methods=['GET'])
 def adventures_by_node_id(node_id):
     return http_not_implemented
+
 
 @nodes.route('/<node_id>', methods=['GET', 'PUT', 'DELETE'])
 def node_by_id(node_id):

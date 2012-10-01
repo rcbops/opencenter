@@ -7,6 +7,7 @@ import sys
 import db.database
 from db import api
 
+
 # Stupid tokenizer.  Use:
 #
 # ft.parse(filter)
@@ -23,35 +24,54 @@ from db import api
 class FilterTokenizer:
     def __init__(self):
         self.scanner = re.Scanner([
-                (r"!", self.negation),
-                (r"or", self.or_op),
-                (r"and", self.and_op),
-                (r"[ \t\n]+", None),
-                (r"[0-9]+", self.number),
-                (r"\(", self.open_paren),
-                (r"\)", self.close_paren),
-                (r"'((?:[^'\\]|\\.)*)'", self.qstring),
-                (r"[a-zA-Z_]*:", self.typedef),
-                (r"\<\=|\>\=", self.op),
-                (r"\=|\<|\>", self.op),
-                (r"[A-Za-z_\.]*", self.identifier),
-                (r"'((?:[^'\\]|\\.)*)'", self.qstring),
-                ])
+            (r"!", self.negation),
+            (r"or", self.or_op),
+            (r"and", self.and_op),
+            (r"[ \t\n]+", None),
+            (r"[0-9]+", self.number),
+            (r"\(", self.open_paren),
+            (r"\)", self.close_paren),
+            (r"'((?:[^'\\]|\\.)*)'", self.qstring),
+            (r"[a-zA-Z_]*:", self.typedef),
+            (r"\<\=|\>\=", self.op),
+            (r"\=|\<|\>", self.op),
+            (r"[A-Za-z_\.]*", self.identifier),
+            (r"'((?:[^'\\]|\\.)*)'", self.qstring),
+        ])
         self.tokens = []
         self.remainer = ''
         self.logger = logging.getLogger('filter.tokenizer')
 
     # token generators
-    def typedef(self, scanner, token): return 'TYPEDEF', token[0:-1]
-    def op(self, scanner, token): return 'OP', token
-    def number(self, scanner, token): return 'NUMBER', token
-    def negation(self, scanner, token): return 'UNEG', token
-    def identifier(self, scanner, token): return 'IDENTIFIER', token
-    def qstring(self, scanner, token): return 'STRING', token[1:-1]
-    def open_paren(self, scanner, token): return 'OPENPAREN', token
-    def close_paren(self, scanner, token): return 'CLOSEPAREN', token
-    def or_op(self, scanner, token): return 'OR', token
-    def and_op(self, scanner, token): return 'AND', token
+    def typedef(self, scanner, token):
+        return 'TYPEDEF', token[0:-1]
+
+    def op(self, scanner, token):
+        return 'OP', token
+
+    def number(self, scanner, token):
+        return 'NUMBER', token
+
+    def negation(self, scanner, token):
+        return 'UNEG', token
+
+    def identifier(self, scanner, token):
+        return 'IDENTIFIER', token
+
+    def qstring(self, scanner, token):
+        return 'STRING', token[1:-1]
+
+    def open_paren(self, scanner, token):
+        return 'OPENPAREN', token
+
+    def close_paren(self, scanner, token):
+        return 'CLOSEPAREN', token
+
+    def or_op(self, scanner, token):
+        return 'OR', token
+
+    def and_op(self, scanner, token):
+        return 'AND', token
 
     def parse(self, input_filter):
         self.tokens, self.remainder = self.scanner.scan(input_filter)
@@ -59,7 +79,8 @@ class FilterTokenizer:
 
         if self.remainder != '':
             raise RuntimeError(
-                'Cannot parse.  Input: %s, remainder %s' % (input_filter, self.remainder))
+                'Cannot parse.  Input: %s, remainder %s' %
+                (input_filter, self.remainder))
 
         return True
 
@@ -69,6 +90,7 @@ class FilterTokenizer:
 
     def peek(self):
         return self.tokens[0]
+
 
 #
 # This is a pretty trivial implementation.  The production
@@ -99,7 +121,6 @@ class AstBuilder:
         root_node = self.parse_phrase()
         return root_node
 
-
     def eval(self):
         # get a list of all the self.filter_types, and eval each in turn
         root_node = self.build()
@@ -115,7 +136,6 @@ class AstBuilder:
         logging.debug("Found %d results" % len(result))
 
         return result
-
 
     # criterion -> field { uneg } op value
     def parse_criterion(self):
@@ -161,7 +181,7 @@ class AstBuilder:
 
         token, val = self.tokenizer.peek()
         if token == 'OR':
-            self.tokenizer.scan() # eat the token
+            self.tokenizer.scan()  # eat the token
             rhs = self.parse_andexpr()
             return Node(node, 'OR', rhs)
         else:
@@ -173,7 +193,7 @@ class AstBuilder:
 
         token, val = self.tokenizer.peek()
         if token == 'AND':
-            self.tokenizer.scan() # eat the token
+            self.tokenizer.scan()  # eat the token
             rhs = self.parse_orexpr()
             return Node(node, 'AND', rhs)
         else:
@@ -196,6 +216,7 @@ class AstBuilder:
 
         return node
 
+
 class Node:
     def __init__(self, lhs, op, rhs):
         self.lhs = lhs
@@ -209,7 +230,7 @@ class Node:
         lhs_id = 'x'
         rhs_id = 'x'
 
-        if type(self.lhs) == type(3) or type(self.lhs) == type('x'):
+        if isinstance(self.lhs, 3) or isinstance(self.lhs, 'x'):
             lhs_id = str(id(self)) + "lhs"
             lhs_label = str(self.lhs)
             fd.write('"%s" [label = "%s"]' % (lhs_id, lhs_label) + ';\n')
@@ -217,7 +238,7 @@ class Node:
             lhs_id = id(self.lhs)
             self.lhs.dotty(fd)
 
-        if type(self.rhs) == type(3) or type(self.rhs) == type('x'):
+        if isinstance(self.rhs, 3) or isinstance(self.rhs, 'x'):
             rhs_id = str(id(self)) + "rhs"
             rhs_label = str(self.rhs)
             fd.write('"%s" [label = "%s"]' % (rhs_id, rhs_label) + ';\n')
@@ -229,7 +250,8 @@ class Node:
         fd.write('"%s" -> "%s"' % (id(self), rhs_id) + ';\n')
 
     def eval_identifier(self, node, identifier):
-        self.logger.debug('resolving identifier "%s" on:\n%s' % (identifier, node))
+        self.logger.debug('resolving identifier "%s" on:\n%s' %
+                          (identifier, node))
 
         if not identifier:
             return None
@@ -239,24 +261,27 @@ class Node:
                 return node[identifier]
             else:
                 # should this raise?
-                self.logger.debug('cannot find attribute %s in node' % identifier)
+                self.logger.debug('cannot find attribute %s in node' %
+                                  identifier)
                 return None
 
         # of the format something.something
-        (obj, attr) = identifier.split('.',1)
+        (obj, attr) = identifier.split('.', 1)
 
         self.logger.debug('checking %s in linked object %s' % (attr, obj))
 
         if "%s%s" % (obj, '_id') in node:
             the_id = node["%s%s" % (obj, '_id')]
             if the_id:
-                self.logger.debug('found linked object type %s with id: %s' % (obj, str(the_id)))
+                self.logger.debug('found linked object type %s with id: %s' %
+                                  (obj, str(the_id)))
                 try:
                     # grab the linked object...
                     new_node = api._model_get_by_id("%ss" % obj, the_id)
                     self.logger.debug("Indirected object: %s" % new_node)
                 except Exception as e:
-                    self.logger.debug('cannot lookup the object type: %s' % str(e))
+                    self.logger.debug('cannot lookup the object type: %s' %
+                                      str(e))
                     return None
 
                 return self.eval_identifier(new_node, attr)
@@ -277,7 +302,9 @@ class Node:
         else:
             rhs_val = self.rhs
 
-        self.logger.debug('evaluating %s (%s) %s %s (%s)' % (self.lhs, lhs_val, self.op, self.rhs, str(rhs_val)))
+        self.logger.debug('evaluating %s (%s) %s %s (%s)' %
+                          (self.lhs, lhs_val, self.op,
+                           self.rhs, str(rhs_val)))
 
         if self.op == '=':
             if rhs_val == lhs_val:
@@ -304,13 +331,12 @@ if __name__ == '__main__':
     from sqlalchemy.orm import sessionmaker, create_session, scoped_session
     from sqlalchemy.ext.declarative import declarative_base
 
-
     db.database.init_db('sqlite:///roush.db')
     db_session = scoped_session(lambda: create_session(autocommit=False,
                                                        autoflush=False,
                                                        bind=engine))
 
-    logging.basicConfig(level = logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG)
 
     Base = declarative_base()
     Base.query = db_session.query_property()

@@ -22,6 +22,7 @@ def _model_get_all(model):
               for r in tables[model].query.all()]
     return result
 
+
 def _model_get_schema(model):
     obj = globals()[model.capitalize()]
     cols = obj.__table__.columns
@@ -38,7 +39,8 @@ def _model_get_schema(model):
         if len(cols[k].foreign_keys) > 0:
             fields[k]['fk'] = list(cols[k].foreign_keys)[0].target_fullname
 
-    return {'schema': fields }
+    return {'schema': fields}
+
 
 def _model_delete_by_id(model, pk_id):
     """Query helper for deleting a node
@@ -60,6 +62,7 @@ def _model_delete_by_id(model, pk_id):
         db_session.rollback()
         msg = "%s id does not exist" % (model.title())
         raise exc.IdNotFound(message=msg)
+
 
 def _model_get_by_id(model, pk_id):
     """Query helper for getting a node
@@ -115,8 +118,8 @@ def adventures_get_all():
 def adventure_create(fields):
     field_list = [c for c in Adventures.__table__.columns.keys()]
     field_list.remove('id')
-    a = Adventures(**dict((field,fields[field])
-                          for field in field_list if fields.has_key(field)))
+    a = Adventures(**dict((field, fields[field])
+                          for field in field_list if field in fields))
     db_session.add(a)
     try:
         db_session.commit()
@@ -126,6 +129,7 @@ def adventure_create(fields):
         db_session.rollback()
         msg = "Unable to create Adventure"
         raise exc.CreateError(message=msg)
+
 
 def adventure_delete_by_id(adventure_id):
     """Query helper for deleting a adventure
@@ -177,8 +181,8 @@ def cluster_delete_by_id(cluster_id):
 def node_create(fields):
     field_list = [c for c in Nodes.__table__.columns.keys()]
     field_list.remove('id')
-    a = Nodes(**dict((field,fields[field])
-                     for field in field_list if fields.has_key(field)))
+    a = Nodes(**dict((field, fields[field])
+                     for field in field_list if field in fields))
     db_session.add(a)
     try:
         db_session.commit()
