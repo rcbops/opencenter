@@ -42,7 +42,7 @@ def list_adventures():
             resp.status_code = 201
             resp.headers['Location'] = href
         except exc.CreateError, e:
-            return http_bad_request
+            return http_bad_request(e.message)
     else:
         adventures = api.adventures_get_all()
         resp = jsonify({'adventures': adventures})

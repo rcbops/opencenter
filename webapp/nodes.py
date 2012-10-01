@@ -28,50 +28,34 @@ nodes = Blueprint('nodes', __name__)
 @nodes.route('/', methods=['GET', 'POST'])
 def list_nodes():
     if request.method == 'POST':
-        if 'hostname' in request.json:
-            hostname = request.json['hostname']
-
-            role_id = None
-            if 'role_id' in request.json:
-                role_id = request.json['role_id']
-
-            cluster_id = None
-            if 'cluster_id' in request.json:
-                cluster_id = request.json['cluster_id']
-
-            config = None
-            if 'config' in request.json:
-                config = request.json['config']
-
-            # This should probably check against Roles.id and Clusters.id
-            node = Nodes(hostname=hostname, role_id=role_id,
-                         cluster_id=cluster_id, config=config)
-
-            # FIXME(rp): get a role name and a node name, and
-            # do a set_cluster_for_node(node_name, cluster_name)
-            try:
-                db_session.add(node)
-                current_app.backend.create_node(
-                    node.hostname,
-                    role=node.role_id,
-                    cluster=node.cluster_id,
-                    node_settings=node.config)
-                db_session.commit()
-                href = request.base_url + str(node.id)
-                msg = {'status': 201,
-                       'message': 'Node Created',
-                       'node': dict(
-                           (c, getattr(node, c))
-                           for c in node.__table__.columns.keys()),
-                       'ref': href}
-                resp = jsonify(msg)
-                resp.headers['Location'] = href
-                resp.status_code = 201
-            except IntegrityError, e:
-                db_session.rollback()
-                return http_conflict(e)
-        else:
-            return http_bad_request('Attribute hostname not provided')
+        fields = ['hostname', 'role_id', 'cluster_id', 'backend',
+                  'backend_state', 'config']
+        data = dict((field, request.json[field] if (field in request.json)
+                     else None) for field in fields)
+        # FIXME(rp): get a role name and a node name, and
+        # do a set_cluster_for_node(node_name, cluster_name)
+        try:
+            node = api.node_create(data)
+            current_app.backend.create_node(
+                node['hostname'],
+                role=node['role_id'],
+                cluster=node['cluster_id'],
+                node_settings=node['config'])
+            if node['cluster_id'] is not None:
+                cluster = api.cluster_get_by_id(node['cluster_id'])
+                current_app.backend.set_cluster_for_node(
+                    node=node['hostname'],
+                    cluster=cluster['name'])
+            href = request.base_url + str(node['id'])
+            msg = {'status': 201,
+                   'message': 'Node Created',
+                   'node': node,
+                   'ref': href}
+            resp = jsonify(msg)
+            resp.status_code = 201
+            resp.headers['Location'] = href
+        except exc.CreateError, e:
+            return http_bad_request(e.message)
     else:
         nodes = api.nodes_get_all()
         resp = jsonify({'nodes': nodes})
