@@ -30,8 +30,8 @@ class Nodes(Base):
                             backref=backref('nodes',
                             uselist=False,
                             lazy='dynamic'))
-    backend = Column(String(30)) # Adventures.backend
-    backend_state = Column(String(30)) # Adventures.backend_state
+    backend = Column(String(30))  # Adventures.backend
+    backend_state = Column(String(30))  # Adventures.backend_state
     config = Column(JsonBlob)
 
     def __init__(self, hostname, role_id=None, cluster_id=None, config=None,

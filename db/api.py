@@ -22,6 +22,7 @@ def _model_get_all(model):
               for r in tables[model].query.all()]
     return result
 
+
 def _model_get_schema(model):
     obj = globals()[model.capitalize()]
     cols = obj.__table__.columns
@@ -38,7 +39,8 @@ def _model_get_schema(model):
         if len(cols[k].foreign_keys) > 0:
             fields[k]['fk'] = list(cols[k].foreign_keys)[0].target_fullname
 
-    return {'schema': fields }
+    return {'schema': fields}
+
 
 def _model_delete_by_id(model, pk_id):
     """Query helper for deleting a node
@@ -60,6 +62,7 @@ def _model_delete_by_id(model, pk_id):
         db_session.rollback()
         msg = "%s id does not exist" % (model.title())
         raise exc.IdNotFound(message=msg)
+
 
 def _model_get_by_id(model, pk_id):
     """Query helper for getting a node
@@ -83,6 +86,30 @@ def _model_get_by_id(model, pk_id):
 
     return result[0]
 
+
+def _model_get_by_filter(model, filters):
+    """Query helper that returns a node dict.
+
+    :param filters: dictionary of filters; that are combined with AND
+                    to filter the result set.
+    """
+    tables = {'adventures': Adventures,
+              'clusters': Clusters,
+              'nodes': Nodes,
+              'roles': Roles,
+              'tasks': Tasks}
+    filter_options = and_(
+        * [tables[model].__table__.columns[k] == v
+           for k, v in filters.iteritems()])
+    r = tables[model].query.filter(filter_options).first()
+    if not r:
+        result = None
+    else:
+        result = dict((c, getattr(r, c))
+                      for c in r.__table__.columns.keys())
+    return result
+
+
 def adventures_get_all():
     """Query helper that returns a dict of all adventures"""
     return _model_get_all('adventures')
@@ -91,8 +118,8 @@ def adventures_get_all():
 def adventure_create(fields):
     field_list = [c for c in Adventures.__table__.columns.keys()]
     field_list.remove('id')
-    a = Adventures(**dict((field,fields[field])
-                          for field in field_list if fields.has_key(field)))
+    a = Adventures(**dict((field, fields[field])
+                          for field in field_list if field in fields))
     db_session.add(a)
     try:
         db_session.commit()
@@ -102,6 +129,7 @@ def adventure_create(fields):
         db_session.rollback()
         msg = "Unable to create Adventure"
         raise exc.CreateError(message=msg)
+
 
 def adventure_delete_by_id(adventure_id):
     """Query helper for deleting a adventure
@@ -119,11 +147,42 @@ def clusters_get_all():
     return _model_get_all('clusters')
 
 
+def cluster_get_by_filter(filters):
+    """Query helper that returns a cluster dict.
+
+    :param filters: dictionary of filters; that are combined with AND
+                    to filter the result set.
+    """
+    #TODO(shep): this should accept an array.. and return the first result
+    result = _model_get_by_filter('clusters', filters)
+    return result
+
+
+def cluster_get_by_id(cluster_id):
+    """Query helper that returns a node by cluster_id
+
+    :param cluster_id: id of the cluster to lookup
+    """
+    result = cluster_get_by_filter({'id': cluster_id})
+    return result
+
+
+def cluster_delete_by_id(cluster_id):
+    """Query helper for deleting a cluster
+
+    :param cluster_id: id of cluster to delete
+    """
+    try:
+        return _model_delete_by_id('clusters', cluster_id)
+    except exc.IdNotFound, e:
+        raise exc.NodeNotFound()
+
+
 def node_create(fields):
     field_list = [c for c in Nodes.__table__.columns.keys()]
     field_list.remove('id')
-    a = Nodes(**dict((field,fields[field])
-                     for field in field_list if fields.has_key(field)))
+    a = Nodes(**dict((field, fields[field])
+                     for field in field_list if field in fields))
     db_session.add(a)
     try:
         db_session.commit()
@@ -146,15 +205,8 @@ def node_get_by_filter(filters):
     :param filters: dictionary of filters; that are combined with AND
                     to filter the result set.
     """
-    filter_options = and_(
-        * [Nodes.__table__.columns[k] == v
-           for k, v in filters.iteritems()])
-    r = Nodes.query.filter(filter_options).first()
-    if not r:
-        result = None
-    else:
-        result = dict((c, getattr(r, c))
-                      for c in r.__table__.columns.keys())
+    #TODO(shep): this should accept an array.. and return the first result
+    result = _model_get_by_filter('nodes', filters)
     return result
 
 

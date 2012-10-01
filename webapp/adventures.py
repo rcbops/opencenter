@@ -37,7 +37,7 @@ def list_adventures():
             href = request.base_url + str(adventure['id'])
             msg = {'status': 201, 'message': 'Adventure Create',
                    'ref': href,
-                    'adventure': adventure}
+                   'adventure': adventure}
             resp = jsonify(msg)
             resp.status_code = 201
             resp.headers['Location'] = href
@@ -48,11 +48,13 @@ def list_adventures():
         resp = jsonify({'adventures': adventures})
     return resp
 
+
 @adventures.route('/filter', methods=['POST'])
 def filter_adventures():
     builder = AstBuilder(FilterTokenizer(),
                          'adventures: %s' % request.json['filter'])
     return jsonify({'adventures': builder.eval()})
+
 
 @adventures.route('/<adventure_id>', methods=['GET', 'PUT', 'DELETE'])
 def adventure_by_id(adventure_id):

@@ -67,11 +67,13 @@ def list_clusters():
         resp = jsonify({'clusters': cluster_list})
     return resp
 
+
 @clusters.route('/filter', methods=['POST'])
 def filter_clusters():
     builder = AstBuilder(FilterTokenizer(),
                          'clusters: %s' % request.json['filter'])
     return jsonify({'clusters': builder.eval()})
+
 
 @clusters.route('/<cluster_id>/nodes', methods=['GET'])
 def nodes_by_cluster_id(cluster_id):

@@ -148,7 +148,9 @@ class Thing(Flask):
             self.config['daemonize'] = True
 
     def register_blueprint(self, blueprint, url_prefix='/', **kwargs):
-        super(Thing, self).register_blueprint(blueprint, url_prefix=url_prefix, **kwargs)
+        super(Thing, self).register_blueprint(blueprint,
+                                              url_prefix=url_prefix,
+                                              **kwargs)
 
         # auto-register the schema url
         def schema_details(what):
@@ -170,7 +172,6 @@ class Thing(Flask):
             self.add_url_rule('/schema', 'root.schema',
                               root_schema,
                               methods=['GET'])
-
 
     def run(self):
         context = None
