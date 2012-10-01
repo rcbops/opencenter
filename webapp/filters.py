@@ -230,7 +230,7 @@ class Node:
         lhs_id = 'x'
         rhs_id = 'x'
 
-        if isinstance(self.lhs, 3) or isinstance(self.lhs, 'x'):
+        if isinstance(self.lhs, int) or isinstance(self.lhs, str):
             lhs_id = str(id(self)) + "lhs"
             lhs_label = str(self.lhs)
             fd.write('"%s" [label = "%s"]' % (lhs_id, lhs_label) + ';\n')
@@ -238,7 +238,7 @@ class Node:
             lhs_id = id(self.lhs)
             self.lhs.dotty(fd)
 
-        if isinstance(self.rhs, 3) or isinstance(self.rhs, 'x'):
+        if isinstance(self.rhs, int) or isinstance(self.rhs, str):
             rhs_id = str(id(self)) + "rhs"
             rhs_label = str(self.rhs)
             fd.write('"%s" [label = "%s"]' % (rhs_id, rhs_label) + ';\n')
