@@ -102,6 +102,11 @@ def node_by_id(node_id):
             r.role_id = request.json['role_id']
         if 'config' in request.json:
             r.config = request.json['config']
+        if 'backend' in request.json:
+            r.backend = request.json['backend']
+        if 'backend_state' in request.json:
+            r.backend_state = request.json['backend_state']
+
         #TODO(shep): this is an un-excepted db call
         db_session.commit()
         node = dict(node=dict((c, getattr(r, c))
