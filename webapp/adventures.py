@@ -54,11 +54,6 @@ def filter_adventures():
                          'adventures: %s' % request.json['filter'])
     return jsonify({'adventures': builder.eval()})
 
-@adventures.route('/schema', methods=['GET'])
-def schema():
-    return jsonify(api._model_get_schema('adventures'))
-
-
 @adventures.route('/<adventure_id>', methods=['GET', 'PUT', 'DELETE'])
 def adventure_by_id(adventure_id):
     if request.method == 'PUT':

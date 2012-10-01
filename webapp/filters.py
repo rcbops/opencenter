@@ -268,12 +268,12 @@ class Node:
         lhs_val = None
 
         if isinstance(self.lhs, Node):
-            lhs_val = self.lhs.eval(node)
+            lhs_val = self.lhs.eval_node(node)
         else:
             lhs_val = self.eval_identifier(node, self.lhs)
 
         if isinstance(self.rhs, Node):
-            rhs_val = self.rhs.eval(node)
+            rhs_val = self.rhs.eval_node(node)
         else:
             rhs_val = self.rhs
 
