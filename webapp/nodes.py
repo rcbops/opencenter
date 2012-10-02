@@ -28,8 +28,7 @@ nodes = Blueprint('nodes', __name__)
 @nodes.route('/', methods=['GET', 'POST'])
 def list_nodes():
     if request.method == 'POST':
-        fields = ['hostname', 'role_id', 'cluster_id', 'backend',
-                  'backend_state', 'config']
+        fields = api.node_get_columns()
         data = dict((field, request.json[field] if (field in request.json)
                      else None) for field in fields)
         # FIXME(rp): get a role name and a node name, and
@@ -90,6 +89,14 @@ def node_by_id(node_id):
     resp = ''
 
     if request.method == 'PUT':
+        fields = api.node_get_columns()
+
+        #data = dict((field, request.json[field] if (field in request.json)
+        #             else None) for field in fields)
+
+        data = dict((field, request.json[field]) for field in fields
+                    if field in request.json)
+        print data
         # NOTE: We probably can't rename hosts -- it affect chef...
         # Think on this.  Also, probably should do a get_node_status
         # to make sure it's happy in the config management

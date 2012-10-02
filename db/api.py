@@ -23,6 +23,16 @@ def _model_get_all(model):
     return result
 
 
+def _model_get_columns(model):
+    tables = {'adventures': Adventures,
+              'clusters': Clusters,
+              'nodes': Nodes,
+              'roles': Roles,
+              'tasks': Tasks}
+    result = [c for c in tables[model].__table__.columns.keys()]
+    return result
+
+
 def _model_get_schema(model):
     obj = globals()[model.capitalize()]
     cols = obj.__table__.columns
@@ -167,6 +177,12 @@ def cluster_get_by_id(cluster_id):
     return result
 
 
+def cluster_get_columns():
+    """Query helper that returns a list of Clusters columns"""
+    result = _model_get_columns('clusters')
+    return result
+
+
 def cluster_delete_by_id(cluster_id):
     """Query helper for deleting a cluster
 
@@ -194,9 +210,24 @@ def node_create(fields):
         raise exc.CreateError(message=msg)
 
 
+#def node_update_by_id(node_id, fields):
+#    field_list = [c for c in Nodes.__table__.columns.keys()]
+#    field_list.remove('id')
+#    r = Nodes.query.filter_by(id=node_id).first()
+#    r.__setattribute__((field, fields[field]) for field in field_list if field in fields)
+#    try:
+#        db_session.commit()
+
+
 def nodes_get_all():
     """Query helper that returns a dict of all nodes"""
     return _model_get_all('nodes')
+
+
+def node_get_columns():
+    """Query helper that returns a list of Nodes columns"""
+    result = _model_get_columns('nodes')
+    return result
 
 
 def node_get_by_filter(filters):
@@ -235,9 +266,21 @@ def roles_get_all():
     return _model_gett_all('roles')
 
 
+def role_get_columns():
+    """Query helper that returns a list of Roles columns"""
+    result = _model_get_columns('roles')
+    return result
+
+
 def tasks_get_all():
     """Query helper that returns a dict of all tasks"""
     return _model_get_all('tasks')
+
+
+def task_get_columns():
+    """Query helper that returns a list of Tasks columns"""
+    result = _model_get_columns('tasks')
+    return result
 
 
 def task_get_by_filter(filters):
