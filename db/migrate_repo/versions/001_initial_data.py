@@ -19,9 +19,7 @@ def upgrade(migrate_engine):
 
     adventures = [
         {'name': 'install chef',
-         'dsl': '{"start_state": "s1", "states": {"s1": {
-             "action": "run_task", "parameters": {
-                 "action": "install_chef"}}}}',
+         'dsl': '{"start_state": "s1", "states": { "s1": { "action": "run_task", "parameters": {"action": "install_chef"}, "on_success": "s2"}, "s2": {"action": "set_backend", "parameters": {"backend": "chef-client", "backend_state": "installed"}}}}',
          'language': 'json',
          'backend': 'unprovisioned',
          'backend_state': 'unknown'},
@@ -32,9 +30,7 @@ def upgrade(migrate_engine):
          'backend': 'chef-client',
          'backend_state': 'installed'},
         {'name': 'install chef server',
-         'dsl':  '{"start_state": "s1", "states": {"s1": {
-             "action": "run_task", "parameters": {
-                 "action": "install_chef_server"}}}}',
+         'dsl':  '{"start_state": "s1", "states": { "s1": { "action": "run_task", "parameters": {"action": "install_chef_server"}, "on_success": "s2"}, "s2": {"action": "set_backend", "parameters": {"backend": "chef-server", "backend_state": "installed"}}}}',
          'language': 'json',
          'backend': 'unprovisioned',
          'backend_state': 'unknown'}]
