@@ -4,3 +4,4 @@ sqlalchemy-migrate
 pychef
 python-daemon
 unittest2
+pep8
