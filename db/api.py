@@ -214,7 +214,8 @@ def node_create(fields):
 #    field_list = [c for c in Nodes.__table__.columns.keys()]
 #    field_list.remove('id')
 #    r = Nodes.query.filter_by(id=node_id).first()
-#    r.__setattribute__((field, fields[field]) for field in field_list if field in fields)
+#    r.__setattribute__((field, fields[field])
+#                        for field in field_list if field in fields)
 #    try:
 #        db_session.commit()
 
