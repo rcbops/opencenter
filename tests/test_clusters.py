@@ -4,7 +4,7 @@ import os
 import random
 import roush
 import string
-import unittest
+import unittest2
 import tempfile
 import time
 
@@ -19,7 +19,7 @@ def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
 
 
-class ClusterCreateTests(unittest.TestCase):
+class ClusterCreateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
         self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
@@ -141,7 +141,7 @@ class ClusterCreateTests(unittest.TestCase):
         self.assertEquals(out['status'], 400)
 
 
-class ClusterUpdateTests(unittest.TestCase):
+class ClusterUpdateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
         self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
@@ -231,7 +231,7 @@ class ClusterUpdateTests(unittest.TestCase):
                                    content_type=self.content_type)
 
 
-class ClusterAttributeTests(unittest.TestCase):
+class ClusterAttributeTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
         self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
@@ -372,7 +372,7 @@ class ClusterAttributeTests(unittest.TestCase):
                                    content_type=self.content_type)
 
 
-class ClusterInvalidHTTPMethodTests(unittest.TestCase):
+class ClusterInvalidHTTPMethodTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
         self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)

@@ -4,7 +4,7 @@ import os
 import random
 import roush
 import string
-import unittest
+import unittest2
 import tempfile
 import time
 
@@ -19,7 +19,7 @@ def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
 
 
-class NodeCreateTests(unittest.TestCase):
+class NodeCreateTests(unittest2.TestCase):
 
     @classmethod
     def setUpClass(self):
@@ -181,7 +181,7 @@ class NodeCreateTests(unittest.TestCase):
         self.assertEquals(resp.status_code, 405)
 
 
-class NodeUpdateTests(unittest.TestCase):
+class NodeUpdateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
         self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)

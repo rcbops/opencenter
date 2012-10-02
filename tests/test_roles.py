@@ -4,7 +4,7 @@ import os
 from pprint import pprint
 import random
 import string
-import unittest
+import unittest2
 import tempfile
 
 import webapp
@@ -14,7 +14,7 @@ def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
 
 
-class RoleCRUDTestCase(unittest.TestCase):
+class RoleCRUDTestCase(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
         self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
@@ -88,4 +88,4 @@ class RoleCRUDTestCase(unittest.TestCase):
     #     pass
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest2.main()
