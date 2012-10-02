@@ -1,3 +1,5 @@
+import json
+
 from sqlalchemy import *
 from migrate import *
 
@@ -19,22 +21,40 @@ def upgrade(migrate_engine):
 
     adventures = [
         {'name': 'install chef',
-         'dsl': '{"start_state": "s1", "states": {"s1": {
-             "action": "run_task", "parameters": {
-                 "action": "install_chef"}}}}',
+         'dsl': json.dumps({'start_state': 's1',
+                            'states': {
+                                's1': {'advance': 'run_task',
+                                       'parameters': {
+                                           'action': 'install_chef'},
+                                       'on_success': 's2'},
+                                's2': {'advance': 'set_backend',
+                                       'parameters': {
+                                           'backend': 'chef-client',
+                                           'backend_state': 'installed'}}}}),
          'language': 'json',
          'backend': 'unprovisioned',
          'backend_state': 'unknown'},
         {'name': 'run chef',
-         'dsl': '{"start_state": "s1", "states": {"s1": {
-             "action": "run_task", "parameters": {"action": "run_chef"}}}}',
+         'dsl': json.dumps({'start_state': 's1',
+                            'states': {'s1':
+                                       {'advance': 'run_task',
+                                        'parameters': {'action':
+                                                       'run_chef'}}}}),
          'language': 'json',
          'backend': 'chef-client',
          'backend_state': 'installed'},
         {'name': 'install chef server',
-         'dsl':  '{"start_state": "s1", "states": {"s1": {
-             "action": "run_task", "parameters": {
-                 "action": "install_chef_server"}}}}',
+         'dsl':  json.dumps({'start_state': 's1',
+                             'states': {'s1':
+                                        {'advance': 'run_task',
+                                         'parameters': {'action':
+                                                        'install_chef_server'},
+                                         'on_success': 's2'},
+                                        's2':
+                                        {'advance': 'set_backend',
+                                         'parameters': {
+                                             'backend': 'chef-server',
+                                             'backend_state': 'installed'}}}}),
          'language': 'json',
          'backend': 'unprovisioned',
          'backend_state': 'unknown'}]
