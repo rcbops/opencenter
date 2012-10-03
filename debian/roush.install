@@ -1,5 +1,5 @@
 roush.py usr/share/roush
-migrate.py usr/share/roush
+manage.py usr/share/roush
 backends/* usr/share/roush/backends
 db/* usr/share/roush/db
 roles/* usr/share/roush/roles
