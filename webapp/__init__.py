@@ -80,6 +80,8 @@ class Thing(Flask):
                     print "Bad option"
                     sys.exit(1)
 
+            sys.argv = [sys.argv[0]] + args
+
         defaults = {'main':
                     {'bind_address': '0.0.0.0',
                      'bind_port': 8080,

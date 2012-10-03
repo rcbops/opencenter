@@ -19,8 +19,8 @@ set -e
 
 case "$1" in
     configure)
-        python /usr/share/roush/migrate.py -c /usr/share/roush/roush.conf version_control || /bin/true
-        python /usr/share/roush/migrate.py -c /usr/share/roush/roush.conf upgrade || /bin/true
+        python /usr/share/roush/manage.py -c /usr/share/roush/roush.conf version_control || /bin/true
+        python /usr/share/roush/manage.py -c /usr/share/roush/roush.conf upgrade || /bin/true
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
