@@ -1,4 +1,5 @@
 import json
+import os
 
 from sqlalchemy import *
 from migrate import *
@@ -21,45 +22,25 @@ def upgrade(migrate_engine):
 
     adventures = [
         {'name': 'install chef',
-         'dsl': json.dumps({'start_state': 's1',
-                            'states': {
-                                's1': {'advance': 'run_task',
-                                       'parameters': {
-                                           'action': 'install_chef'},
-                                       'on_success': 's2'},
-                                's2': {'advance': 'set_backend',
-                                       'parameters': {
-                                           'backend': 'chef-client',
-                                           'backend_state': 'installed'}}}}),
+         'dsl': 'install_chef.json',
          'language': 'json',
          'backend': 'unprovisioned',
          'backend_state': 'unknown'},
         {'name': 'run chef',
-         'dsl': json.dumps({'start_state': 's1',
-                            'states': {'s1':
-                                       {'advance': 'run_task',
-                                        'parameters': {'action':
-                                                       'run_chef'}}}}),
+         'dsl': 'run_chef.json',
          'language': 'json',
          'backend': 'chef-client',
          'backend_state': 'installed'},
         {'name': 'install chef server',
-         'dsl':  json.dumps({'start_state': 's1',
-                             'states': {'s1':
-                                        {'advance': 'run_task',
-                                         'parameters': {'action':
-                                                        'install_chef_server'},
-                                         'on_success': 's2'},
-                                        's2':
-                                        {'advance': 'set_backend',
-                                         'parameters': {
-                                             'backend': 'chef-server',
-                                             'backend_state': 'installed'}}}}),
+         'dsl':  'install_chef_server.json',
          'language': 'json',
          'backend': 'unprovisioned',
          'backend_state': 'unknown'}]
 
     for adventure in adventures:
+        json_path = os.path.join(
+            os.path.dirname(__file__), adventure['dsl'])
+        adventure['dsl'] = open(json_path).read()
         adv = api.adventure_create(adventure)
 
 
