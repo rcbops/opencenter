@@ -1,0 +1,16 @@
+{
+    "start_state": "s1",
+    "states": {
+        "s1": {
+            "primitive": "install_chef",
+            "parameters": {},
+            "on_success": "s2"
+        },
+        "s2": {
+            "primitive": "set_backend",
+            "paramters": {
+                "backend": "chef-client",
+                "backend_state": "installed" }
+        }
+    }
+}

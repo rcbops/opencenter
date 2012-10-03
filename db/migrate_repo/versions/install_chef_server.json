@@ -1,0 +1,19 @@
+{
+    "start_state": "s1",
+    "states": {
+        "s1": {
+            "primitive": "run_task",
+            "parameters": {
+                "action": "install_chef_server",
+                "payload": {}},
+            "on_success": "s2"
+        },
+        "s2": {
+            "primitive": "set_backend",
+            "parameters": {
+                "backend": "chef-server",
+                "backend_state": "installed"
+            }
+        }
+    }
+}
