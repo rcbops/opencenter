@@ -28,7 +28,6 @@ class Nodes(Base):
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
     clusters = relationship('Clusters',
                             backref=backref('nodes',
-                            uselist=False,
                             lazy='dynamic'))
     backend = Column(String(30))  # Adventures.backend
     backend_state = Column(String(30))  # Adventures.backend_state
