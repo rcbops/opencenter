@@ -1,6 +1,7 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 from itertools import islice
+import json
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
@@ -125,6 +126,41 @@ def adventures_get_all():
     return _model_get_all('adventures')
 
 
+def adventures_get_by_node_id(node_id):
+    """Query helper that returns a dict of all the adventures
+       for a given node_id
+
+    :param node_id: blah blah
+    """
+    # this is the SQL query we are trying to achieve
+    # select adventures.* from adventures join nodes on
+    #    (nodes.backend = adventures.backend or adventures.backend = null)
+    #    AND (nodes.backend_state = adventures.backend_state
+    #         OR adventures.backend_state is null);
+
+    stmt1 = or_(Adventures.backend == Nodes.backend,
+                Adventures.backend is None)
+    stmt2 = or_(Adventures.backend_state == Nodes.backend_state,
+                Adventures.backend_state is None)
+    adventure_list = Adventures.query.join(
+        Nodes,
+        and_(stmt1, stmt2, Nodes.id == node_id)).all()
+
+    result = list()
+    for r in adventure_list:
+        tmp = dict()
+        for c in r.__table__.columns.keys():
+            if c == 'dsl':
+                if r.__getattribute__('language') == 'json':
+                    tmp[c] = json.loads(getattr(r, c))
+                else:
+                    tmp[c] = getattr(r, c)
+            else:
+                tmp[c] = getattr(r, c)
+        result.append(tmp)
+    return result
+
+
 def adventure_create(fields):
     field_list = [c for c in Adventures.__table__.columns.keys()]
     field_list.remove('id')
@@ -210,14 +246,19 @@ def node_create(fields):
         raise exc.CreateError(message=msg)
 
 
-#def node_update_by_id(node_id, fields):
-#    field_list = [c for c in Nodes.__table__.columns.keys()]
-#    field_list.remove('id')
-#    r = Nodes.query.filter_by(id=node_id).first()
-#    r.__setattribute__((field, fields[field])
-#                        for field in field_list if field in fields)
-#    try:
-#        db_session.commit()
+def node_update_by_id(node_id, fields):
+    field_list = [c for c in Nodes.__table__.columns.keys()]
+    field_list.remove('id')
+    r = Nodes.query.filter_by(id=node_id).first()
+    for field in field_list:
+        if field in fields:
+            r.__setattr__(field, fields[field])
+    try:
+        db_session.commit()
+        return dict((c, getattr(r, c))
+                    for c in r.__table__.columns.keys())
+    except Exception, e:
+        db_session.rollback()
 
 
 def nodes_get_all():
