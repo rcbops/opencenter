@@ -34,6 +34,10 @@ class ClusterCreateTests(unittest2.TestCase):
         self.content_type = 'application/json'
         self.shep = 30
 
+    @classmethod
+    def tearDownClass(self):
+        pass
+
     def test_create_cluster_with_desc_and_override_attributes(self):
         data = {'name': self.name,
                 'description': self.desc,

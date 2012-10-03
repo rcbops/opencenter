@@ -20,7 +20,6 @@ def _randomStr(size):
 
 
 class NodeCreateTests(unittest2.TestCase):
-
     @classmethod
     def setUpClass(self):
         self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
@@ -52,6 +51,16 @@ class NodeCreateTests(unittest2.TestCase):
         resp = self.app.delete('/clusters/%s' % self.clus1_id,
                                content_type=self.content_type)
 
+    def _delete_node(self, node_id):
+        if self.foo.config['backend'] != 'null':
+            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+        resp = self.app.delete('/nodes/%s' % node_id,
+                               content_type=self.content_type)
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 200)
+        self.assertEquals(out['message'], 'Node deleted')
+
     def test_create_node_with_hostname_only(self):
         data = {'hostname': self.hostname}
         resp = self.app.post('/nodes/',
@@ -67,14 +76,7 @@ class NodeCreateTests(unittest2.TestCase):
         self.assertEquals(out['node']['config'], None)
 
         # Cleanup the node we created
-        if self.foo.config['backend'] != "null":
-            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
-        resp = self.app.delete('/nodes/%s' % out['node']['id'],
-                               content_type=self.content_type)
-        self.assertEquals(resp.status_code, 200)
-        out = json.loads(resp.data)
-        self.assertEquals(out['status'], 200)
-        self.assertEquals(out['message'], 'Node deleted')
+        self._delete_node(out['node']['id'])
 
     def test_create_node_with_hostname_config_and_no_cluster_role(self):
         data = {'hostname': self.hostname,
@@ -92,14 +94,7 @@ class NodeCreateTests(unittest2.TestCase):
         self.assertEquals(out['node']['config'], self.attribs)
 
         # Cleanup the node we created
-        if self.foo.config['backend'] != "null":
-            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
-        resp = self.app.delete('/nodes/%s' % out['node']['id'],
-                               content_type=self.content_type)
-        self.assertEquals(resp.status_code, 200)
-        out = json.loads(resp.data)
-        self.assertEquals(out['status'], 200)
-        self.assertEquals(out['message'], 'Node deleted')
+        self._delete_node(out['node']['id'])
 
     def test_create_node_with_hostname_config_cluster_and_no_role(self):
         data = {'hostname': self.hostname,
@@ -118,14 +113,7 @@ class NodeCreateTests(unittest2.TestCase):
         self.assertEquals(out['node']['config'], self.attribs)
 
         # Cleanup the node we created
-        if self.foo.config['backend'] != "null":
-            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
-        resp = self.app.delete('/nodes/%s' % out['node']['id'],
-                               content_type=self.content_type)
-        self.assertEquals(resp.status_code, 200)
-        out = json.loads(resp.data)
-        self.assertEquals(out['status'], 200)
-        self.assertEquals(out['message'], 'Node deleted')
+        self._delete_node(out['node']['id'])
 
     def test_create_node_with_hostname_config_cluster_role(self):
         data = {'hostname': self.hostname,
@@ -145,15 +133,7 @@ class NodeCreateTests(unittest2.TestCase):
         self.assertEquals(out['node']['config'], self.attribs)
 
         # Cleanup the node we created
-        if self.foo.config['backend'] != "null":
-            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
-        resp = self.app.delete('/nodes/%s' % out['node']['id'],
-                               content_type=self.content_type)
-        self.assertEquals(resp.status_code, 200)
-        out = json.loads(resp.data)
-        self.assertEquals(out['status'], 200)
-        self.assertEquals(out['message'], 'Node deleted')
-        # self.assertTrue(False)
+        self._delete_node(out['node']['id'])
 
     def test_create_node_without_hostname(self):
         data = {'description': self.desc,
@@ -165,20 +145,20 @@ class NodeCreateTests(unittest2.TestCase):
         out = json.loads(resp.data)
         self.assertEquals(out['status'], 400)
 
-    def test_verify_delete_method_returns_a_405_on_nodes(self):
-        resp = self.app.delete('/nodes/',
-                               content_type=self.content_type)
-        self.assertEquals(resp.status_code, 405)
+    def _generic_test(self, method, path, code):
+        resp = self.app.__getattribute__(method)(
+            path,
+            content_type=self.content_type)
+        self.assertEquals(resp.status_code, code)
 
-    def test_verify_patch_method_returns_a_405_on_nodes(self):
-        resp = self.app.patch('/nodes/',
-                              content_type=self.content_type)
-        self.assertEquals(resp.status_code, 405)
-
-    def test_verify_put_method_returns_a_405_on_nodes(self):
-        resp = self.app.put('/nodes/',
-                            content_type=self.content_type)
-        self.assertEquals(resp.status_code, 405)
+#    def test_verify_delete_method_returns_a_405_on_nodes(self):
+#        self._generic_test('delete', '/nodes/', 405)
+#
+#    def test_verify_patch_method_returns_a_405_on_nodes(self):
+#        self._generic_test('patch', '/nodes/', 405)
+#
+#    def test_verify_put_method_returns_a_405_on_nodes(self):
+#        self._generic_test('put', '/nodes/', 404)
 
 
 class NodeUpdateTests(unittest2.TestCase):
@@ -188,90 +168,135 @@ class NodeUpdateTests(unittest2.TestCase):
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
 
+    @classmethod
+    def tearDownClass(self):
+        pass
+
     def setUp(self):
-#        self.hostname = _randomStr(10)
-#        self.desc = _randomStr(30)
-#        self.attribs = {"package_component": "essex-final",
-#                        "monitoring": {"metric_provider": "null"}}
+        self.hostname = _randomStr(10)
+        self.desc = _randomStr(30)
+        self.attribs = {"package_component": "essex-final",
+                        "monitoring": {"metric_provider": "null"}}
+        self.role_id = None
+        self.cluster_id = None
+        self.backend = "unprovisioned"
+        self.backend_state = "unknown"
         self.content_type = 'application/json'
-#        self.shep = 30
-#        self.create_data = {'hostname': self.hostname,
-#                            'description': self.desc,
-#                            'config': self.attribs}
-#        tmp = self.app.post('/nodes/',
-#                            content_type=self.content_type,
-#                            data=json.dumps(self.create_data))
-#        self.json = json.loads(tmp.data)
-#        self.node_id = self.json['node']['id']
-#        if self.foo.config['backend'] != 'null':
-#            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+        self.shep = 30
+        self.create_data = {'hostname': self.hostname,
+                            'config': self.attribs,
+                            'role_id': self.role_id,
+                            'cluster_id': self.cluster_id,
+                            'backend': self.backend,
+                            'backend_state': self.backend_state}
+        tmp = self.app.post('/nodes/',
+                            content_type=self.content_type,
+                            data=json.dumps(self.create_data))
+        self.json = json.loads(tmp.data)
+        self.node_id = self.json['node']['id']
+        if self.foo.config['backend'] != 'null':
+            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
 
-#    def test_update_node_with_description_and_override_attributes(self):
-#        tmp_desc = _randomStr(30)
-#        tmp_attribs = {'package_component': 'grizzly-final',
-#                       'monitoring': {'metric_provider': 'collectd'}}
-#        data = {'hostname': self.hostname,
-#                'description': tmp_desc,
-#                'config': tmp_attribs}
-#        resp = self.app.put('/nodes/%s' % self.node_id,
-#                            content_type=self.content_type,
-#                            data=json.dumps(data))
-#        self.assertEquals(resp.status_code, 200)
-#        out = json.loads(resp.data)
-#        self.assertEquals(out['id'], self.node_id)
-#        self.assertEquals(out['hostname'], self.hostname)
-#        self.assertEquals(out['description'], tmp_desc)
-#        self.assertNotEquals(out['description'], self.desc)
-#        self.assertEquals(out['config'], tmp_attribs)
-#        self.assertNotEquals(out['config'], self.attribs)
+    def tearDown(self):
+        tmp_resp = self.app.delete('/nodes/%s' + str(self.node_id),
+                                   content_type=self.content_type)
 
-#    def test_update_node_with_description_and_no_override_attributes(self):
-#        tmp_desc = _randomStr(30)
-#        data = {'hostname': self.hostname,
-#                'description': tmp_desc}
-#        resp = self.app.put('/nodes/%s' % self.node_id,
-#                            content_type=self.content_type,
-#                            data=json.dumps(data))
-#        self.assertEquals(resp.status_code, 200)
-#        out = json.loads(resp.data)
-#        self.assertEquals(out['id'], self.node_id)
-#        self.assertEquals(out['hostname'], self.hostname)
-#        self.assertEquals(out['description'], tmp_desc)
-#        self.assertNotEquals(out['description'], self.desc)
-#        self.assertEquals(out['config'], self.attribs)
+    def test_update_node_config(self):
+        tmp_desc = _randomStr(30)
+        tmp_attribs = {'package_component': 'grizzly-final',
+                       'monitoring': {'metric_provider': 'collectd'}}
+        data = {'hostname': self.hostname,
+                'config': tmp_attribs}
+        resp = self.app.put('/nodes/%s' % self.node_id,
+                            content_type=self.content_type,
+                            data=json.dumps(data))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['node']['id'], self.node_id)
+        self.assertEquals(out['node']['hostname'], self.hostname)
+        self.assertEquals(out['node']['role_id'], self.role_id)
+        self.assertEquals(out['node']['cluster_id'], self.cluster_id)
+        self.assertEquals(out['node']['backend'], self.backend)
+        self.assertEquals(out['node']['backend_state'], self.backend_state)
+        self.assertEquals(out['node']['config'], tmp_attribs)
+        self.assertNotEquals(out['node']['config'], self.attribs)
 
-#    def test_update_node_with_override_attributes_and_no_description(self):
-#        tmp_attribs = {'package_component': 'grizzly-final',
-#                       'monitoring': {'metric_provider': 'collectd'}}
-#        data = {'hostname': self.hostname,
-#                'config': tmp_attribs}
-#        resp = self.app.put('/nodes/%s' % self.node_id,
-#                            content_type=self.content_type,
-#                            data=json.dumps(data))
-#        self.assertEquals(resp.status_code, 200)
-#        out = json.loads(resp.data)
-#        self.assertEquals(out['id'], self.node_id)
-#        self.assertEquals(out['hostname'], self.hostname)
-#        self.assertEquals(out['description'], self.desc)
-#        self.assertEquals(out['config'], tmp_attribs)
-#        self.assertNotEquals(out['config'], self.attribs)
+    def test_update_node_attribute_hostname_TODO(self):
+        # This should fail
+        pass
 
-#    def test_update_node_with_no_data(self):
-#        resp = self.app.put('/nodes/%s' % self.node_id,
-#                            data=None,
-#                            content_type=self.content_type)
-#        self.assertEquals(resp.status_code, 400)
+    def test_update_node_attribute_role_id_TODO(self):
+        tmp_role_id = 99
+        data = {'role_id': tmp_role_id}
+        resp = self.app.put('/nodes/%s/role_id' % self.node_id,
+                            content_type=self.content_type,
+                            data=json.dumps(data))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['node']['id'], self.node_id)
+        self.assertEquals(out['node']['hostname'], self.hostname)
+        self.assertEquals(out['node']['config'], self.attribs)
+        self.assertEquals(out['node']['cluster_id'], self.cluster_id)
+        self.assertEquals(out['node']['backend'], self.backend)
+        self.assertEquals(out['node']['backend_state'], self.backend_state)
+        self.assertEquals(out['node']['role_id'], tmp_role_id)
+        self.assertNotEquals(out['node']['role_id'], self.role_id)
 
-    def test_verify_post_method_returns_a_405_on_nodes_with_id(self):
-        resp = self.app.post('/nodes/1',
-                             content_type=self.content_type)
-        self.assertEquals(resp.status_code, 405)
+    def test_update_node_attribute_cluster_id_TODO(self):
+        pass
 
-    def test_verify_patch_method_returns_a_405_on_nodes_with_id(self):
-        resp = self.app.patch('/nodes/1',
-                              content_type=self.content_type)
-        self.assertEquals(resp.status_code, 405)
+    def test_update_node_attribute_backend_TODO(self):
+        pass
 
-#    def tearDown(self):
-#        tmp_resp = self.app.delete('/nodes/%s' + str(self.node_id),
-#                                   content_type=self.content_type)
+    def test_update_node_attribute_backend_state_TODO(self):
+        pass
+
+    def test_update_node_attribute_config_TODO(self):
+        pass
+
+    def test_update_node_with_no_data(self):
+        resp = self.app.put('/nodes/%s' % self.node_id,
+                            data=None,
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 400)
+
+
+class NodeInvalidHTTPMethodTests(unittest2.TestCase):
+    @classmethod
+    def setUpClass(self):
+        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        init_db(self.foo.config['database_uri'])
+        self.app = self.foo.test_client()
+        self.content_type = 'application/json'
+
+    @classmethod
+    def tearDownClass(self):
+        pass
+
+    def _execute_method(self, method_name, path, http_code):
+        """Helper function that will execute a method, against a path and
+           verify the returned http code
+
+        :param method_name: name of the http method to execute
+        :param path: path to execute the http call against
+        :param http_code: http error code to validate against
+        """
+        resp = self.app.__getattribute__(method_name)(
+            path,
+            content_type=self.content_type)
+        self.assertEquals(resp.status_code, http_code)
+
+    def test_405_returned_by_delete_on_nodes(self):
+        self._execute_method('delete', '/nodes/', 405)
+
+    def test_405_returned_by_patch_on_nodes(self):
+        self._execute_method('patch', '/nodes/', 405)
+
+    def test_405_returned_by_put_on_nodes(self):
+        self._execute_method('put', '/nodes/', 405)
+
+    def test_405_returned_by_post_on_nodes_with_id(self):
+        self._execute_method('post', '/nodes/1', 405)
+
+    def test_405_returned_by_patch_on_nodes_with_id(self):
+        self._execute_method('patch', '/nodes/1', 405)
