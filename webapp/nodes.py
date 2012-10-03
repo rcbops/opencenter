@@ -91,6 +91,33 @@ def adventures_by_node_id(node_id):
     return resp
 
 
+@nodes.route('/<node_id>/<key>', methods=['GET', 'PUT'])
+def attributes_by_node_id(node_id, key):
+    node = api.node_get_by_id(node_id)
+    if not node:
+        return http_not_found()
+    else:
+        if request.method == 'PUT':
+            if key in ['id', 'hostname']:
+                msg = "Attribute %s is not modifiable" % key
+                return http_bad_request(msg)
+            else:
+                if key not in request.json:
+                    msg = "Empty body"
+                    return http_bad_request(msg)
+                else:
+                    data = {key: request.json[key]}
+                    updated_node = api.node_update_by_id(node_id, data)
+                    msg = {'status': 200,
+                           'node': updated_node,
+                           'message': 'Updated Attribute: %s' % key}
+                    resp = jsonify(msg)
+                    resp.status_code = 200
+        else:
+            resp = jsonify({key: node[key]})
+        return resp
+
+
 @nodes.route('/<node_id>', methods=['GET', 'PUT', 'DELETE'])
 def node_by_id(node_id):
     resp = ''

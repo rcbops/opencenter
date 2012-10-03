@@ -188,6 +188,26 @@ def adventure_delete_by_id(adventure_id):
         raise exc.AdventureNotFound(e.message)
 
 
+def adventure_get_by_filter(filters):
+    """Query helper that returns a adventure dict.
+
+    :param filters: dictionary of filters; that are combined with AND
+                    to filter the result set.
+    """
+    #TODO(shep): this should accept an array.. and return the first result
+    result = _model_get_by_filter('adventures', filters)
+    return result
+
+
+def adventure_get_by_id(adventure_id):
+    """Query helper that returns an adventure by adventure_id
+
+    :param adventure_id: id of the adventure to lookup
+    """
+    result = adventure_get_by_filter({'id': adventure_id})
+    return result
+
+
 def clusters_get_all():
     """Query helper that returns a dict of all clusters"""
     return _model_get_all('clusters')
