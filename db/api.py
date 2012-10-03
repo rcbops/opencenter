@@ -139,9 +139,9 @@ def adventures_get_by_node_id(node_id):
     #         OR adventures.backend_state is null);
 
     stmt1 = or_(Adventures.backend == Nodes.backend,
-                Adventures.backend is None)
+                Adventures.backend == 'null')
     stmt2 = or_(Adventures.backend_state == Nodes.backend_state,
-                Adventures.backend_state is None)
+                Adventures.backend_state == 'null')
     adventure_list = Adventures.query.join(
         Nodes,
         and_(stmt1, stmt2, Nodes.id == node_id)).all()
