@@ -9,12 +9,10 @@ from sqlalchemy import or_, and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
-# import db.api as api
 from db import api as api
 from db import exceptions as exc
 from db.database import db_session
 from db.models import Nodes, Roles, Clusters, Tasks, Adventures
-
 from errors import (
     http_bad_request,
     http_conflict,
@@ -120,8 +118,6 @@ def attributes_by_node_id(node_id, key):
 
 @nodes.route('/<node_id>', methods=['GET', 'PUT', 'DELETE'])
 def node_by_id(node_id):
-    resp = ''
-
     if request.method == 'PUT':
         fields = api.node_get_columns()
         data = dict((field, request.json[field]) for field in fields
@@ -131,6 +127,7 @@ def node_by_id(node_id):
         # to make sure it's happy in the config management
         node = api.node_update_by_id(node_id, data)
         resp = jsonify({'node': node})
+        return resp
     elif request.method == 'DELETE':
         try:
             # NOTE: This is a transactional problem
@@ -141,6 +138,7 @@ def node_by_id(node_id):
                 msg = {'status': 200, 'message': 'Node deleted'}
                 resp = jsonify(msg)
                 resp.status_code = 200
+                return resp
         except exc.NodeNotFound, e:
             return http_not_found()
     else:
@@ -150,4 +148,4 @@ def node_by_id(node_id):
             return http_not_found()
         else:
             resp = jsonify({'node': node})
-    return resp
+            return resp

@@ -121,6 +121,32 @@ def _model_get_by_filter(model, filters):
     return result
 
 
+def _model_update_by_id(model, pk_id, fields):
+    """Query helper for updating a row
+
+    :param model: name of the table model
+    :param pk_id: id to update
+    :param pk_id: dict of columns:values to update
+    """
+    tables = {'adventures': Adventures,
+              'clusters': Clusters,
+              'nodes': Nodes,
+              'roles': Roles,
+              'tasks': Tasks}
+    field_list = [c for c in tables[model].__table__.columns.keys()]
+    field_list.remove('id')
+    r = tables[model].query.filter_by(id=pk_id).first()
+    for field in field_list:
+        if field in fields:
+            r.__setattr__(field, fields[field])
+    try:
+        db_session.commit()
+        return dict((c, getattr(r, c))
+                    for c in r.__table__.columns.keys())
+    except Exception, e:
+        db_session.rollback()
+
+
 def adventures_get_all():
     """Query helper that returns a dict of all adventures"""
     return _model_get_all('adventures')
@@ -208,6 +234,22 @@ def adventure_get_by_id(adventure_id):
     return result
 
 
+def adventure_get_columns():
+    """Query helper that returns a list of Adventure columns"""
+    result = _model_get_columns('adventures')
+    return result
+
+
+def adventure_update_by_id(node_id, fields):
+    """Query helper that updates an adventure by adventure_id
+
+    :param adventure_id: id of the adventure to lookup
+    :param fields: dict of column:value to update
+    """
+    result = _model_update_by_id('adventures', node_id, fields)
+    return result
+
+
 def clusters_get_all():
     """Query helper that returns a dict of all clusters"""
     return _model_get_all('clusters')
@@ -267,18 +309,8 @@ def node_create(fields):
 
 
 def node_update_by_id(node_id, fields):
-    field_list = [c for c in Nodes.__table__.columns.keys()]
-    field_list.remove('id')
-    r = Nodes.query.filter_by(id=node_id).first()
-    for field in field_list:
-        if field in fields:
-            r.__setattr__(field, fields[field])
-    try:
-        db_session.commit()
-        return dict((c, getattr(r, c))
-                    for c in r.__table__.columns.keys())
-    except Exception, e:
-        db_session.rollback()
+    result = _model_update_by_id('nodes', node_id, fields)
+    return result
 
 
 def nodes_get_all():
@@ -341,23 +373,22 @@ def tasks_get_all():
 
 def task_get_columns():
     """Query helper that returns a list of Tasks columns"""
-    result = _model_get_columns('tasks')
-    return result
+    return _model_get_columns('tasks')
 
 
 def task_get_by_filter(filters):
-    """Query helper that returns a node dict.
+    """Query helper that returns a task dict.
 
     :param filters: dictionary of filters; that are combined with AND
                     to filter the result set.
     """
-    filter_options = and_(
-        * [Tasks.__table__.columns[k] == v
-           for k, v in filters.iteritems()])
-    r = Tasks.query.filter(filter_options).first()
-    if not r:
-        result = None
-    else:
-        result = dict((c, getattr(r, c))
-                      for c in r.__table__.columns.keys())
-    return result
+    #TODO(shep): should this accept an array.. and return the first result?
+    return _model_get_by_filter('tasks', filters)
+
+
+def task_get_by_id(task_id):
+    """Query helper that returns a task by task_id
+
+    :param task_id: id of the task to lookup
+    """
+    return task_get_by_filter({'id': task_id})

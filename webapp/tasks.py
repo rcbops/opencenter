@@ -1,15 +1,17 @@
 #!/usr/bin/env python
-import json
 
+import json
 from pprint import pprint
 from time import time
 
 from flask import Blueprint, Flask, Response, request
 from flask import session, jsonify, url_for, current_app
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
-from sqlalchemy import or_
 
+from db import api as api
+from db import exceptions as exc
 from db.database import db_session
 from db.models import Nodes, Roles, Clusters, Tasks
 from errors import (
@@ -112,18 +114,11 @@ def task_by_id(task_id):
             else:
                 task[col] = getattr(r, col)
         resp = jsonify({'task': task})
+        return resp
     else:
-        row = Tasks.query.filter_by(id=task_id).first()
-        if row is None:
+        task = api.task_get_by_id(task_id)
+        if not task:
             return http_not_found()
         else:
-            task = dict()
-            for col in row.__table__.columns.keys():
-                if col == 'payload' or col == 'result':
-                    val = getattr(row, col)
-                    task[col] = val if (val is None) else json.loads(val)
-                else:
-                    task[col] = getattr(row, col)
-
             resp = jsonify({'task': task})
-    return resp
+            return resp
