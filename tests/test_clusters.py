@@ -34,6 +34,10 @@ class ClusterCreateTests(unittest2.TestCase):
         self.content_type = 'application/json'
         self.shep = 30
 
+    @classmethod
+    def tearDownClass(self):
+        pass
+
     def test_create_cluster_with_desc_and_override_attributes(self):
         data = {'name': self.name,
                 'description': self.desc,
@@ -291,7 +295,7 @@ class ClusterAttributeTests(unittest2.TestCase):
         self.assertEquals(resp.status_code, 200)
         tmp = json.loads(resp.data)
         self.assertEquals(len(tmp['nodes']), 1)
-        self.assertEquals(tmp['nodes'][0]['id'], 1)
+        self.assertEquals(tmp['nodes'][0]['id'], out['node']['id'])
         self.assertEquals(tmp['nodes'][0]['hostname'], hostname)
 
         # Cleanup the node we created
