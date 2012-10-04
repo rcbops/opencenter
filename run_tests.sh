@@ -126,6 +126,6 @@ run_tests
 if [ $coverage -eq 1 ]; then
     echo "Generating coverage report in coverage/"
     # Don't compute coverage for common code, which is tested elsewhere
-    # ${wrapper} coverage html --include='nova/*' --omit='nova/openstack/common/*' -d coverage -i
-    ${wrapper} coverage html --include='webapp/*,db/*,backends/*' -d coverage -i
+    # ${wrapper} coverage html --include='webapp/*,db/*,backends/*' -d coverage -i
+    ${wrapper} coverage xml --include='webapp/*,db/*,backends/*' -i
 fi
