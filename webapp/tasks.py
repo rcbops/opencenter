@@ -65,22 +65,25 @@ def list_tasks():
         resp.status_code = 201
         resp.headers['Location'] = href
     else:
-        task_list = {"tasks": []}
-
-        #
-        # for row in Tasks.query.filter(or_(Tasks.state == 'pending',
-        #                                   Tasks.state == 'running')):
-        for row in Tasks.query.all():
-            tmp = dict()
-            for col in row.__table__.columns.keys():
-                if col == 'payload' or col == 'result':
-                    val = getattr(row, col)
-                    tmp[col] = val if (val is None) else json.loads(val)
-                else:
-                    tmp[col] = getattr(row, col)
-            task_list['tasks'].append(tmp)
-        resp = jsonify(task_list)
+        tasks = api.tasks_get_all()
+        resp = jsonify({'tasks': tasks})
     return resp
+#        task_list = {"tasks": []}
+#
+#        #
+#        # for row in Tasks.query.filter(or_(Tasks.state == 'pending',
+#        #                                   Tasks.state == 'running')):
+#        for row in Tasks.query.all():
+#            tmp = dict()
+#            for col in row.__table__.columns.keys():
+#                if col == 'payload' or col == 'result':
+#                    val = getattr(row, col)
+#                    tmp[col] = val if (val is None) else json.loads(val)
+#                else:
+#                    tmp[col] = getattr(row, col)
+#            task_list['tasks'].append(tmp)
+#        resp = jsonify(task_list)
+#    return resp
 
 
 @tasks.route('/filter', methods=['POST'])
