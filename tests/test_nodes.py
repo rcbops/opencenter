@@ -73,7 +73,7 @@ class NodeCreateTests(unittest2.TestCase):
         self.assertEquals(out['node']['hostname'], self.hostname)
         self.assertEquals(out['node']['cluster_id'], None)
         self.assertEquals(out['node']['role_id'], None)
-        self.assertEquals(out['node']['config'], None)
+        self.assertEquals(out['node']['config'], dict())
 
         # Cleanup the node we created
         self._delete_node(out['node']['id'])
@@ -124,6 +124,7 @@ class NodeCreateTests(unittest2.TestCase):
                              content_type=self.content_type,
                              data=json.dumps(data))
         self.assertEquals(resp.status_code, 201)
+        print(resp.status_code)
         out = json.loads(resp.data)
         self.assertEquals(out['status'], 201)
         self.assertEquals(out['message'], 'Node Created')
@@ -150,15 +151,6 @@ class NodeCreateTests(unittest2.TestCase):
             path,
             content_type=self.content_type)
         self.assertEquals(resp.status_code, code)
-
-#    def test_verify_delete_method_returns_a_405_on_nodes(self):
-#        self._generic_test('delete', '/nodes/', 405)
-#
-#    def test_verify_patch_method_returns_a_405_on_nodes(self):
-#        self._generic_test('patch', '/nodes/', 405)
-#
-#    def test_verify_put_method_returns_a_405_on_nodes(self):
-#        self._generic_test('put', '/nodes/', 404)
 
 
 class NodeUpdateTests(unittest2.TestCase):
@@ -201,15 +193,14 @@ class NodeUpdateTests(unittest2.TestCase):
         tmp_resp = self.app.delete('/nodes/%s' + str(self.node_id),
                                    content_type=self.content_type)
 
-    def test_update_node_config(self):
+    def test_update_node_attribute_config(self):
         tmp_desc = _randomStr(30)
         tmp_attribs = {'package_component': 'grizzly-final',
                        'monitoring': {'metric_provider': 'collectd'}}
-        data = {'hostname': self.hostname,
-                'config': tmp_attribs}
-        resp = self.app.put('/nodes/%s' % self.node_id,
+        payload = {'config': tmp_attribs}
+        resp = self.app.put('/nodes/%s/config' % self.node_id,
                             content_type=self.content_type,
-                            data=json.dumps(data))
+                            data=json.dumps(payload))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.assertEquals(out['node']['id'], self.node_id)
@@ -221,16 +212,36 @@ class NodeUpdateTests(unittest2.TestCase):
         self.assertEquals(out['node']['config'], tmp_attribs)
         self.assertNotEquals(out['node']['config'], self.attribs)
 
-    def test_update_node_attribute_hostname_TODO(self):
-        # This should fail
-        pass
+    def test_update_node_attribute_id_returns_400(self):
+        tmp_id = 99
+        payload = {'id': tmp_id}
+        resp = self.app.put('/nodes/%s/id' % self.node_id,
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
+        self.assertEquals(resp.status_code, 400)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 400)
+        self.assertTrue('id is not modifiable' in out['message'])
 
-    def test_update_node_attribute_role_id_TODO(self):
+    def test_update_node_attribute_hostname_returns_400(self):
+        tmp_hostname = _randomStr(30)
+        payload = {'hostname': tmp_hostname}
+        resp = self.app.put('/nodes/%s/hostname' % self.node_id,
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
+        self.assertEquals(resp.status_code, 400)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 400)
+        self.assertTrue('hostname is not modifiable' in out['message'])
+
+    def test_update_node_attribute_role_id(self):
+        # TODO(shep): Not sure if this should work with a non-existent
+        #             role_id
         tmp_role_id = 99
-        data = {'role_id': tmp_role_id}
+        payload = {'role_id': tmp_role_id}
         resp = self.app.put('/nodes/%s/role_id' % self.node_id,
                             content_type=self.content_type,
-                            data=json.dumps(data))
+                            data=json.dumps(payload))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.assertEquals(out['node']['id'], self.node_id)
@@ -242,17 +253,68 @@ class NodeUpdateTests(unittest2.TestCase):
         self.assertEquals(out['node']['role_id'], tmp_role_id)
         self.assertNotEquals(out['node']['role_id'], self.role_id)
 
-    def test_update_node_attribute_cluster_id_TODO(self):
-        pass
+    def test_update_node_attribute_cluster_id(self):
+        # TODO(shep): Not sure if this should work with a non-existent
+        #             cluster_id
+        tmp_cluster_id = 99
+        payload = {'cluster_id': tmp_cluster_id}
+        resp = self.app.put('/nodes/%s/cluster_id' % self.node_id,
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['node']['id'], self.node_id)
+        self.assertEquals(out['node']['hostname'], self.hostname)
+        self.assertEquals(out['node']['config'], self.attribs)
+        self.assertEquals(out['node']['role_id'], self.role_id)
+        self.assertEquals(out['node']['backend'], self.backend)
+        self.assertEquals(out['node']['backend_state'], self.backend_state)
+        self.assertEquals(out['node']['cluster_id'], tmp_cluster_id)
+        self.assertNotEquals(out['node']['cluster_id'], self.cluster_id)
 
-    def test_update_node_attribute_backend_TODO(self):
-        pass
+    def test_update_node_attribute_backend(self):
+        tmp_backend = _randomStr(10)
+        payload = {'backend': tmp_backend}
+        resp = self.app.put('/nodes/%s/backend' % self.node_id,
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['node']['id'], self.node_id)
+        self.assertEquals(out['node']['hostname'], self.hostname)
+        self.assertEquals(out['node']['config'], self.attribs)
+        self.assertEquals(out['node']['role_id'], self.role_id)
+        self.assertEquals(out['node']['cluster_id'], self.cluster_id)
+        self.assertEquals(out['node']['backend_state'], self.backend_state)
+        self.assertEquals(out['node']['backend'], tmp_backend)
+        self.assertNotEquals(out['node']['backend'], self.backend)
 
-    def test_update_node_attribute_backend_state_TODO(self):
-        pass
+    def test_update_node_attribute_backend_state(self):
+        tmp_backend_state = _randomStr(10)
+        payload = {'backend_state': tmp_backend_state}
+        resp = self.app.put('/nodes/%s/backend_state' % self.node_id,
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['node']['id'], self.node_id)
+        self.assertEquals(out['node']['hostname'], self.hostname)
+        self.assertEquals(out['node']['config'], self.attribs)
+        self.assertEquals(out['node']['role_id'], self.role_id)
+        self.assertEquals(out['node']['cluster_id'], self.cluster_id)
+        self.assertEquals(out['node']['backend'], self.backend)
+        self.assertEquals(out['node']['backend_state'], tmp_backend_state)
+        self.assertNotEquals(out['node']['backend_state'], self.backend_state)
 
-    def test_update_node_attribute_config_TODO(self):
-        pass
+    def test_update_node_attribute_config_with_bad_data_returns_400(self):
+        payload = {'backend': _randomStr(10)}
+        resp = self.app.put('/nodes/%s/config' % self.node_id,
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
+        self.assertEquals(resp.status_code, 400)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 400)
+        self.assertTrue('Empty body' in out['message'])
 
     def test_update_node_with_no_data(self):
         resp = self.app.put('/nodes/%s' % self.node_id,

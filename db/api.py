@@ -3,7 +3,7 @@
 from itertools import islice
 import json
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.sql import and_, or_
 
@@ -73,6 +73,10 @@ def _model_delete_by_id(model, pk_id):
         db_session.rollback()
         msg = "%s id does not exist" % (model.title())
         raise exc.IdNotFound(message=msg)
+    except InvalidRequestError, e:
+        db_session.rollback()
+        msg = e.msg
+        raise Foo(msg)
 
 
 def _model_get_by_id(model, pk_id):
@@ -143,6 +147,10 @@ def _model_update_by_id(model, pk_id, fields):
         db_session.commit()
         return dict((c, getattr(r, c))
                     for c in r.__table__.columns.keys())
+    except InvalidRequestError, e:
+        db_session.rollback()
+        msg = e.msg
+        raise Foo(msg)
     except Exception, e:
         db_session.rollback()
 
@@ -197,6 +205,10 @@ def adventure_create(fields):
         db_session.commit()
         return dict((c, getattr(a, c))
                     for c in a.__table__.columns.keys())
+    except InvalidRequestError, e:
+        db_session.rollback()
+        msg = e.msg
+        raise Foo(msg)
     except IntegrityError, e:
         db_session.rollback()
         msg = "Unable to create Adventure"
@@ -292,6 +304,11 @@ def cluster_delete_by_id(cluster_id):
         raise exc.NodeNotFound()
 
 
+def cluster_update_by_id(cluster_id, fields):
+    result = _model_update_by_id('clusters', cluster_id, fields)
+    return result
+
+
 def node_create(fields):
     field_list = [c for c in Nodes.__table__.columns.keys()]
     field_list.remove('id')
@@ -302,6 +319,10 @@ def node_create(fields):
         db_session.commit()
         return dict((c, getattr(a, c))
                     for c in a.__table__.columns.keys())
+    except InvalidRequestError, e:
+        db_session.rollback()
+        msg = e.msg
+        raise Foo(msg)
     except IntegrityError, e:
         db_session.rollback()
         msg = "Unable to create Node, duplicate entry"
@@ -363,6 +384,22 @@ def roles_get_all():
 def role_get_columns():
     """Query helper that returns a list of Roles columns"""
     result = _model_get_columns('roles')
+    return result
+
+
+def task_get_columns():
+    """Query helper that returns a list of Tasks columns"""
+    result = _model_get_columns('tasks')
+    return result
+
+
+def task_update_by_id(task_id, fields):
+    """Query helper that updates an task by task_id
+
+    :param task_id: id of the task to lookup
+    :param fields: dict of column:value to update
+    """
+    result = _model_update_by_id('tasks', task_id, fields)
     return result
 
 

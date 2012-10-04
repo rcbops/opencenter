@@ -1,6 +1,7 @@
 .roush-venv
 roush.db
 *.pyc
+*.swp
 run_tests.err.log
 local.conf
-:memory
+.coverage

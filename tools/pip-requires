@@ -4,4 +4,6 @@ sqlalchemy-migrate
 pychef
 python-daemon
 unittest2
+nose
+coverage
 pep8
