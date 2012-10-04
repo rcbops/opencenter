@@ -3,4 +3,4 @@ roush.db
 *.pyc
 run_tests.err.log
 local.conf
-:memory
+.coverage
