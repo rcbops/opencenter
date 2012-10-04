@@ -308,6 +308,7 @@ def cluster_update_by_id(cluster_id, fields):
     result = _model_update_by_id('clusters', cluster_id, fields)
     return result
 
+
 def node_create(fields):
     field_list = [c for c in Nodes.__table__.columns.keys()]
     field_list.remove('id')
@@ -400,6 +401,7 @@ def task_update_by_id(task_id, fields):
     """
     result = _model_update_by_id('tasks', task_id, fields)
     return result
+
 
 def tasks_get_all():
     """Query helper that returns a dict of all tasks"""
