@@ -67,9 +67,10 @@ def list_tasks():
     else:
         task_list = {"tasks": []}
 
-        # FIXME(rp): need api selectable filters here
-        for row in Tasks.query.filter(or_(Tasks.state == 'pending',
-                                          Tasks.state == 'running')):
+        #
+        # for row in Tasks.query.filter(or_(Tasks.state == 'pending',
+        #                                   Tasks.state == 'running')):
+        for row in Tasks.query.all():
             tmp = dict()
             for col in row.__table__.columns.keys():
                 if col == 'payload' or col == 'result':
