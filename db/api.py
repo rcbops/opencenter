@@ -3,7 +3,7 @@
 from itertools import islice
 import json
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.sql import and_, or_
 
@@ -73,6 +73,10 @@ def _model_delete_by_id(model, pk_id):
         db_session.rollback()
         msg = "%s id does not exist" % (model.title())
         raise exc.IdNotFound(message=msg)
+    except InvalidRequestError, e:
+        db_session.rollback()
+        msg = e.msg
+        raise Foo(msg)
 
 
 def _model_get_by_id(model, pk_id):
@@ -365,6 +369,21 @@ def role_get_columns():
     result = _model_get_columns('roles')
     return result
 
+
+def task_get_columns():
+    """Query helper that returns a list of Tasks columns"""
+    result = _model_get_columns('tasks')
+    return result
+
+
+def task_update_by_id(task_id, fields):
+    """Query helper that updates an task by task_id
+
+    :param task_id: id of the task to lookup
+    :param fields: dict of column:value to update
+    """
+    result = _model_update_by_id('tasks', task_id, fields)
+    return result
 
 def tasks_get_all():
     """Query helper that returns a dict of all tasks"""

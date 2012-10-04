@@ -75,7 +75,7 @@ class ClusterCreateTests(unittest2.TestCase):
         self.assertEquals(out['message'], 'Cluster Created')
         self.assertEquals(out['cluster']['name'], self.name)
         self.assertEquals(out['cluster']['description'], self.desc)
-        self.assertEquals(out['cluster']['config'], None)
+        self.assertEquals(out['cluster']['config'], dict())
 
         # Cleanup the cluster we created
         if self.foo.config['backend'] != "null":
@@ -122,7 +122,7 @@ class ClusterCreateTests(unittest2.TestCase):
         self.assertEquals(out['message'], 'Cluster Created')
         self.assertEquals(out['cluster']['name'], self.name)
         self.assertEquals(out['cluster']['description'], None)
-        self.assertEquals(out['cluster']['config'], None)
+        self.assertEquals(out['cluster']['config'], dict())
 
         # Cleanup the cluster we created
         if self.foo.config['backend'] != "null":
@@ -287,7 +287,7 @@ class ClusterAttributeTests(unittest2.TestCase):
         self.assertEquals(out['node']['hostname'], hostname)
         self.assertEquals(out['node']['cluster_id'], self.cluster_id)
         self.assertEquals(out['node']['role_id'], None)
-        self.assertEquals(out['node']['config'], None)
+        self.assertEquals(out['node']['config'], dict())
 
         # make sure /clusters/<cluster_id>/nodes looks right
         resp = self.app.get('/clusters/%s/nodes' % self.cluster_id,
