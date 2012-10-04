@@ -50,7 +50,7 @@ done
 
 # If enabled, tell nose to collect coverage data
 if [ $coverage -eq 1 ]; then
-    noseopts="$noseopts --with-coverage --cover-package=webapp"
+    noseopts="$noseopts --with-xunit --with-coverage --cover-package=webapp"
     noseopts="$noseopts --cover-package=db"
     noseopts="$noseopts --cover-package=backends"
 fi
