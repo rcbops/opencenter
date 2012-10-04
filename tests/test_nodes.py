@@ -73,7 +73,7 @@ class NodeCreateTests(unittest2.TestCase):
         self.assertEquals(out['node']['hostname'], self.hostname)
         self.assertEquals(out['node']['cluster_id'], None)
         self.assertEquals(out['node']['role_id'], None)
-        self.assertEquals(out['node']['config'], None)
+        self.assertEquals(out['node']['config'], dict())
 
         # Cleanup the node we created
         self._delete_node(out['node']['id'])

@@ -147,6 +147,10 @@ def _model_update_by_id(model, pk_id, fields):
         db_session.commit()
         return dict((c, getattr(r, c))
                     for c in r.__table__.columns.keys())
+    except InvalidRequestError, e:
+        db_session.rollback()
+        msg = e.msg
+        raise Foo(msg)
     except Exception, e:
         db_session.rollback()
 
@@ -201,6 +205,10 @@ def adventure_create(fields):
         db_session.commit()
         return dict((c, getattr(a, c))
                     for c in a.__table__.columns.keys())
+    except InvalidRequestError, e:
+        db_session.rollback()
+        msg = e.msg
+        raise Foo(msg)
     except IntegrityError, e:
         db_session.rollback()
         msg = "Unable to create Adventure"
@@ -296,6 +304,10 @@ def cluster_delete_by_id(cluster_id):
         raise exc.NodeNotFound()
 
 
+def cluster_update_by_id(cluster_id, fields):
+    result = _model_update_by_id('clusters', cluster_id, fields)
+    return result
+
 def node_create(fields):
     field_list = [c for c in Nodes.__table__.columns.keys()]
     field_list.remove('id')
@@ -306,6 +318,10 @@ def node_create(fields):
         db_session.commit()
         return dict((c, getattr(a, c))
                     for c in a.__table__.columns.keys())
+    except InvalidRequestError, e:
+        db_session.rollback()
+        msg = e.msg
+        raise Foo(msg)
     except IntegrityError, e:
         db_session.rollback()
         msg = "Unable to create Node, duplicate entry"

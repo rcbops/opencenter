@@ -151,30 +151,37 @@ def config_by_cluster_id(cluster_id):
 @clusters.route('/<cluster_id>', methods=['GET', 'PUT', 'DELETE'])
 def cluster_by_id(cluster_id):
     if request.method == 'PUT':
-        # FIXME(shep): currently breaks badly on an empty put
-        r = Clusters.query.filter_by(id=cluster_id).first()
-        # FIXME(rp): renames break the backend association
-        if 'name' in request.json:
-            r.name = request.json['name']
-        if 'description' in request.json:
-            r.description = request.json['description']
-        if 'config' in request.json:
-            r.config = json.dumps(request.json['config'])
-        #TODO(shep): this is an un-excepted db call
-        try:
-            current_app.backend.set_cluster_settings(
-                r.name, cluster_desc=r.description if (
-                    'description' in request.json) else None,
-                cluster_settings=request.json['config'] if (
-                    'config' in request.json) else None)
-            db_session.commit()
-        except ChefServerError, e:
-            db_session.rollback()
-            # FIXME(shep): this is not the correct return code/action
-            return http_conflict(e)
-        cls = dict(cluster=dict((c, getattr(r, c))
-                                for c in r.__table__.columns.keys()))
-        resp = jsonify(cls)
+        fields = api.cluster_get_columns()
+        data = dict((field, request.json[field]) for field in fields
+                    if field in request.json)
+        cluster = api.cluster_update_by_id(cluster_id, data)
+        resp = jsonify({'cluster': cluster})
+        return resp
+
+#        # FIXME(shep): currently breaks badly on an empty put
+#        r = Clusters.query.filter_by(id=cluster_id).first()
+#        # FIXME(rp): renames break the backend association
+#        if 'name' in request.json:
+#            r.name = request.json['name']
+#        if 'description' in request.json:
+#            r.description = request.json['description']
+#        if 'config' in request.json:
+#            r.config = json.dumps(request.json['config'])
+#        #TODO(shep): this is an un-excepted db call
+#        try:
+#            current_app.backend.set_cluster_settings(
+#                r.name, cluster_desc=r.description if (
+#                    'description' in request.json) else None,
+#                cluster_settings=request.json['config'] if (
+#                    'config' in request.json) else None)
+#            db_session.commit()
+#        except Exception, e:
+#            db_session.rollback()
+#            # FIXME(shep): this is not the correct return code/action
+#            return http_conflict(e)
+#        cls = dict(cluster=dict((c, getattr(r, c))
+#                                for c in r.__table__.columns.keys()))
+#        resp = jsonify(cls)
     elif request.method == 'DELETE':
         r = Clusters.query.filter_by(id=cluster_id).first()
         try:

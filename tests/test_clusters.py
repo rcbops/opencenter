@@ -187,9 +187,9 @@ class ClusterUpdateTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['description'], tmp_desc)
         self.assertNotEquals(out['cluster']['description'], self.desc)
         self.assertEquals(out['cluster']['config'],
-                          json.dumps(tmp_attribs))
+                          tmp_attribs)
         self.assertNotEquals(out['cluster']['config'],
-                             json.dumps(self.attribs))
+                             self.attribs)
 
     def test_update_cluster_with_description_and_no_override_attributes(self):
         tmp_desc = _randomStr(30)
@@ -220,9 +220,9 @@ class ClusterUpdateTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['name'], self.name)
         self.assertEquals(out['cluster']['description'], self.desc)
         self.assertEquals(out['cluster']['config'],
-                          json.dumps(tmp_attribs))
+                          tmp_attribs)
         self.assertNotEquals(out['cluster']['config'],
-                             json.dumps(self.attribs))
+                             self.attribs)
 
     def test_update_cluster_with_no_data(self):
         resp = self.app.put('/clusters/%s' % self.cluster_id,

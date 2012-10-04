@@ -93,29 +93,32 @@ def filter_tasks():
 @tasks.route('/<task_id>', methods=['GET', 'PUT'])
 def task_by_id(task_id):
     if request.method == 'PUT':
-        # NOTE: We probably can't rename hosts -- it affect chef...
-        # Think on this.  Also, probably should do a get_node_status
-        # to make sure it's happy in the config management
-        r = Tasks.query.filter_by(id=task_id).first()
-        if 'action' in request.json:
-            r.action = request.json['action']
-        if 'payload' in request.json:
-            r.payload = json.dumps(request.json['payload'])
-        if 'state' in request.json:
-            r.state = request.json['state']
-        if 'result' in request.json:
-            r.result = json.dumps(request.json['result'])
-        #TODO(shep): this is an un-excepted db call
-        db_session.commit()
-        task = dict()
-        for col in r.__table__.columns.keys():
-            if col == 'payload' or col == 'result':
-                val = getattr(r, col)
-                task[col] = val if (val is None) else json.loads(val)
-            else:
-                task[col] = getattr(r, col)
+        fields = api.task_get_columns()
+        data = dict((field, request.json[field]) for field in fields
+                    if field in request.json)
+        task = api.task_update_by_id(task_id, data)
         resp = jsonify({'task': task})
         return resp
+        #r = Tasks.query.filter_by(id=task_id).first()
+        #if 'action' in request.json:
+        #    r.action = request.json['action']
+        #if 'payload' in request.json:
+        #    r.payload = json.dumps(request.json['payload'])
+        #if 'state' in request.json:
+        #    r.state = request.json['state']
+        #if 'result' in request.json:
+        #    r.result = json.dumps(request.json['result'])
+        ##TODO(shep): this is an un-excepted db call
+        #db_session.commit()
+        #task = dict()
+        #for col in r.__table__.columns.keys():
+        #    if col == 'payload' or col == 'result':
+        #        val = getattr(r, col)
+        #        task[col] = val if (val is None) else json.loads(val)
+        #    else:
+        #        task[col] = getattr(r, col)
+        #resp = jsonify({'task': task})
+        #return resp
     else:
         task = api.task_get_by_id(task_id)
         if not task:
