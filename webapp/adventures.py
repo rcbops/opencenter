@@ -58,27 +58,20 @@ def filter_adventures():
 
 @adventures.route('/<adventure_id>', methods=['GET', 'PUT', 'DELETE'])
 def adventure_by_id(adventure_id):
-    resp = {}
-
     if request.method == 'PUT':
-        fupep8 = Adventures.query.filter_by(id=request.json['id']).first()
-
-        for parm in request.json:
-            if parm in Adventures.__table__.columns.keys():
-                setattr(fupep8, parm, request.json[parm])
-
-        try:
-            db_session.commit()
-        except Exception, e:
-            db_session.rollback()
-        adventure = api.adventure_get_by_id(adventure_id)
+        fields = api.adventure_get_columns()
+        data = dict((field, request.json[field]) for field in fields
+                    if field in request.json)
+        adventure = api.adventure_update_by_id(adventure_id, data)
         resp = jsonify({'adventure': adventure})
+        return resp
     elif request.method == 'DELETE':
         try:
             api.adventure_delete_by_id(adventure_id)
             msg = {'status': 200, 'message': 'Adventure deleted'}
             resp = jsonify(msg)
             resp.status_code = 200
+            return resp
         except exc.AdventureNotFound, e:
             return http_not_found()
     else:
@@ -87,4 +80,4 @@ def adventure_by_id(adventure_id):
             return http_not_found()
         else:
             resp = jsonify({'adventure': adventure})
-    return resp
+            return resp
