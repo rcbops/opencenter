@@ -120,7 +120,9 @@ class Tasks(Base):
     node_id = Column(Integer, ForeignKey('nodes.id'))
     action = Column(String(40))
     payload = Column(JsonBlob, default={})
-    state = Column(Enum('pending', 'running', 'done', 'timeout', 'cancelled'))
+    state = Column(
+        Enum('pending', 'running', 'done', 'timeout', 'cancelled'),
+        default='pending')
     result = Column(JsonBlob, default={})
     submitted = Column(Integer)
     completed = Column(Integer)
