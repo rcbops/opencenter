@@ -5,3 +5,5 @@ roush.db
 run_tests.err.log
 local.conf
 .coverage
+coverage.xml
+nosetests.xml
