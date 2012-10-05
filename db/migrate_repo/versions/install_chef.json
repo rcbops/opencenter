@@ -8,7 +8,7 @@
         },
         "s2": {
             "primitive": "set_backend",
-            "paramters": {
+            "parameters": {
                 "backend": "chef-client",
                 "backend_state": "installed" }
         }
