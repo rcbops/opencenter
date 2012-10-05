@@ -46,13 +46,13 @@ class TaskCreateTests(unittest2.TestCase):
         pass
 
     # NOTE(shep): tasks are not deletable
-    #def _delete_task(self, task_id):
-    #    resp = self.app.delete('/tasks/%s' % task_id,
-    #                           content_type=self.content_type)
-    #    self.assertEquals(resp.status_code, 200)
-    #    out = json.loads(tmp.data)
-    #    self.assertEquals(out['status'], 200)
-    #    self.assertEquals(out['message'], 'Task deleted')
+    def _delete_task(self, task_id):
+        resp = self.app.delete('/tasks/%s' % task_id,
+                               content_type=self.content_type)
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 200)
+        self.assertEquals(out['message'], 'Task deleted')
 
     def test_create_task_with_required_fields_only(self):
         # required fields: node_id, action, payload, state
@@ -77,7 +77,7 @@ class TaskCreateTests(unittest2.TestCase):
 
         # Clean up the task we created
         # NOTE(shep): tasks are not deletable
-        #self._delete_task(out['task']['id'])
+        self._delete_task(out['task']['id'])
 
 
 class TaskUpdateTests(unittest2.TestCase):
