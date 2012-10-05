@@ -180,18 +180,9 @@ def adventures_get_by_node_id(node_id):
         Nodes,
         and_(stmt1, stmt2, Nodes.id == node_id)).all()
 
-    result = list()
-    for r in adventure_list:
-        tmp = dict()
-        for c in r.__table__.columns.keys():
-            if c == 'dsl':
-                if r.__getattribute__('language') == 'json':
-                    tmp[c] = json.loads(getattr(r, c))
-                else:
-                    tmp[c] = getattr(r, c)
-            else:
-                tmp[c] = getattr(r, c)
-        result.append(tmp)
+    result = [dict((c, getattr(r, c))
+                   for c in r.__table__.columns.keys())
+              for r in adventure_list]
     return result
 
 
