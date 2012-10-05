@@ -51,7 +51,7 @@ def filter_tasks():
     return jsonify({'tasks': builder.eval()})
 
 
-@tasks.route('/<task_id>', methods=['GET', 'PUT'])
+@tasks.route('/<task_id>', methods=['GET', 'PUT', 'DELETE'])
 def task_by_id(task_id):
     if request.method == 'PUT':
         fields = api.task_get_columns()
@@ -60,6 +60,15 @@ def task_by_id(task_id):
         task = api.task_update_by_id(task_id, data)
         resp = jsonify({'task': task})
         return resp
+    elif request.method == 'DELETE':
+        try:
+            if api.task_delete_by_id(task_id):
+                msg = {'status': 200, 'message': 'Task deleted'}
+                resp = jsonify(msg)
+                resp.status_code = 200
+                return resp
+        except exc.NodeNotFound, e:
+            return http_not_found()
     else:
         task = api.task_get_by_id(task_id)
         if not task:

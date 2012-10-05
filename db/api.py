@@ -383,6 +383,17 @@ def task_create(fields):
     return _model_create('tasks', fields)
 
 
+def task_delete_by_id(task_id):
+    """Query helper for deleting a task
+
+    :param task_id: id of task to delete
+    """
+    try:
+        return _model_delete_by_id('tasks', task_id)
+    except exc.IdNotFound, e:
+        raise exc.NodeNotFound()
+
+
 def task_get_columns():
     """Query helper that returns a list of Tasks columns"""
     result = _model_get_columns('tasks')
