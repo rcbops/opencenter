@@ -1,4 +1,5 @@
 import json
+from time import time
 
 from sqlalchemy import (Column, Integer, String, ForeignKey,
                         Text, Enum, DateTime)
@@ -120,7 +121,9 @@ class Tasks(Base):
     node_id = Column(Integer, ForeignKey('nodes.id'))
     action = Column(String(40))
     payload = Column(JsonBlob, default={})
-    state = Column(Enum('pending', 'running', 'done', 'timeout', 'cancelled'))
+    state = Column(
+        Enum('pending', 'running', 'done', 'timeout', 'cancelled'),
+        default='pending')
     result = Column(JsonBlob, default={})
     submitted = Column(Integer)
     completed = Column(Integer)
@@ -137,7 +140,7 @@ class Tasks(Base):
         self.payload = payload
         self.state = state
         self.result = result
-        self.submitted = submitted
+        self.submitted = int(time())
         self.completed = completed
         self.expires = expires
 
