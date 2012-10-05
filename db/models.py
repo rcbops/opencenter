@@ -1,4 +1,5 @@
 import json
+from time import time
 
 from sqlalchemy import (Column, Integer, String, ForeignKey,
                         Text, Enum, DateTime)
@@ -139,7 +140,7 @@ class Tasks(Base):
         self.payload = payload
         self.state = state
         self.result = result
-        self.submitted = submitted
+        self.submitted = int(time())
         self.completed = completed
         self.expires = expires
 

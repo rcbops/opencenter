@@ -30,7 +30,7 @@ def list_tasks():
             task = api.task_create(data)
             href = request.base_url + str(task['id'])
             msg = {'status': 201,
-                   'message': 'Tasl Created',
+                   'message': 'Task Created',
                    'task': task,
                    'ref': href}
             resp = jsonify(msg)

@@ -2,6 +2,7 @@
 
 from itertools import islice
 import json
+from time import time
 
 from sqlalchemy.exc import IntegrityError, StatementError
 from sqlalchemy.orm.exc import UnmappedInstanceError
@@ -394,6 +395,15 @@ def task_update_by_id(task_id, fields):
     :param task_id: id of the task to lookup
     :param fields: dict of column:value to update
     """
+    # submitted should never be updated
+    if 'submitted' in fields:
+        del fields['submitted']
+
+    # if state moves to a terminal one, update completed
+    if 'state' in fields:
+        if fields['state'] not in ['pending', 'running']:
+            fields['completed'] = int(time())
+
     result = _model_update_by_id('tasks', task_id, fields)
     return result
 
