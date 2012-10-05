@@ -3,7 +3,7 @@
 from itertools import islice
 import json
 
-from sqlalchemy.exc import IntegrityError, InvalidRequestError
+from sqlalchemy.exc import IntegrityError, StatementError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.sql import and_, or_
 
@@ -187,23 +187,24 @@ def adventures_get_by_node_id(node_id):
 
 
 def adventure_create(fields):
-    field_list = [c for c in Adventures.__table__.columns.keys()]
-    field_list.remove('id')
-    a = Adventures(**dict((field, fields[field])
-                          for field in field_list if field in fields))
-    db_session.add(a)
-    try:
-        db_session.commit()
-        return dict((c, getattr(a, c))
-                    for c in a.__table__.columns.keys())
-    except InvalidRequestError, e:
-        db_session.rollback()
-        msg = e.msg
-        raise Foo(msg)
-    except IntegrityError, e:
-        db_session.rollback()
-        msg = "Unable to create Adventure"
-        raise exc.CreateError(message=msg)
+    return _model_create('adventures', fields)
+#    field_list = [c for c in Adventures.__table__.columns.keys()]
+#    field_list.remove('id')
+#    a = Adventures(**dict((field, fields[field])
+#                          for field in field_list if field in fields))
+#    db_session.add(a)
+#    try:
+#        db_session.commit()
+#        return dict((c, getattr(a, c))
+#                    for c in a.__table__.columns.keys())
+#    except InvalidRequestError, e:
+#        db_session.rollback()
+#        msg = e.msg
+#        raise Foo(msg)
+#    except IntegrityError, e:
+#        db_session.rollback()
+#        msg = "Unable to create Adventure"
+#        raise exc.CreateError(message=msg)
 
 
 def adventure_delete_by_id(adventure_id):
@@ -301,22 +302,37 @@ def cluster_update_by_id(cluster_id, fields):
 
 
 def node_create(fields):
-    field_list = [c for c in Nodes.__table__.columns.keys()]
+    return _model_create('nodes', fields)
+
+def _model_create(model, fields):
+    """Query helper for creating a row
+
+    :param model: name of the table model
+    :param fields: dict of columns:values to create
+    """
+    tables = {'adventures': Adventures,
+              'clusters': Clusters,
+              'nodes': Nodes,
+              'roles': Roles,
+              'tasks': Tasks}
+    field_list = [c for c in tables[model].__table__.columns.keys()]
     field_list.remove('id')
-    a = Nodes(**dict((field, fields[field])
-                     for field in field_list if field in fields))
-    db_session.add(a)
+    r = tables[model](**dict((field, fields[field])
+                             for field in field_list if field in fields))
+    db_session.add(r)
     try:
         db_session.commit()
-        return dict((c, getattr(a, c))
-                    for c in a.__table__.columns.keys())
-    except InvalidRequestError, e:
+        return dict((c, getattr(r, c))
+                    for c in r.__table__.columns.keys())
+    except StatementError, e:
         db_session.rollback()
-        msg = e.msg
-        raise Foo(msg)
+        # msg = e.message
+        msg = "JSON object must be either type(dict) or type(list) " \
+              "not %s" % (e.message)
+        raise exc.CreateError(msg)
     except IntegrityError, e:
         db_session.rollback()
-        msg = "Unable to create Node, duplicate entry"
+        msg = "Unable to create %s, duplicate entry" % (model.title())
         raise exc.CreateError(message=msg)
 
 
@@ -377,6 +393,9 @@ def role_get_columns():
     result = _model_get_columns('roles')
     return result
 
+
+def task_create(fields):
+    return _model_create('tasks', fields)
 
 def task_get_columns():
     """Query helper that returns a list of Tasks columns"""
