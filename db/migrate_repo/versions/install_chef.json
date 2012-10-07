@@ -10,15 +10,14 @@
             "primitive": "run_task",
             "parameters": {
                 "action": "run_chef",
-                "payload": {}
+                "payload": {}},
+            "on_success": "s3"
         },
         "s3": {
             "primitive": "set_backend",
             "parameters": {
                 "backend": "chef-client",
-                "backend_state": "installed" },
-            "on_success": "s3"
-            }
+                "backend_state": "installed" }
         }
     }
 }
