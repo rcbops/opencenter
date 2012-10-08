@@ -100,7 +100,6 @@ class Clusters(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(20), unique=True)
     description = Column(String(80))
-    # config = Column(Text)
     config = Column(JsonBlob, default={})
     node = relationship('Nodes', backref=backref('cluster',
                                                  uselist=False,
