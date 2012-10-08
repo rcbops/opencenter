@@ -26,42 +26,23 @@ clusters = Blueprint('clusters', __name__)
 @clusters.route('/', methods=['GET', 'POST'])
 def list_clusters():
     if request.method == 'POST':
-        if 'name' in request.json:
-            name = request.json['name']
-            desc = None
-            if 'description' in request.json:
-                desc = request.json['description']
-            config = None
-            if 'config' in request.json:
-                config = request.json['config']
-            cluster = Clusters(name=name, description=desc, config=config)
-            try:
-                db_session.add(cluster)
-                # FIXME(rp): Transactional problem
-                # NOTE(shep): setting override_attributes as part of
-                #  the create, due to the lag time of chef.search
-                # current_app.backend.create_cluster(name, desc, config)
-                db_session.commit()
-                href = request.base_url + str(cluster.id)
-                msg = {'status': 201,
-                       'message': 'Cluster Created',
-                       'cluster': dict(
-                           (c, getattr(cluster, c))
-                           for c in cluster.__table__.columns.keys()),
-                       'ref': href}
-                resp = jsonify(msg)
-                resp.headers['Location'] = href
-                resp.status_code = 201
-            except IntegrityError, e:
-                # This is thrown on duplicate rows
-                db_session.rollback()
-                return http_conflict(e)
-            #except BackendError, e:
-            #    # This is thrown on duplicate environments
-            #    db_session.rollback()
-            #    return http_conflict(e)
-        else:
-            return http_bad_request('name')
+        fields = api.cluster_get_columns()
+        data = dict((field, request.json[field] if (field in request.json)
+                     else None) for field in fields)
+        # FIXME(rp): get a role name and a node name, and
+        # do a set_cluster_for_node(node_name, cluster_name)
+        try:
+            cluster = api.cluster_create(data)
+            href = request.base_url + str(cluster['id'])
+            msg = {'status': 201,
+                   'message': 'Cluster Created',
+                   'cluster': cluster,
+                   'ref': href}
+            resp = jsonify(msg)
+            resp.status_code = 201
+            resp.headers['Location'] = href
+        except exc.CreateError, e:
+            return http_bad_request(e.message)
     else:
         cluster_list = api.clusters_get_all()
         resp = jsonify({'clusters': cluster_list})
@@ -78,6 +59,7 @@ def filter_clusters():
 @clusters.route('/<cluster_id>/nodes', methods=['GET'])
 def nodes_by_cluster_id(cluster_id):
     if request.method == 'GET':
+        # cluster_list = api.cluster_get_by_id(cluster_id)
         r = Clusters.query.filter_by(id=cluster_id).first()
         if r is None:
             return http_not_found()
@@ -95,8 +77,8 @@ def nodes_by_cluster_id(cluster_id):
 
 @clusters.route('/<cluster_id>/<key>', methods=['GET', 'PUT'])
 def attributes_by_cluster_id(cluster_id, key):
-    r = Clusters.query.filter_by(id=cluster_id).first()
-    if r is None:
+    cluster = api.cluster_get_by_id(cluster_id)
+    if cluster is None:
         return http_not_found()
     else:
         if request.method == 'PUT':
@@ -108,20 +90,17 @@ def attributes_by_cluster_id(cluster_id, key):
                     msg = "Empty body"
                     return http_bad_request(msg)
                 else:
-                    r.__setattr__(key, request.json[key])
-                    try:
-                        db_session.commit()
-                        msg = {'status': 200,
-                               'cluster': dict(
-                                   (c, getattr(r, c))
-                                   for c in r.__table__.columns.keys()),
-                               'message': 'Updated Attribute: %s' % key}
-                        resp = jsonify(msg)
-                        resp.status_code = 200
-                    except Exception, e:
-                        return http_conflict(e)
+                    data = {key: request.json[key]}
+                    updated_cluster = api.cluster_update_by_id(
+                        cluster_id,
+                        data)
+                    msg = {'status': 200,
+                           'cluster': updated_cluster,
+                           'message': 'Updated Attribute: %s' % key}
+                    resp = jsonify(msg)
+                    resp.status_code = 200
         else:
-            resp = jsonify({key: r.__getattribute__(key)})
+            resp = jsonify({key: cluster[key]})
         return resp
 
 
@@ -154,34 +133,12 @@ def cluster_by_id(cluster_id):
         fields = api.cluster_get_columns()
         data = dict((field, request.json[field]) for field in fields
                     if field in request.json)
-        cluster = api.cluster_update_by_id(cluster_id, data)
-        resp = jsonify({'cluster': cluster})
-        return resp
-
-#        # FIXME(shep): currently breaks badly on an empty put
-#        r = Clusters.query.filter_by(id=cluster_id).first()
-#        # FIXME(rp): renames break the backend association
-#        if 'name' in request.json:
-#            r.name = request.json['name']
-#        if 'description' in request.json:
-#            r.description = request.json['description']
-#        if 'config' in request.json:
-#            r.config = json.dumps(request.json['config'])
-#        #TODO(shep): this is an un-excepted db call
-#        try:
-#            current_app.backend.set_cluster_settings(
-#                r.name, cluster_desc=r.description if (
-#                    'description' in request.json) else None,
-#                cluster_settings=request.json['config'] if (
-#                    'config' in request.json) else None)
-#            db_session.commit()
-#        except Exception, e:
-#            db_session.rollback()
-#            # FIXME(shep): this is not the correct return code/action
-#            return http_conflict(e)
-#        cls = dict(cluster=dict((c, getattr(r, c))
-#                                for c in r.__table__.columns.keys()))
-#        resp = jsonify(cls)
+        if 'name' in data:
+            msg = "Attribute %s is not modifiable" % 'name'
+            return http_bad_request(msg)
+        else:
+            cluster = api.cluster_update_by_id(cluster_id, data)
+            resp = jsonify({'cluster': cluster})
     elif request.method == 'DELETE':
         r = Clusters.query.filter_by(id=cluster_id).first()
         try:
@@ -198,11 +155,9 @@ def cluster_by_id(cluster_id):
         except UnmappedInstanceError, e:
             return http_not_found()
     else:
-        r = Clusters.query.filter_by(id=cluster_id).first()
-        if r is None:
+        cluster = api.cluster_get_by_id(cluster_id)
+        if cluster is None:
             return http_not_found()
         else:
-            cls = dict(cluster=dict((c, getattr(r, c))
-                                    for c in r.__table__.columns.keys()))
-            resp = jsonify(cls)
+            resp = jsonify({'cluster': cluster})
     return resp
