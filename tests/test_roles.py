@@ -132,6 +132,48 @@ class RoleUpdateTests(unittest2.TestCase):
         self.assertNotEquals(out['role']['description'], self.desc)
 
 
+class RoleReadTests(unittest2.TestCase):
+    @classmethod
+    def setUpClass(self):
+        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        self.app = self.foo.test_client()
+        self.content_type = 'application/json'
+        self.name = _randomStr(10)
+        self.desc = _randomStr(30)
+        self.data = {'name': self.name,
+                     'description': self.desc}
+        resp = self.app.post('/roles/',
+                             content_type=self.content_type,
+                             data=json.dumps(self.data))
+        out = json.loads(resp.data)
+        self.role_id = out['role']['id']
+
+    @classmethod
+    def tearDownClass(self):
+        resp = self.app.delete('/roles/%s' % self.role_id,
+                               content_type=self.content_type)
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def test_update_role_attribute_name_by_uri(self):
+        resp = self.app.get('/roles/%s/name' % self.role_id,
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['name'], self.name)
+
+    def test_update_role_attribute_description_by_uri(self):
+        resp = self.app.get('/roles/%s/description' % self.role_id,
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['description'], self.desc)
+
+
 class RoleInvalidHTTPMethodTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
