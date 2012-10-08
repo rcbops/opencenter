@@ -87,8 +87,8 @@ class RoleUpdateTests(unittest2.TestCase):
         tmp_name = _randomStr(10)
         payload = {'name': tmp_name}
         resp = self.app.put('/roles/%s' % self.role_id,
-                             content_type=self.content_type,
-                             data=json.dumps(payload))
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.assertEquals(out['role']['name'], tmp_name)
@@ -99,8 +99,8 @@ class RoleUpdateTests(unittest2.TestCase):
         tmp_name = _randomStr(10)
         payload = {'name': tmp_name}
         resp = self.app.put('/roles/%s/name' % self.role_id,
-                             content_type=self.content_type,
-                             data=json.dumps(payload))
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.assertEquals(out['role']['name'], tmp_name)
@@ -111,8 +111,8 @@ class RoleUpdateTests(unittest2.TestCase):
         tmp_desc = _randomStr(30)
         payload = {'description': tmp_desc}
         resp = self.app.put('/roles/%s' % self.role_id,
-                             content_type=self.content_type,
-                             data=json.dumps(payload))
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.assertEquals(out['role']['name'], self.name)
@@ -123,8 +123,8 @@ class RoleUpdateTests(unittest2.TestCase):
         tmp_desc = _randomStr(30)
         payload = {'description': tmp_desc}
         resp = self.app.put('/roles/%s/description' % self.role_id,
-                             content_type=self.content_type,
-                             data=json.dumps(payload))
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.assertEquals(out['role']['name'], self.name)
