@@ -29,6 +29,7 @@ LOG = logging.getLogger('backend.driver')
 
 backend_list = {}
 
+
 # we'll load either a directory or a file, and add any
 # loaded backends to the backend list.
 #
@@ -37,8 +38,10 @@ def load(path, config={}):
     if os.path.isdir(path):
         _load_path(path, config)
 
+
 def backends():
     return backend_list.keys()
+
 
 def notify(object_type, notification_type, old_object, new_object):
     # evaluate filter predicate, call all registered handlers
@@ -55,7 +58,9 @@ def notify(object_type, notification_type, old_object, new_object):
             backend_notification_list.append(new_object.backend)
 
     for backend in backend_notification_list:
-        backend_list[backend].notify(object_type, notification_type, old_object, new_object)
+        backend_list[backend].notify(object_type, notification_type,
+                                     old_object, new_object)
+
 
 def _load_path(path, config={}):
     dirlist = os.listdir(path)
@@ -64,6 +69,7 @@ def _load_path(path, config={}):
 
     if not os.path.isdir(p) and p.endswith('.py'):
         _load_file(p, config)
+
 
 def _load_file(path, config={}):
     LOG.debug('Loading backend plugin file %s' % path)
@@ -76,12 +82,14 @@ def _load_file(path, config={}):
     else:
         backend_list[backend_name] = backend_obj
 
+
 def _ns_load(name, config={}):
     # expects an include of backends/#{name}.py,
     # with a class of #{name.capitalize}Backend
 
     import_str = "backends.%s" % name
-    class_str = '%sBackend' % ''.join(map(lambda x: x.capitalize(), name.split('-')))
+    class_str = '%sBackend' % ''.join(map(lambda x: x.capitalize(),
+                                          name.split('-')))
 
     try:
         __import__(import_str)
@@ -90,6 +98,7 @@ def _ns_load(name, config={}):
         LOG.error('Could not load backend named %s (%s)' % (name, str(e)))
 
     return None
+
 
 # Object types: cluster, role, node, &c
 # Notification types: create, update, delete

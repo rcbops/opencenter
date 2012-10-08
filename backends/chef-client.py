@@ -27,7 +27,6 @@ class ChefClient(backends.ConfigurationBackend):
 
         self.role_map = {}
 
-
     def notify(self, object_type, notification_type, old_object, new_object):
         pass
 
@@ -92,7 +91,17 @@ class ChefClient(backends.ConfigurationBackend):
     #         env = chef.Environment.create(cluster_name,
     #                                       self.api,
     #                                       description=cluster_desc,
-    #                                       override_attributes=cluster_settings)
+    #                                       override_attributes=cluster_
+# s
+# e
+# t
+# t
+# i
+# n
+# g
+# s
+# )
+
 
     #         try:
     #             env.save()

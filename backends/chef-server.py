@@ -6,6 +6,7 @@ import backends
 
 LOG = logging.getLogger('backend.driver')
 
+
 class ChefServerBackend(backends.ConfigurationBackend):
     def __init__(self, config):
         LOG.debug('initializing null backend')
