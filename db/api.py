@@ -368,14 +368,54 @@ def node_delete_by_id(node_id):
         raise exc.NodeNotFound()
 
 
+def role_create(fields):
+    return _model_create('roles', fields)
+
+
+def role_delete_by_id(role_id):
+    """Query helper for deleting a role
+
+    :param role_id: id of role to delete
+    """
+    try:
+        return _model_delete_by_id('roles', role_id)
+    except exc.IdNotFound, e:
+        raise exc.NodeNotFound()
+
+
 def roles_get_all():
     """Query helper that returns a dict of all roles"""
     return _model_gett_all('roles')
 
 
+def role_get_by_filter(filters):
+    """Query helper that returns a role dict.
+
+    :param filters: dictionary of filters; that are combined with AND
+                    to filter the result set.
+    """
+    #TODO(shep): this should accept an array.. and return the first result
+    result = _model_get_by_filter('roles', filters)
+    return result
+
+
+def role_get_by_id(role_id):
+    """Query helper that returns a role by role_id
+
+    :param role_id: id of the role to lookup
+    """
+    result = role_get_by_filter({'id': role_id})
+    return result
+
+
 def role_get_columns():
     """Query helper that returns a list of Roles columns"""
     result = _model_get_columns('roles')
+    return result
+
+
+def role_update_by_id(role_id, fields):
+    result = _model_update_by_id('roles', role_id, fields)
     return result
 
 
