@@ -52,8 +52,8 @@ class NodeCreateTests(unittest2.TestCase):
                                content_type=self.content_type)
 
     def _delete_node(self, node_id):
-        if self.foo.config['backend'] != 'null':
-            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+        # if self.foo.config['backend'] != 'null':
+        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
         resp = self.app.delete('/nodes/%s' % node_id,
                                content_type=self.content_type)
         self.assertEquals(resp.status_code, 200)
@@ -186,8 +186,8 @@ class NodeUpdateTests(unittest2.TestCase):
                             data=json.dumps(self.create_data))
         self.json = json.loads(tmp.data)
         self.node_id = self.json['node']['id']
-        if self.foo.config['backend'] != 'null':
-            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+        # if self.foo.config['backend'] != 'null':
+        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
 
     def tearDown(self):
         tmp_resp = self.app.delete('/nodes/%s' + str(self.node_id),

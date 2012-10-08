@@ -34,16 +34,16 @@ def list_nodes():
         # do a set_cluster_for_node(node_name, cluster_name)
         try:
             node = api.node_create(data)
-            current_app.backend.create_node(
-                node['hostname'],
-                role=node['role_id'],
-                cluster=node['cluster_id'],
-                node_settings=node['config'])
-            if node['cluster_id'] is not None:
-                cluster = api.cluster_get_by_id(node['cluster_id'])
-                current_app.backend.set_cluster_for_node(
-                    node=node['hostname'],
-                    cluster=cluster['name'])
+            # current_app.backend.create_node(
+            #     node['hostname'],
+            #     role=node['role_id'],
+            #     cluster=node['cluster_id'],
+            #     node_settings=node['config'])
+            # if node['cluster_id'] is not None:
+            #     cluster = api.cluster_get_by_id(node['cluster_id'])
+            #     current_app.backend.set_cluster_for_node(
+            #         node=node['hostname'],
+            #         cluster=cluster['name'])
             href = request.base_url + str(node['id'])
             msg = {'status': 201,
                    'message': 'Node Created',
@@ -134,7 +134,7 @@ def node_by_id(node_id):
             # node = api.node_get_by_filter('id', node_id)
             node = api.node_get_by_id(node_id)
             if api.node_delete_by_id(node_id):
-                current_app.backend.delete_node(node['hostname'])
+                # current_app.backend.delete_node(node['hostname'])
                 msg = {'status': 200, 'message': 'Node deleted'}
                 resp = jsonify(msg)
                 resp.status_code = 200

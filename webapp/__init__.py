@@ -21,8 +21,6 @@ from db import api, models, database
 
 import backends
 
-backend = None
-
 
 # Stolen: http://code.activestate.com/recipes/\
 #         577911-context-manager-for-a-daemon-pid-file/
@@ -85,7 +83,7 @@ class Thing(Flask):
         defaults = {'main':
                     {'bind_address': '0.0.0.0',
                      'bind_port': 8080,
-                     'backend': 'null',
+                     'backend': './backends',
                      'loglevel': 'WARNING',
                      'database_uri': 'sqlite:///',
                      'daemonize': False,
@@ -110,9 +108,12 @@ class Thing(Flask):
         if confighash:
             defaults.update(confighash)
 
-        backend_module = defaults['main']['backend']
-        self.backend = backends.load(
-            backend_module, defaults['%s_backend' % backend_module])
+        # load the backends
+        backends.load(defaults['main']['backend'], defaults)
+
+        # set the notification dispatcher
+        self.dispatch = backends.notify
+
         self.config.update(defaults['main'])
 
         LOG = logging.getLogger()
