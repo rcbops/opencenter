@@ -49,6 +49,33 @@ def filter_roles():
     return jsonify({'roles': builder.eval()})
 
 
+@roles.route('/<role_id>/<key>', methods=['GET', 'PUT'])
+def attributes_by_role_id(role_id, key):
+    role = api.role_get_by_id(role_id)
+    if not role:
+        return http_not_found()
+    else:
+        if request.method == 'PUT':
+            if key in ['id', 'hostname']:
+                msg = "Attribute %s is not modifiable" % key
+                return http_bad_request(msg)
+            else:
+                if key not in request.json:
+                    msg = "Empty body"
+                    return http_bad_request(msg)
+                else:
+                    data = {key: request.json[key]}
+                    updated_role = api.role_update_by_id(role_id, data)
+                    msg = {'status': 200,
+                           'role': updated_role,
+                           'message': 'Updated Attribute: %s' % key}
+                    resp = jsonify(msg)
+                    resp.status_code = 200
+        else:
+            resp = jsonify({key: role[key]})
+        return resp
+
+
 @roles.route('/<role_id>', methods=['GET', 'PUT', 'DELETE'])
 def role_by_id(role_id):
     if request.method == 'PUT':

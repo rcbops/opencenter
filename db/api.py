@@ -270,9 +270,19 @@ def adventure_update_by_id(node_id, fields):
     return result
 
 
+def cluster_create(fields):
+    return _model_create('clusters', fields)
+
+
 def clusters_get_all():
     """Query helper that returns a dict of all clusters"""
     return _model_get_all('clusters')
+
+
+def cluster_get_columns():
+    """Query helper that returns a list of Adventure columns"""
+    result = _model_get_columns('clusters')
+    return result
 
 
 def cluster_get_by_filter(filters):

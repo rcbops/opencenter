@@ -14,78 +14,159 @@ def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
 
 
-class RoleCRUDTestCase(unittest2.TestCase):
+class RoleCreateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
         self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
         self.app = self.foo.test_client()
-
-        self.role_name = _randomStr(10)
-        self.role_desc = _randomStr(30)
         self.content_type = 'application/json'
 
-    def test_role_crud(self):
-        # create a new role
-        role = {'name': self.role_name,
-                'description': self.role_desc}
-        resp = self.app.post('/roles/', data=json.dumps(role),
-                             content_type=self.content_type)
-        self.assertEqual(resp.status_code, 201)
-        data = json.loads(resp.data)
+    @classmethod
+    def tearDownClass(self):
+        pass
 
-        # make sure the role was created
-        resp = self.app.get("/roles/%s" % data['role']['id'],
-                            content_type=self.content_type)
+    def setUp(self):
+        self.name = _randomStr(10)
+        self.desc = _randomStr(30)
 
-        tmp = json.loads(resp.data)
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(tmp['role']['id'], data['role']['id'])
-        self.assertEqual(tmp['role']['name'], self.role_name)
-        self.assertEqual(tmp['role']['description'], self.role_desc)
+    def tearDown(self):
+        pass
 
-        # update role attributes
-        new_desc = _randomStr(30)
-        new_role = {"description": new_desc}
-        resp = self.app.put("/roles/%d" % data['role']['id'],
-                            data=json.dumps(new_role),
-                            content_type=self.content_type)
-        self.assertEqual(resp.status_code, 200)
-        tmp_data = json.loads(resp.data)
-        self.assertEqual(tmp_data['role']['description'], new_desc)
-        self.assertNotEqual(tmp_data['role']['description'], self.role_desc)
-
-        # clean up the role
-        resp = self.app.delete("/roles/%d" % data['role']['id'],
+    def _delete_role(self, role_id):
+        resp = self.app.delete("/roles/%d" % role_id,
                                content_type=self.content_type)
         self.assertEqual(resp.status_code, 200)
         tmp = json.loads(resp.data)
         self.assertEqual(tmp['status'], 200)
         self.assertEqual(tmp['message'], 'Role deleted')
 
+    def test_create_role(self):
+        data = {'name': self.name,
+                'description': self.desc}
+        resp = self.app.post('/roles/',
+                             content_type=self.content_type,
+                             data=json.dumps(data))
+        self.assertEqual(resp.status_code, 201)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 201)
+        self.assertEquals(out['message'], 'Role Created')
+        self.assertEquals(out['role']['name'], self.name)
+        self.assertEquals(out['role']['description'], self.desc)
 
-#class RoleTestCase(RoushTestCase):
+        # clean up the role we created
+        self._delete_role(out['role']['id'])
 
-#    @classmethod
-#    def setUpClass(self):
-        # roush.app.testing = True
-        # self.app = roush.app.test_client()
-        # Create a role
-    #     self.role_name = _randomStr(10)
-    #     self.role_desc = _randomStr(30)
-    #     self.role_data = {
-    #         "name": self.role_name,
-    #         "description": self.role_desc}
-    #     tmp = self.app.post('/roles', data=json.dumps(self.role_data),
-    #                         content_type='application/json')
-    #     self.role_json = json.loads(tmp.data)
-    #     self.role_id = self.role_json['role']['id']
 
-    # @classmethod
-    # def tearDownClass(self):
-    #     tmp = self.app.delete('/roles/%s' % self.role_id)
+class RoleUpdateTests(unittest2.TestCase):
+    @classmethod
+    def setUpClass(self):
+        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        self.app = self.foo.test_client()
+        self.content_type = 'application/json'
 
-    # def test_role_blah(self):
-    #     pass
+    @classmethod
+    def tearDownClass(self):
+        pass
 
-if __name__ == '__main__':
-    unittest2.main()
+    def setUp(self):
+        self.name = _randomStr(10)
+        self.desc = _randomStr(30)
+        self.data = {'name': self.name,
+                     'description': self.desc}
+        resp = self.app.post('/roles/',
+                             content_type=self.content_type,
+                             data=json.dumps(self.data))
+        out = json.loads(resp.data)
+        self.role_id = out['role']['id']
+
+    def tearDown(self):
+        resp = self.app.delete('/roles/%s' % self.role_id,
+                               content_type=self.content_type)
+
+    def test_update_role_attribute_name(self):
+        tmp_name = _randomStr(10)
+        payload = {'name': tmp_name}
+        resp = self.app.put('/roles/%s' % self.role_id,
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['role']['name'], tmp_name)
+        self.assertNotEquals(out['role']['name'], self.name)
+        self.assertEquals(out['role']['description'], self.desc)
+
+    def test_update_role_attribute_name_by_uri(self):
+        tmp_name = _randomStr(10)
+        payload = {'name': tmp_name}
+        resp = self.app.put('/roles/%s/name' % self.role_id,
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['role']['name'], tmp_name)
+        self.assertNotEquals(out['role']['name'], self.name)
+        self.assertEquals(out['role']['description'], self.desc)
+
+    def test_update_role_attribute_description(self):
+        tmp_desc = _randomStr(30)
+        payload = {'description': tmp_desc}
+        resp = self.app.put('/roles/%s' % self.role_id,
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['role']['name'], self.name)
+        self.assertEquals(out['role']['description'], tmp_desc)
+        self.assertNotEquals(out['role']['description'], self.desc)
+
+    def test_update_role_attribute_description_by_uri(self):
+        tmp_desc = _randomStr(30)
+        payload = {'description': tmp_desc}
+        resp = self.app.put('/roles/%s/description' % self.role_id,
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['role']['name'], self.name)
+        self.assertEquals(out['role']['description'], tmp_desc)
+        self.assertNotEquals(out['role']['description'], self.desc)
+
+
+class RoleInvalidHTTPMethodTests(unittest2.TestCase):
+    @classmethod
+    def setUpClass(self):
+        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        self.app = self.foo.test_client()
+        self.content_type = 'application/json'
+
+    @classmethod
+    def tearDownClass(self):
+        pass
+
+    def _execute_method(self, method_name, path, http_code):
+        """Helper function that will execute a method, against a path and
+           verify the returned http code
+
+        :param method_name: name of the http method to execute
+        :param path: path to execute the http call against
+        :param http_code: http error code to validate against
+        """
+        resp = self.app.__getattribute__(method_name)(
+            path,
+            content_type=self.content_type)
+        self.assertEquals(resp.status_code, http_code)
+
+    def test_405_returned_by_delete_on_roles(self):
+        self._execute_method('delete', '/roles/', 405)
+
+    def test_405_returned_by_patch_on_roles(self):
+        self._execute_method('patch', '/roles/', 405)
+
+    def test_405_returned_by_put_on_roles(self):
+        self._execute_method('put', '/roles/', 405)
+
+    def test_405_returned_by_post_on_roles_with_id(self):
+        self._execute_method('post', '/roles/99', 405)
+
+    def test_405_returned_by_patch_on_roles_with_id(self):
+        self._execute_method('patch', '/roles/99', 405)
