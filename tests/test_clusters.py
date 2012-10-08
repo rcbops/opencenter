@@ -54,8 +54,8 @@ class ClusterCreateTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['config'], self.attribs)
 
         # Cleanup the cluster we created
-        if self.foo.config['backend'] != "null":
-            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+        # if self.foo.config['backend'] != "null":
+        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
         resp = self.app.delete('/clusters/%s' % out['cluster']['id'],
                                content_type=self.content_type)
         self.assertEquals(resp.status_code, 200)
@@ -78,8 +78,8 @@ class ClusterCreateTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['config'], dict())
 
         # Cleanup the cluster we created
-        if self.foo.config['backend'] != "null":
-            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+        # if self.foo.config['backend'] != "null":
+        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
         resp = self.app.delete('/clusters/%s' % out['cluster']['id'],
                                content_type=self.content_type)
         self.assertEquals(resp.status_code, 200)
@@ -102,8 +102,8 @@ class ClusterCreateTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['config'], self.attribs)
 
         # Cleanup the cluster we created
-        if self.foo.config['backend'] != "null":
-            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+        # if self.foo.config['backend'] != "null":
+        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
         resp = self.app.delete('/clusters/%s' % out['cluster']['id'],
                                content_type=self.content_type)
         self.assertEquals(resp.status_code, 200)
@@ -125,8 +125,8 @@ class ClusterCreateTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['config'], dict())
 
         # Cleanup the cluster we created
-        if self.foo.config['backend'] != "null":
-            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+        # if self.foo.config['backend'] != "null":
+        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
         resp = self.app.delete('/clusters/%s' % out['cluster']['id'],
                                content_type=self.content_type)
         self.assertEquals(resp.status_code, 200)
@@ -167,8 +167,8 @@ class ClusterUpdateTests(unittest2.TestCase):
                             data=json.dumps(self.create_data))
         self.json = json.loads(tmp.data)
         self.cluster_id = self.json['cluster']['id']
-        if self.foo.config['backend'] != 'null':
-            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+        # if self.foo.config['backend'] != 'null':
+        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
 
     def test_update_cluster_with_description_and_override_attributes(self):
         tmp_desc = _randomStr(30)
@@ -257,8 +257,8 @@ class ClusterAttributeTests(unittest2.TestCase):
                             data=json.dumps(self.create_data))
         self.json = json.loads(tmp.data)
         self.cluster_id = self.json['cluster']['id']
-        if self.foo.config['backend'] != 'null':
-            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+        # if self.foo.config['backend'] != 'null':
+        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
 
     def test_cluster_node_list_on_non_existent_cluster_id(self):
         resp = self.app.get('/clusters/99/nodes',
@@ -299,8 +299,8 @@ class ClusterAttributeTests(unittest2.TestCase):
         self.assertEquals(tmp['nodes'][0]['hostname'], hostname)
 
         # Cleanup the node we created
-        if self.foo.config['backend'] != "null":
-            time.sleep(2 * self.shep)  # chef-solr indexing can be slow
+        # if self.foo.config['backend'] != "null":
+        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
         resp = self.app.delete('/nodes/%s' % out['node']['id'],
                                content_type=self.content_type)
         self.assertEquals(resp.status_code, 200)

@@ -40,7 +40,7 @@ def list_clusters():
                 # FIXME(rp): Transactional problem
                 # NOTE(shep): setting override_attributes as part of
                 #  the create, due to the lag time of chef.search
-                current_app.backend.create_cluster(name, desc, config)
+                # current_app.backend.create_cluster(name, desc, config)
                 db_session.commit()
                 href = request.base_url + str(cluster.id)
                 msg = {'status': 201,
@@ -189,7 +189,7 @@ def cluster_by_id(cluster_id):
             db_session.commit()
 
             # FIXME(rp): Transaction
-            current_app.backend.delete_cluster(r.name)
+            # current_app.backend.delete_cluster(r.name)
 
             msg = {'status': 200, 'message': 'Cluster deleted'}
 
