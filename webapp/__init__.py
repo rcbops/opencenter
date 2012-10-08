@@ -112,7 +112,7 @@ class Thing(Flask):
         backends.load(defaults['main']['backend'], defaults)
 
         # set the notification dispatcher
-        self.dispatch=backends.notify
+        self.dispatch = backends.notify
 
         self.config.update(defaults['main'])
 
