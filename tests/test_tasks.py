@@ -1,17 +1,12 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
+
 import json
-import os
 import random
 import roush
 import string
-import unittest2
-import tempfile
 import time
+import unittest2
 
-from test_roush import RoushTestCase
-# from setup import RoushTest
-
-from db.database import init_db
 import webapp
 
 
@@ -19,11 +14,22 @@ def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
 
 
+def _gen_payload_obj():
+    ret = {_randomStr(5): _randomStr(10),
+           _randomStr(5): {_randomStr(5): _randomStr(10)},
+           _randomStr(5): [_randomStr(10), _randomStr(10)]}
+    return ret
+
+
+def _gen_result_obj():
+    ret = _gen_payload_obj()
+    return ret
+
+
 class TaskCreateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
         self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
-        init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
         self.content_type = 'application/json'
 
@@ -34,13 +40,9 @@ class TaskCreateTests(unittest2.TestCase):
     def setUp(self):
         self.node_id = 99
         self.action = _randomStr(10)
-        self.payload = {_randomStr(5): _randomStr(10),
-                        _randomStr(5): {_randomStr(5): _randomStr(10)},
-                        _randomStr(5): [_randomStr(10), _randomStr(10)]}
+        self.payload = _gen_payload_obj()
         self.state = 'pending'
-        self.result = {_randomStr(5): _randomStr(10),
-                       _randomStr(5): {_randomStr(5): _randomStr(10)},
-                       _randomStr(5): [_randomStr(10), _randomStr(10)]}
+        self.result = _gen_result_obj()
 
     def tearDown(self):
         pass
@@ -86,7 +88,6 @@ class TaskUpdateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
         self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
-        init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
         self.content_type = 'application/json'
 
@@ -99,13 +100,9 @@ class TaskUpdateTests(unittest2.TestCase):
         # optional fields: result, submitted, completed, expires
         self.node_id = 99
         self.action = _randomStr(10)
-        self.payload = {_randomStr(5): _randomStr(10),
-                        _randomStr(5): {_randomStr(5): _randomStr(10)},
-                        _randomStr(5): [_randomStr(10), _randomStr(10)]}
+        self.payload = _gen_payload_obj()
         self.state = 'pending'
-        self.result = {_randomStr(5): _randomStr(10),
-                       _randomStr(5): {_randomStr(5): _randomStr(10)},
-                       _randomStr(5): [_randomStr(10), _randomStr(10)]}
+        self.result = _gen_result_obj()
         self.data = {'node_id': self.node_id,
                      'action': self.action,
                      'payload': self.payload,
@@ -278,7 +275,6 @@ class TaskInvalidHTTPMethodTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
         self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
-        init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
         self.content_type = 'application/json'
 
