@@ -38,7 +38,7 @@ def util_int(what):
 
 def util_includes(element, container):
     try:
-        if element in continer:
+        if element in container:
             return True
         return False
     except Exception as e:
