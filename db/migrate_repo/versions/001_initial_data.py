@@ -21,7 +21,7 @@ def upgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
 
     adventures = [
-        {'name': 'install chef',
+        {'name': 'install chef client',
          'dsl': 'install_chef.json',
          'criteria': 'install_chef.criteria'},
         {'name': 'run chef',
@@ -29,7 +29,13 @@ def upgrade(migrate_engine):
          'criteria': 'run_chef.criteria'},
         {'name': 'install chef server',
          'dsl':  'install_chef_server.json',
-         'criteria': 'install_chef_server.criteria'}]
+         'criteria': 'install_chef_server.criteria'},
+        {'name': 'install nova controller',
+         'dsl': 'install_nova_controller.json',
+         'criteria': 'install_nova_controller.criteria'},
+        {'name': 'install nova compute',
+         'dsl': 'install_nova_compute.json',
+         'criteria': 'install_nova_compute.criteria'}]
 
     for adventure in adventures:
         json_path = os.path.join(

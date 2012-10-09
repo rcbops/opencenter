@@ -91,6 +91,7 @@ class FilterTokenizer:
             (r"!", self.negation),
             (r"or", self.or_op),
             (r"and", self.and_op),
+            (r"none", self.none),
             (r",", self.comma),
             (r"[ \t\n]+", None),
             (r"[0-9]+", self.number),
@@ -141,6 +142,9 @@ class FilterTokenizer:
 
     def comma(self, scanner, token):
         return 'COMMA', token
+
+    def none(self, scanner, token):
+        return 'NONE', token
 
     def parse(self, input_filter):
         self.tokens, self.remainder = self.scanner.scan(input_filter)
@@ -251,6 +255,9 @@ class AstBuilder:
         if token == 'STRING':
             return Node(str(val), 'STRING', None)
 
+        if token == 'NONE':
+            return Node(None, 'NONE', None)
+
         if token == 'IDENTIFIER':
             next_token, next_val = self.tokenizer.peek()
             if next_token != 'OPENPAREN':
@@ -309,7 +316,7 @@ class AstBuilder:
         token, val = self.tokenizer.peek()
         if token == 'AND':
             self.tokenizer.scan()  # eat the token
-            rhs = self.parse_orexpr()
+            rhs = self.parse_andexpr()
             return Node(node, 'AND', rhs)
         else:
             return node
@@ -418,6 +425,9 @@ class Node:
         if self.op == 'IDENTIFIER':
             return 'IDENTIFIER %s' % self.lhs
 
+        if self.op == 'NONE':
+            return 'VALUE None'
+
         if self.op == 'FUNCTION':
             return 'FN %s(%s)' % (str(self.lhs), ', '.join(map(str, self.rhs)))
 
@@ -432,7 +442,7 @@ class Node:
 
         self.logger.debug('evaluating %s' % str(self))
 
-        if self.op in ['STRING', 'NUMBER', 'IDENTIFIER', 'FUNCTION']:
+        if self.op in ['STRING', 'NUMBER', 'IDENTIFIER', 'FUNCTION', 'NONE']:
             if self.op == 'STRING':
                 retval = str(self.lhs)
 
@@ -442,11 +452,13 @@ class Node:
             if self.op == 'IDENTIFIER':
                 retval = self.eval_identifier(node, self.lhs)
 
+            if self.op == 'NONE':
+                retval = None
+
             if self.op == 'FUNCTION':
                 if not self.lhs in functions:
                     raise RuntimeError('Cannot find external fn %s' % self.lhs)
 
-                # yeah, pep8, you are right.  this is much easier to read...
                 args = map(lambda x: x.eval_node(node, functions), self.rhs)
                 retval = functions[self.lhs](*args)
 
