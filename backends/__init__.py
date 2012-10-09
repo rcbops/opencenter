@@ -7,24 +7,24 @@ import logging
 LOG = logging.getLogger('backend.driver')
 
 
-# class BackendException(Exception):
-#     pass
+class BackendException(Exception):
+    pass
 
 
-# class NodeDoesNotExist(BackendException):
-#     pass
+class NodeDoesNotExist(BackendException):
+    pass
 
 
-# class ClusterDoesNotExist(BackendException):
-#     pass
+class ClusterDoesNotExist(BackendException):
+    pass
 
 
-# class RoleDoesNotExist(BackendException):
-#     pass
+class RoleDoesNotExist(BackendException):
+    pass
 
 
-# class BackendError(BackendException):
-#     pass
+class BackendError(BackendException):
+    pass
 
 
 backend_list = {}
