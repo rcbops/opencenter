@@ -355,6 +355,14 @@ class ClusterReadTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['name'], self.name)
         self.assertEquals(out['cluster']['description'], self.desc)
 
+    def test_read_cluster_by_bad_id_404(self):
+        resp = self.app.get('/clusters/%s' % '99',
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 404)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 404)
+        self.assertTrue('Not Found' in out['message'])
+
     def test_read_cluster_attribute_name_by_uri_with_bad_id_404(self):
         resp = self.app.get('/clusters/%s/name' % '99',
                             content_type=self.content_type)
