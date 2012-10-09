@@ -98,6 +98,7 @@ def attributes_by_cluster_id(cluster_id, key):
 
 @clusters.route('/<cluster_id>/config', methods=['PATCH'])
 def config_by_cluster_id(cluster_id):
+    # TODO(shep): this needs to be converted to db/api.py
     r = Clusters.query.filter_by(id=cluster_id).first()
     if r is None:
         return http_not_found()
