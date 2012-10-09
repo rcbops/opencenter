@@ -133,12 +133,8 @@ def cluster_by_id(cluster_id):
         fields = api.cluster_get_columns()
         data = dict((field, request.json[field]) for field in fields
                     if field in request.json)
-        if 'name' in data:
-            msg = "Attribute %s is not modifiable" % 'name'
-            return http_bad_request(msg)
-        else:
-            cluster = api.cluster_update_by_id(cluster_id, data)
-            resp = jsonify({'cluster': cluster})
+        cluster = api.cluster_update_by_id(cluster_id, data)
+        resp = jsonify({'cluster': cluster})
     elif request.method == 'DELETE':
         r = Clusters.query.filter_by(id=cluster_id).first()
         try:

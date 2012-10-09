@@ -316,6 +316,10 @@ def cluster_delete_by_id(cluster_id):
 
 
 def cluster_update_by_id(cluster_id, fields):
+    protected_fields = ['name']
+    for field in protected_fields:
+        if field in fields:
+            fields.pop(field)
     result = _model_update_by_id('clusters', cluster_id, fields)
     return result
 

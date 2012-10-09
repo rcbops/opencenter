@@ -184,7 +184,7 @@ class ClusterUpdateTests(unittest2.TestCase):
         resp = self.app.delete('/clusters/%s' % self.cluster_id,
                                content_type=self.content_type)
 
-    def test_update_cluster_attribute_name_returns_a_400_TODO(self):
+    def test_update_cluster_attribute_name(self):
         # TODO(shep): currently this passes, but an update
         #             against the name attribute should fail
         tmp_name = _randomStr(10)
@@ -192,11 +192,10 @@ class ClusterUpdateTests(unittest2.TestCase):
         resp = self.app.put('/clusters/%s' % self.cluster_id,
                             content_type=self.content_type,
                             data=json.dumps(payload))
-        self.assertEquals(resp.status_code, 400)
+        self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
-        self.assertEqual(out['status'], 400)
-        self.assertTrue('Attribute name is not modifiable' in out['message'])
-        # pass
+        self.assertEquals(out['cluster']['name'], self.name)
+        self.assertEquals(out['cluster']['description'], self.desc)
 
     def test_update_cluster_attribute_name_by_uri_returns_a_400(self):
         tmp_name = _randomStr(10)
