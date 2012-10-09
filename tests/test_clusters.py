@@ -38,6 +38,14 @@ class ClusterCreateTests(unittest2.TestCase):
     def tearDownClass(self):
         pass
 
+    def _delete_cluster(self, cluster_id):
+        resp = self.app.delete('/clusters/%s' % cluster_id,
+                               content_type=self.content_type)
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 200)
+        self.assertEquals(out['message'], 'Cluster deleted')
+
     def test_create_cluster_with_desc_and_override_attributes(self):
         data = {'name': self.name,
                 'description': self.desc,
@@ -54,14 +62,7 @@ class ClusterCreateTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['config'], self.attribs)
 
         # Cleanup the cluster we created
-        # if self.foo.config['backend'] != "null":
-        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
-        resp = self.app.delete('/clusters/%s' % out['cluster']['id'],
-                               content_type=self.content_type)
-        self.assertEquals(resp.status_code, 200)
-        out = json.loads(resp.data)
-        self.assertEquals(out['status'], 200)
-        self.assertEquals(out['message'], 'Cluster deleted')
+        self._delete_cluster(out['cluster']['id'])
 
     def test_create_cluster_with_desc_and_no_override_attributes(self):
         data = {'name': self.name,
@@ -78,14 +79,7 @@ class ClusterCreateTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['config'], dict())
 
         # Cleanup the cluster we created
-        # if self.foo.config['backend'] != "null":
-        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
-        resp = self.app.delete('/clusters/%s' % out['cluster']['id'],
-                               content_type=self.content_type)
-        self.assertEquals(resp.status_code, 200)
-        out = json.loads(resp.data)
-        self.assertEquals(out['status'], 200)
-        self.assertEquals(out['message'], 'Cluster deleted')
+        self._delete_cluster(out['cluster']['id'])
 
     def test_create_cluster_with_override_attributes_and_no_desc(self):
         data = {'name': self.name,
@@ -102,14 +96,7 @@ class ClusterCreateTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['config'], self.attribs)
 
         # Cleanup the cluster we created
-        # if self.foo.config['backend'] != "null":
-        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
-        resp = self.app.delete('/clusters/%s' % out['cluster']['id'],
-                               content_type=self.content_type)
-        self.assertEquals(resp.status_code, 200)
-        out = json.loads(resp.data)
-        self.assertEquals(out['status'], 200)
-        self.assertEquals(out['message'], 'Cluster deleted')
+        self._delete_cluster(out['cluster']['id'])
 
     def test_create_cluster_with_no_desc_and_no_override_attributes(self):
         data = {'name': self.name}
@@ -125,14 +112,7 @@ class ClusterCreateTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['config'], dict())
 
         # Cleanup the cluster we created
-        # if self.foo.config['backend'] != "null":
-        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
-        resp = self.app.delete('/clusters/%s' % out['cluster']['id'],
-                               content_type=self.content_type)
-        self.assertEquals(resp.status_code, 200)
-        out = json.loads(resp.data)
-        self.assertEquals(out['status'], 200)
-        self.assertEquals(out['message'], 'Cluster deleted')
+        self._delete_cluster(out['cluster']['id'])
 
     def test_create_cluster_without_name_TODO(self):
         # TODO(shep): currently this passes, but a cluster should
@@ -147,6 +127,37 @@ class ClusterCreateTests(unittest2.TestCase):
         #out = json.loads(resp.data)
         #self.assertEquals(out['status'], 400)
         pass
+
+    def test_create_duplicate_cluster_returns_a_400_TODO(self):
+        data = {'name': self.name,
+                'description': self.desc,
+                'config': self.attribs}
+        resp = self.app.post('/clusters/',
+                             content_type=self.content_type,
+                             data=json.dumps(data))
+        self.assertEquals(resp.status_code, 201)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 201)
+        self.assertEquals(out['message'], 'Cluster Created')
+        self.assertEquals(out['cluster']['name'], self.name)
+        self.assertEquals(out['cluster']['description'], self.desc)
+        self.assertEquals(out['cluster']['config'], self.attribs)
+
+        # Lets create a duplicate entry
+        data = {'name': self.name,
+                'description': self.desc,
+                'config': self.attribs}
+        resp = self.app.post('/clusters/',
+                             content_type=self.content_type,
+                             data=json.dumps(data))
+        self.assertEquals(resp.status_code, 400)
+        tmp = json.loads(resp.data)
+        self.assertEquals(tmp['status'], 400)
+        # Error messages suck right now.. need to make them better
+        # self.assertTrue('foo' in tmp['message'])
+
+        # Cleanup the cluster we created
+        self._delete_cluster(out['cluster']['id'])
 
 
 class ClusterUpdateTests(unittest2.TestCase):
@@ -193,7 +204,7 @@ class ClusterUpdateTests(unittest2.TestCase):
         self.assertTrue('Attribute name is not modifiable' in out['message'])
         # pass
 
-    def test_update_cluster_attribute_name_by_uri_returns_a_404(self):
+    def test_update_cluster_attribute_name_by_uri_returns_a_400(self):
         tmp_name = _randomStr(10)
         payload = {'name': tmp_name}
         resp = self.app.put('/clusters/%s/name' % self.cluster_id,
@@ -216,7 +227,7 @@ class ClusterUpdateTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['description'], tmp_desc)
         self.assertNotEquals(out['cluster']['description'], self.desc)
 
-    def test_update_role_attribute_description_by_uri(self):
+    def test_update_cluster_attribute_description_by_uri(self):
         tmp_desc = _randomStr(30)
         payload = {'description': tmp_desc}
         resp = self.app.put('/clusters/%s/description' % self.cluster_id,
@@ -227,6 +238,17 @@ class ClusterUpdateTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['name'], self.name)
         self.assertEquals(out['cluster']['description'], tmp_desc)
         self.assertNotEquals(out['cluster']['description'], self.desc)
+
+    def test_update_cluster_attribute_description_by_uri_bad_data_400(self):
+        tmp_desc = _randomStr(30)
+        payload = {'foo': tmp_desc}
+        resp = self.app.put('/clusters/%s/description' % self.cluster_id,
+                            content_type=self.content_type,
+                            data=json.dumps(payload))
+        self.assertEquals(resp.status_code, 400)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 400)
+        self.assertEquals(out['message'], 'Empty body')
 
     def test_update_cluster_attribute_config(self):
         tmp_attribs = {'package_component': 'grizzly-final',
@@ -259,6 +281,29 @@ class ClusterUpdateTests(unittest2.TestCase):
                           tmp_attribs)
         self.assertNotEquals(out['cluster']['config'],
                              self.attribs)
+
+    def test_patch_on_cluster_attribute_config(self):
+        tmp_attribs = {'monitoring': {'metric_provider': 'collectd'}}
+        resp = self.app.patch('/clusters/%s/config' % self.cluster_id,
+                              data=json.dumps(tmp_attribs),
+                              content_type=self.content_type)
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 200)
+        self.assertEquals(out['cluster']['config']['monitoring'],
+                          tmp_attribs['monitoring'])
+        self.assertNotEquals(out['cluster']['config']['monitoring'],
+                             self.attribs['monitoring'])
+
+    def test_patch_on_cluster_attribute_config_bad_cluster_404(self):
+        tmp_attribs = {'monitoring': {'metric_provider': 'collectd'}}
+        resp = self.app.get('/clusters/%s/config' % '99',
+                            data=json.dumps(tmp_attribs),
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 404)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 404)
+        self.assertTrue('Not Found' in out['message'])
 
     def test_update_cluster_with_no_data(self):
         resp = self.app.put('/clusters/%s' % self.cluster_id,
@@ -294,6 +339,30 @@ class ClusterReadTests(unittest2.TestCase):
     def tearDown(self):
         pass
 
+    def test_read_cluster_list(self):
+        resp = self.app.get('/clusters/', content_type=self.content_type)
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(len(out['clusters']), 1)
+        self.assertEquals(out['clusters'][0]['name'], self.name)
+        self.assertEquals(out['clusters'][0]['description'], self.desc)
+
+    def test_read_cluster_by_id(self):
+        resp = self.app.get('/clusters/%s' % self.cluster_id,
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.assertEquals(out['cluster']['name'], self.name)
+        self.assertEquals(out['cluster']['description'], self.desc)
+
+    def test_read_cluster_attribute_name_by_uri_with_bad_id_404(self):
+        resp = self.app.get('/clusters/%s/name' % '99',
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 404)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 404)
+        self.assertTrue('Not Found' in out['message'])
+
     def test_read_cluster_attribute_name_by_uri(self):
         resp = self.app.get('/clusters/%s/name' % self.cluster_id,
                             content_type=self.content_type)
@@ -309,7 +378,7 @@ class ClusterReadTests(unittest2.TestCase):
         self.assertEquals(out['description'], self.desc)
 
 
-class ClusterAttributeTests(unittest2.TestCase):
+class ClusterUpdateAttributeTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
         self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
@@ -343,6 +412,7 @@ class ClusterAttributeTests(unittest2.TestCase):
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.assertEquals(len(out['nodes']), 0)
+        self.assertEquals(out['nodes'], list())
 
     def test_cluster_node_list(self):
         # Create a node with cluster_id=self.cluster_id
@@ -377,19 +447,6 @@ class ClusterAttributeTests(unittest2.TestCase):
         out = json.loads(resp.data)
         self.assertEquals(out['status'], 200)
         self.assertEquals(out['message'], 'Node deleted')
-
-    def test_patch_on_cluster_attribute_config(self):
-        tmp_attribs = {'monitoring': {'metric_provider': 'collectd'}}
-        resp = self.app.patch('/clusters/%s/config' % self.cluster_id,
-                              data=json.dumps(tmp_attribs),
-                              content_type=self.content_type)
-        self.assertEquals(resp.status_code, 200)
-        out = json.loads(resp.data)
-        self.assertEquals(out['status'], 200)
-        self.assertEquals(out['cluster']['config']['monitoring'],
-                          tmp_attribs['monitoring'])
-        self.assertNotEquals(out['cluster']['config']['monitoring'],
-                             self.attribs['monitoring'])
 
     def tearDown(self):
         tmp_resp = self.app.delete('/clusters/%s' % self.cluster_id,
