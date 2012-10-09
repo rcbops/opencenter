@@ -90,7 +90,7 @@ def adventures_by_node_id(node_id):
             builder = AstBuilder(FilterTokenizer(), adventure['criteria'])
             try:
                 root_node = builder.build()
-                if root_node.eval_node(node):
+                if root_node.eval_node(node, builder.functions):
                     available_adventures.append(adventure)
             except Exception as e:
                 current_app.logger.warn('adv err %s: %s' % (adventure['name'],

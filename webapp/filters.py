@@ -65,6 +65,13 @@ def util_filter(node_type, input_filter):
     return result
 
 
+def util_printf(fmt, *args):
+    try:
+        return fmt % args
+    except Exception:
+        return None
+
+
 # Stupid tokenizer.  Use:
 #
 # ft.parse(filter)
@@ -89,12 +96,13 @@ class FilterTokenizer:
             (r"[0-9]+", self.number),
             (r"\(", self.open_paren),
             (r"\)", self.close_paren),
-            (r"'((?:[^'\\]|\\.)*)'", self.qstring),
+            (r"'([^'\\]*(?:\\.[^'\\]*)*)'", self.qstring),
+#            (r"'((?:[^'\\]|\\.)*)'", self.qstring),
             (r"[a-zA-Z_]*:", self.typedef),
             (r"\<\=|\>\=", self.op),
             (r"\=|\<|\>", self.op),
             (r"[A-Za-z_\.]*", self.identifier),
-            (r"'((?:[^'\\]|\\.)*)'", self.qstring),
+#            (r"'((?:[^'\\]|\\.)*)'", self.qstring),
         ])
         self.tokens = []
         self.remainer = ''
@@ -117,7 +125,7 @@ class FilterTokenizer:
         return 'IDENTIFIER', token
 
     def qstring(self, scanner, token):
-        return 'STRING', token[1:-1]
+        return 'STRING', token[1:-1].replace("\\'", "'")
 
     def open_paren(self, scanner, token):
         return 'OPENPAREN', token
@@ -140,8 +148,8 @@ class FilterTokenizer:
 
         if self.remainder != '':
             raise RuntimeError(
-                'Cannot parse.  Input: %s, remainder %s' %
-                (input_filter, self.remainder))
+                'Cannot parse.  Input: %s\nTokens: %s\nRemainder %s' %
+                (input_filter, self.tokens, self.remainder))
 
         self.logger.debug('Tokenized %s as %s' % (input_filter, self.tokens))
         return True
@@ -206,7 +214,7 @@ class AstBuilder:
 
         for node in nodes:
             logging.debug('Checking node %s' % node['id'])
-            if root_node.eval_node(node):
+            if root_node.eval_node(node, self.functions):
                 result.append(node)
 
         logging.debug("Found %d results" % len(result))
@@ -415,7 +423,7 @@ class Node:
 
         return '(%s) %s (%s)' % (str(self.lhs), self.op, str(self.rhs))
 
-    def eval_node(self, node):
+    def eval_node(self, node, functions):
         rhs_val = None
         lhs_val = None
         result = False
@@ -435,11 +443,11 @@ class Node:
                 retval = self.eval_identifier(node, self.lhs)
 
             if self.op == 'FUNCTION':
-                if not self.lhs in self.functions:
+                if not self.lhs in functions:
                     raise RuntimeError('Cannot find external fn %s' % self.lhs)
 
                 # yeah, pep8, you are right.  this is much easier to read...
-                args = map(lambda x: x.eval_node(node), self.rhs)
+                args = map(lambda x: x.eval_node(node, functions), self.rhs)
                 retval = functions[self.lhs](*args)
 
             self.logger.debug('evaluated %s to %s' % (str(self), retval))
@@ -448,8 +456,8 @@ class Node:
         self.logger.debug('arithmetic op, type %s' % self.op)
 
         # otherwise arithmetic op
-        lhs_val = self.lhs.eval_node(node)
-        rhs_val = self.rhs.eval_node(node)
+        lhs_val = self.lhs.eval_node(node, functions)
+        rhs_val = self.rhs.eval_node(node, functions)
 
         # wrong types is always false
         if type(lhs_val) == unicode:
@@ -511,14 +519,7 @@ if __name__ == '__main__':
     Base.query = db_session.query_property()
 
     def run_filter(input_filter):
-        builder = AstBuilder(FilterTokenizer(), input_filter,
-                             functions={'nth': util_nth,
-                                        'str': util_str,
-                                        'int': util_int,
-                                        'includes': util_includes,
-                                        'max': util_max,
-                                        'filter': util_filter})
-
+        builder = AstBuilder(FilterTokenizer(), input_filter)
         result = builder.eval()
 
         print 'Result: %s' % result
