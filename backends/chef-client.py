@@ -9,9 +9,9 @@ import backends
 LOG = logging.getLogger('backend.driver')
 
 
-class ChefClient(backends.ConfigurationBackend):
+class ChefClientBackend(backends.ConfigurationBackend):
     def __init__(self, config):
-        LOG.debug('initializing chef backend')
+        LOG.debug('initializing chef-client backend')
         api = None
         self.config = config
 
