@@ -72,7 +72,6 @@ def _model_create(model, fields):
         db_session.commit()
         ret = dict((c, getattr(r, c))
                    for c in r.__table__.columns.keys())
-        print "Object_Type: %s" % model.rstrip('s')
         b.notify(model.rstrip('s'), 'create', None, ret)
         return ret
     except StatementError, e:
@@ -98,9 +97,16 @@ def _model_delete_by_id(model, pk_id):
               'nodes': Nodes,
               'tasks': Tasks}
     r = tables[model].query.filter_by(id=pk_id).first()
+    # We need generate an object hash to pass to the backend notification
+    old_obj = None
+    if r is not None:
+        old_obj = dict((c, getattr(r, c))
+                       for c in r.__table__.columns.keys())
+
     try:
         db_session.delete(r)
         db_session.commit()
+        b.notify(model.rstrip('s'), 'delete', old_obj, None)
         return True
     except UnmappedInstanceError, e:
         db_session.rollback()
@@ -170,13 +176,22 @@ def _model_update_by_id(model, pk_id, fields):
     field_list = [c for c in tables[model].__table__.columns.keys()]
     field_list.remove('id')
     r = tables[model].query.filter_by(id=pk_id).first()
+
+    # We need generate an object hash to pass to the backend notification
+    old_obj = None
+    if r is not None:
+        old_obj = dict((c, getattr(r, c))
+                       for c in r.__table__.columns.keys())
+
     for field in field_list:
         if field in fields:
             r.__setattr__(field, fields[field])
     try:
         db_session.commit()
-        return dict((c, getattr(r, c))
-                    for c in r.__table__.columns.keys())
+        ret = dict((c, getattr(r, c))
+                   for c in r.__table__.columns.keys())
+        b.notify(model.rstrip('s'), 'update', old_obj, ret)
+        return ret
     except InvalidRequestError, e:
         db_session.rollback()
         msg = e.msg
