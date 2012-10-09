@@ -25,7 +25,8 @@ adventures = Blueprint('adventures', __name__)
 @adventures.route('/', methods=['GET', 'POST'])
 def list_adventures():
     if request.method == 'POST':
-        fields = ['name', 'language', 'dsl', 'backend', 'backend_state']
+        # RP: should this not come out of the model schema?
+        fields = ['name', 'language', 'dsl', 'criteria']
         data = {}
         for field in fields:
             if field in request.json:

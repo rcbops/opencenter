@@ -51,15 +51,16 @@ def util_max(ary):
     return max(ary)
 
 
+def util_count(ary):
+    if not isinstance(ary, list):
+        return None
+    return len(ary)
+
+
 def util_filter(node_type, input_filter):
     builder = AstBuilder(FilterTokenizer(), "%s: %s" % (node_type,
-                                                        input_filter),
-                         functions={'nth': util_nth,
-                                    'str': util_str,
-                                    'int': util_int,
-                                    'includes': util_includes,
-                                    'max': util_max,
-                                    'filter': util_filter})
+                                                        input_filter))
+
     result = builder.eval()
     return result
 
@@ -157,7 +158,7 @@ class FilterTokenizer:
 # This is a pretty trivial implementation.  The production
 # rules are as follows:
 #
-# phrase -> typedef andexpr EOF
+# phrase -> {typedef}? andexpr EOF
 # andexpr -> orexpr { T_AND orexpr }
 # orexpr -> expr { T_OR expr }
 # expr -> T_OPENPAREN andexpr T_CLOSEPAREN | criterion
@@ -171,12 +172,20 @@ class FilterTokenizer:
 # Lots of small problems here.. nodes should probably
 # store both tokens and
 class AstBuilder:
-    def __init__(self, tokenizer, input_filter, functions={}):
+    def __init__(self, tokenizer, input_filter,
+                 filter_type=None, functions={'nth': util_nth,
+                                              'str': util_str,
+                                              'int': util_int,
+                                              'includes': util_includes,
+                                              'max': util_max,
+                                              'filter': util_filter,
+                                              'count': util_count}):
         self.tokenizer = tokenizer
         self.input_filter = input_filter
         self.logger = logging.getLogger('filter.astbuilder')
         self.logger.debug('Running input filter %s' % input_filter)
         self.functions = functions
+        self.filter_type = filter_type
 
     def build(self):
         self.tokenizer.parse(self.input_filter)
@@ -187,13 +196,17 @@ class AstBuilder:
     def eval(self):
         # get a list of all the self.filter_types, and eval each in turn
         root_node = self.build()
+
+        if not self.filter_type:
+            raise RuntimeError('unknown filter type')
+
         nodes = api._model_get_all(self.filter_type)
 
         result = []
 
         for node in nodes:
             logging.debug('Checking node %s' % node['id'])
-            if root_node.eval_node(node, functions=self.functions):
+            if root_node.eval_node(node):
                 result.append(node)
 
         logging.debug("Found %d results" % len(result))
@@ -293,14 +306,13 @@ class AstBuilder:
         else:
             return node
 
-    # phrase -> typedef andexpr EOF
+    # phrase -> {typedef}? andexpr EOF
     def parse_phrase(self):
-        token, val = self.tokenizer.scan()
+        token, val = self.tokenizer.peek()
 
-        if token != 'TYPEDEF':
-            raise RuntimeError('missing typedef')
-
-        self.filter_type = val
+        if token == 'TYPEDEF':
+            self.filter_type = val
+            self.tokenizer.scan()
 
         node = self.parse_andexpr()
 
@@ -403,41 +415,53 @@ class Node:
 
         return '(%s) %s (%s)' % (str(self.lhs), self.op, str(self.rhs))
 
-    def eval_node(self, node, functions={}):
+    def eval_node(self, node):
         rhs_val = None
         lhs_val = None
         result = False
 
-        self.logger.debug('evaluating %s' % self)
+        retval = None
 
-        if self.op == 'STRING':
-            return str(self.lhs)
+        self.logger.debug('evaluating %s' % str(self))
 
-        if self.op == 'NUMBER':
-            return int(self.lhs)
+        if self.op in ['STRING', 'NUMBER', 'IDENTIFIER', 'FUNCTION']:
+            if self.op == 'STRING':
+                retval = str(self.lhs)
 
-        if self.op == 'IDENTIFIER':
-            return self.eval_identifier(node, self.lhs)
+            if self.op == 'NUMBER':
+                retval = int(self.lhs)
 
-        if self.op == 'FUNCTION':
-            if not self.lhs in functions:
-                raise RuntimeError('Cannot find external fn %s' % self.lhs)
+            if self.op == 'IDENTIFIER':
+                retval = self.eval_identifier(node, self.lhs)
 
-            # yeah, pep8, you are right.  this is much easier to read...
-            args = map(lambda x: x.eval_node(node,
-                                             functions=functions), self.rhs)
+            if self.op == 'FUNCTION':
+                if not self.lhs in self.functions:
+                    raise RuntimeError('Cannot find external fn %s' % self.lhs)
 
-            return functions[self.lhs](*args)
+                # yeah, pep8, you are right.  this is much easier to read...
+                args = map(lambda x: x.eval_node(node), self.rhs)
+                retval = functions[self.lhs](*args)
+
+            self.logger.debug('evaluated %s to %s' % (str(self), retval))
+            return retval
 
         self.logger.debug('arithmetic op, type %s' % self.op)
 
         # otherwise arithmetic op
-        lhs_val = self.lhs.eval_node(node, functions=functions)
-        rhs_val = self.rhs.eval_node(node, functions=functions)
+        lhs_val = self.lhs.eval_node(node)
+        rhs_val = self.rhs.eval_node(node)
 
         # wrong types is always false
+        if type(lhs_val) == unicode:
+            lhs_val = str(lhs_val)
+
+        if type(rhs_val) == unicode:
+            rhs_val = str(rhs_val)
+
         if type(lhs_val) != type(rhs_val):
             return False
+
+        self.logger.debug('checking %s %s %s' % (lhs_val, self.op, rhs_val))
 
         if self.op == '=':
             if lhs_val == rhs_val:

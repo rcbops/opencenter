@@ -84,8 +84,20 @@ def adventures_by_node_id(node_id):
     if not node:
         return http_not_found()
     else:
-        adventures = api.adventures_get_by_node_id(node_id)
-        resp = jsonify({'adventures': adventures})
+        all_adventures = api.adventures_get_all()
+        available_adventures = []
+        for adventure in all_adventures:
+            builder = AstBuilder(FilterTokenizer(), adventure['criteria'])
+            try:
+                root_node = builder.build()
+                if root_node.eval_node(node):
+                    available_adventures.append(adventure)
+            except Exception as e:
+                current_app.logger.warn('adv err %s: %s' % (adventure['name'],
+                                                            str(e)))
+
+        # adventures = api.adventures_get_by_node_id(node_id)
+        resp = jsonify({'adventures': available_adventures})
     return resp
 
 

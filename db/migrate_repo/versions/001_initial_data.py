@@ -23,16 +23,13 @@ def upgrade(migrate_engine):
     adventures = [
         {'name': 'install chef',
          'dsl': 'install_chef.json',
-         'backend': 'unprovisioned',
-         'backend_state': 'unknown'},
+         'criteria': "backend='unprovisioned' and backend_state='unknown'"},
         {'name': 'run chef',
          'dsl': 'run_chef.json',
-         'backend': 'chef-client',
-         'backend_state': 'installed'},
+         'criteria': "backend='chef-client' and backend_state='installed'"},
         {'name': 'install chef server',
          'dsl':  'install_chef_server.json',
-         'backend': 'unprovisioned',
-         'backend_state': 'unknown'}]
+         'criteria': "backend='unprovisioned' and backend_state='unknown'"}]
 
     for adventure in adventures:
         json_path = os.path.join(

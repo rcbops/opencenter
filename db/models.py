@@ -65,14 +65,12 @@ class Adventures(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(30))
     dsl = Column(JsonBlob, default={})
-    backend = Column(String(30))
-    backend_state = Column(String(30))
+    criteria = Column(String(255))
 
-    def __init__(self, name, dsl, backend=None, backend_state=None):
+    def __init__(self, name, dsl, criteria='1 = 1'):
         self.name = name
         self.dsl = dsl
-        self.backend = backend
-        self.backend_state = backend_state
+        self.criteria = criteria
 
     def __repr__(self):
         return '<Adventures %r>' % (self.name)
