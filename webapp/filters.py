@@ -8,6 +8,62 @@ import db.database
 from db import api
 
 
+# some common utility functions
+def util_nth(n, ary):
+    if not isinstance(ary, list):
+        return None
+
+    if not isinstance(n, int):
+        return None
+
+    if (len(ary) - 1) < n:
+        return None
+
+    return ary[n]
+
+
+def util_str(what):
+    if not what:
+        return None
+
+    return str(what)
+
+
+def util_int(what):
+    if not what:
+        return None
+
+    return int(what)
+
+
+def util_includes(element, container):
+    try:
+        if element in continer:
+            return True
+        return False
+    except Exception as e:
+        return False
+
+
+def util_max(ary):
+    if not isinstance(ary, list):
+        return False
+    return max(ary)
+
+
+def util_filter(node_type, input_filter):
+    builder = AstBuilder(FilterTokenizer(), "%s: %s" % (node_type,
+                                                        input_filter),
+                         functions={'nth': util_nth,
+                                    'str': util_str,
+                                    'int': util_int,
+                                    'includes': util_includes,
+                                    'max': util_max,
+                                    'filter': util_filter})
+    result = builder.eval()
+    return result
+
+
 # Stupid tokenizer.  Use:
 #
 # ft.parse(filter)
@@ -27,6 +83,7 @@ class FilterTokenizer:
             (r"!", self.negation),
             (r"or", self.or_op),
             (r"and", self.and_op),
+            (r",", self.comma),
             (r"[ \t\n]+", None),
             (r"[0-9]+", self.number),
             (r"\(", self.open_paren),
@@ -73,6 +130,9 @@ class FilterTokenizer:
     def and_op(self, scanner, token):
         return 'AND', token
 
+    def comma(self, scanner, token):
+        return 'COMMA', token
+
     def parse(self, input_filter):
         self.tokens, self.remainder = self.scanner.scan(input_filter)
         self.tokens.append(('EOF', None))
@@ -82,6 +142,7 @@ class FilterTokenizer:
                 'Cannot parse.  Input: %s, remainder %s' %
                 (input_filter, self.remainder))
 
+        self.logger.debug('Tokenized %s as %s' % (input_filter, self.tokens))
         return True
 
     def scan(self):
@@ -100,20 +161,22 @@ class FilterTokenizer:
 # andexpr -> orexpr { T_AND orexpr }
 # orexpr -> expr { T_OR expr }
 # expr -> T_OPENPAREN andexpr T_CLOSEPAREN | criterion
-# criterion -> field { uneg } op value
+# criterion -> evaluable_item { uneg } op evaluable_item
+# evalable_item -> function(evaluable_item, e_i, ...) | identifier | value
 #
 # field -> datatype.value
 # op -> '=', '<', '>'
-# value -> number |
+# value -> number | string
 #
 # Lots of small problems here.. nodes should probably
 # store both tokens and
 class AstBuilder:
-    def __init__(self, tokenizer, input_filter):
+    def __init__(self, tokenizer, input_filter, functions={}):
         self.tokenizer = tokenizer
         self.input_filter = input_filter
         self.logger = logging.getLogger('filter.astbuilder')
         self.logger.debug('Running input filter %s' % input_filter)
+        self.functions = functions
 
     def build(self):
         self.tokenizer.parse(self.input_filter)
@@ -130,36 +193,67 @@ class AstBuilder:
 
         for node in nodes:
             logging.debug('Checking node %s' % node['id'])
-            if root_node.eval_node(node):
+            if root_node.eval_node(node, functions=self.functions):
                 result.append(node)
 
         logging.debug("Found %d results" % len(result))
 
         return result
 
-    # criterion -> field { uneg } op value
+    # criterion -> evaluable_item { uneg } op evaluable_item
     def parse_criterion(self):
+        negate = False
+
+        lhs = self.parse_evaluable_item()
+
         token, val = self.tokenizer.scan()
 
-        if token != 'IDENTIFIER':
-            raise RuntimeError('expecting identifier')
+        if token == 'UNEG':
+            negate = True
+            token, val = self.tokenizer.scan()
 
-        lhs = val
-        token, val = self.tokenizer.scan()
         if token != 'OP':
-            raise RuntimeError('expecting operator')
+            raise RuntimeError('expecting operator or unary negation')
 
         op = val
 
-        token, val = self.tokenizer.scan()
-        if token == 'NUMBER':
-            rhs = int(val)
-        elif token == 'STRING':
-            rhs = val
-        else:
-            raise RuntimeError('expecting STRING or NUMBER')
+        rhs = self.parse_evaluable_item()
+        return Node(lhs, op, rhs, negate)
 
-        return Node(lhs, op, rhs)
+    # evaulable_item -> function(evalable_item, ...) | identifier | value
+    def parse_evaluable_item(self):
+        token, val = self.tokenizer.scan()
+
+        if token == 'NUMBER':
+            return Node(int(val), 'NUMBER', None)
+
+        if token == 'STRING':
+            return Node(str(val), 'STRING', None)
+
+        if token == 'IDENTIFIER':
+            next_token, next_val = self.tokenizer.peek()
+            if next_token != 'OPENPAREN':
+                return Node(str(val), 'IDENTIFIER', None)
+            else:
+                self.tokenizer.scan()  # eat the paren
+
+                done = False
+                args = []
+                function_name = str(val)
+
+                while not done:
+                    args.append(self.parse_evaluable_item())
+
+                    token, val = self.tokenizer.scan()
+
+                    if token == 'CLOSEPAREN':
+                        # done parsing evaluable item
+                        return Node(function_name, 'FUNCTION', args)
+
+                    if token != 'COMMA':
+                        raise RuntimeError('expecting comma or close paren')
+
+        raise RuntimeError('expecting evaluable item')
 
     # expr -> T_OPENPAREN andexpr T_CLOSEPAREN | criterion
     def parse_expr(self):
@@ -218,10 +312,11 @@ class AstBuilder:
 
 
 class Node:
-    def __init__(self, lhs, op, rhs):
+    def __init__(self, lhs, op, rhs, negate=False):
         self.lhs = lhs
         self.rhs = rhs
         self.op = op
+        self.negate = negate
         self.logger = logging.getLogger('filter.node')
 
     def dotty(self, fd):
@@ -266,64 +361,110 @@ class Node:
                 return None
 
         # of the format something.something
-        (obj, attr) = identifier.split('.', 1)
+        (attr, rest) = identifier.split('.', 1)
 
-        self.logger.debug('checking %s in linked object %s' % (attr, obj))
+        self.logger.debug('checking for attr %s in %s' % (attr, node))
 
-        if "%s%s" % (obj, '_id') in node:
-            the_id = node["%s%s" % (obj, '_id')]
-            if the_id:
-                self.logger.debug('found linked object type %s with id: %s' %
-                                  (obj, str(the_id)))
-                try:
-                    # grab the linked object...
-                    new_node = api._model_get_by_id("%ss" % obj, the_id)
-                    self.logger.debug("Indirected object: %s" % new_node)
-                except Exception as e:
-                    self.logger.debug('cannot lookup the object type: %s' %
-                                      str(e))
-                    return None
+        if attr in node:
+            return self.eval_identifier(node[attr], rest)
+        else:
+            self.logger.debug('no attr... try %s in link %s' % (rest, attr))
 
-                return self.eval_identifier(new_node, attr)
-            else:
-                return None
+            if "%s%s" % (attr, '_id') in node:
+                the_id = node["%s%s" % (attr, '_id')]
+                if the_id:
+                    self.logger.debug('found link type %s with id: %s' %
+                                      (attr, str(the_id)))
+                    try:
+                        # grab the linked object...
+                        new_node = api._model_get_by_id("%ss" % attr, the_id)
+                        self.logger.debug("Indirected object: %s" % new_node)
+                    except Exception as e:
+                        self.logger.debug('cannot lookup the object type: %s' %
+                                          str(e))
+                        return None
 
-    def eval_node(self, node):
+                    return self.eval_identifier(new_node, rest)
+
+        return None
+
+    def __str__(self):
+        if self.op == 'STRING':
+            return str(self.lhs)
+
+        if self.op == 'NUMBER':
+            return str(int(self.lhs))
+
+        if self.op == 'IDENTIFIER':
+            return 'IDENTIFIER %s' % self.lhs
+
+        if self.op == 'FUNCTION':
+            return 'FN %s(%s)' % (str(self.lhs), ', '.join(map(str, self.rhs)))
+
+        return '(%s) %s (%s)' % (str(self.lhs), self.op, str(self.rhs))
+
+    def eval_node(self, node, functions={}):
         rhs_val = None
         lhs_val = None
+        result = False
 
-        if isinstance(self.lhs, Node):
-            lhs_val = self.lhs.eval_node(node)
-        else:
-            lhs_val = self.eval_identifier(node, self.lhs)
+        self.logger.debug('evaluating %s' % self)
 
-        if isinstance(self.rhs, Node):
-            rhs_val = self.rhs.eval_node(node)
-        else:
-            rhs_val = self.rhs
+        if self.op == 'STRING':
+            return str(self.lhs)
 
-        self.logger.debug('evaluating %s (%s) %s %s (%s)' %
-                          (self.lhs, lhs_val, self.op,
-                           self.rhs, str(rhs_val)))
+        if self.op == 'NUMBER':
+            return int(self.lhs)
+
+        if self.op == 'IDENTIFIER':
+            return self.eval_identifier(node, self.lhs)
+
+        if self.op == 'FUNCTION':
+            if not self.lhs in functions:
+                raise RuntimeError('Cannot find external fn %s' % self.lhs)
+
+            # yeah, pep8, you are right.  this is much easier to read...
+            args = map(lambda x: x.eval_node(node,
+                                             functions=functions), self.rhs)
+
+            return functions[self.lhs](*args)
+
+        self.logger.debug('arithmetic op, type %s' % self.op)
+
+        # otherwise arithmetic op
+        lhs_val = self.lhs.eval_node(node, functions=functions)
+        rhs_val = self.rhs.eval_node(node, functions=functions)
+
+        # wrong types is always false
+        if type(lhs_val) != type(rhs_val):
+            return False
 
         if self.op == '=':
-            if rhs_val == lhs_val:
-                return True
-            return False
+            if lhs_val == rhs_val:
+                result = True
         elif self.op == '<':
-            if rhs_val < lhs_val:
-                return True
-            return False
+            if lhs_val < rhs_val:
+                result = True
         elif self.op == '>':
-            if rhs_val > lhs_val:
-                return True
-            return False
+            if lhs_val > rhs_val:
+                result = True
+        elif self.op == '<=':
+            if lhs_val <= rhs_val:
+                result = True
+        elif self.op == '>=':
+            if lhs_val >= rhs_val:
+                result = True
         elif self.op == 'AND':
-            return lhs_val and rhs_val
+            result = lhs_val and rhs_val
         elif self.op == 'OR':
-            return lhs_val or rhs_val
+            result = lhs_val or rhs_val
         else:
             raise RuntimeError('bad op token (%s)' % self.op)
+
+        if self.negate:
+            return not result
+
+        return result
 
 if __name__ == '__main__':
     from db.database import init_db
@@ -331,22 +472,29 @@ if __name__ == '__main__':
     from sqlalchemy.orm import sessionmaker, create_session, scoped_session
     from sqlalchemy.ext.declarative import declarative_base
 
+    from roushclient.client import RoushEndpoint
+
+    logging.basicConfig(level=logging.DEBUG)
+
+    ep = RoushEndpoint()
+
     db.database.init_db('sqlite:///roush.db')
     db_session = scoped_session(lambda: create_session(autocommit=False,
                                                        autoflush=False,
                                                        bind=engine))
 
-    logging.basicConfig(level=logging.DEBUG)
-
     Base = declarative_base()
     Base.query = db_session.query_property()
 
-    if len(sys.argv) > 1:
-        input_filter = sys.argv[1]
-    else:
-        input_filter = "nodes: hostname = 'airbook'"
+    def run_filter(input_filter):
+        builder = AstBuilder(FilterTokenizer(), input_filter,
+                             functions={'nth': util_nth,
+                                        'str': util_str,
+                                        'int': util_int,
+                                        'includes': util_includes,
+                                        'max': util_max,
+                                        'filter': util_filter})
 
-    builder = AstBuilder(FilterTokenizer(), input_filter)
-    result = builder.eval()
+        result = builder.eval()
 
-    logging.debug("%s" % result)
+        print 'Result: %s' % result
