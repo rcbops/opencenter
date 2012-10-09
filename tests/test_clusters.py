@@ -297,7 +297,7 @@ class ClusterUpdateTests(unittest2.TestCase):
 
     def test_patch_on_cluster_attribute_config_bad_cluster_404(self):
         tmp_attribs = {'monitoring': {'metric_provider': 'collectd'}}
-        resp = self.app.get('/clusters/%s/config' % '99',
+        resp = self.app.patch('/clusters/%s/config' % '99',
                             data=json.dumps(tmp_attribs),
                             content_type=self.content_type)
         self.assertEquals(resp.status_code, 404)
