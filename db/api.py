@@ -304,6 +304,22 @@ def cluster_get_columns():
     return result
 
 
+def cluster_get_node_list(cluster_id):
+    """Query helper that returns a dict of nodes
+
+    :param cluster_id: id of the cluster to look up
+    """
+    r = Clusters.query.filter_by(id=cluster_id).first()
+    if r is None:
+        return None
+    else:
+        if r.nodes.count > 0:
+            return list({'id': x.id, 'hostname': x.hostname}
+                        for x in r.nodes)
+        else:
+            return list()
+
+
 def cluster_delete_by_id(cluster_id):
     """Query helper for deleting a cluster
 

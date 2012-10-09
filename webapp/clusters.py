@@ -11,7 +11,7 @@ from sqlalchemy.orm.exc import UnmappedInstanceError
 from db import api as api
 from db import exceptions as exc
 from db.database import db_session
-from db.models import Nodes, Clusters
+from db.models import Clusters
 from errors import (
     http_bad_request,
     http_conflict,
@@ -59,19 +59,11 @@ def filter_clusters():
 @clusters.route('/<cluster_id>/nodes', methods=['GET'])
 def nodes_by_cluster_id(cluster_id):
     if request.method == 'GET':
-        # cluster_list = api.cluster_get_by_id(cluster_id)
-        r = Clusters.query.filter_by(id=cluster_id).first()
-        if r is None:
+        node_list = api.cluster_get_node_list(cluster_id)
+        if node_list is None:
             return http_not_found()
         else:
-            if r.nodes.count > 0:
-                node_list = dict(nodes=list(
-                                 {'id': x.id, 'hostname': x.hostname}
-                                 for x in r.nodes))
-                resp = jsonify(node_list)
-            else:
-                tmp = dict(nodes=list())
-                resp = jsonify(tmp)
+            resp = jsonify({'nodes': node_list})
             return resp
 
 
@@ -136,19 +128,12 @@ def cluster_by_id(cluster_id):
         cluster = api.cluster_update_by_id(cluster_id, data)
         resp = jsonify({'cluster': cluster})
     elif request.method == 'DELETE':
-        r = Clusters.query.filter_by(id=cluster_id).first()
         try:
-            db_session.delete(r)
-            db_session.commit()
-
-            # FIXME(rp): Transaction
-            # current_app.backend.delete_cluster(r.name)
-
-            msg = {'status': 200, 'message': 'Cluster deleted'}
-
-            resp = jsonify(msg)
-            resp.status_code = 200
-        except UnmappedInstanceError, e:
+            if api.cluster_delete_by_id(cluster_id):
+                msg = {'status': 200, 'message': 'Cluster deleted'}
+                resp = jsonify(msg)
+                resp.status_code = 200
+        except exc.NodeNotFound, e:
             return http_not_found()
     else:
         cluster = api.cluster_get_by_id(cluster_id)
