@@ -430,7 +430,7 @@ class ClusterUpdateAttributeTests(unittest2.TestCase):
         self.assertEquals(out['message'], 'Node Created')
         self.assertEquals(out['node']['hostname'], hostname)
         self.assertEquals(out['node']['cluster_id'], self.cluster_id)
-        self.assertEquals(out['node']['role_id'], None)
+        self.assertEquals(out['node']['role'], None)
         self.assertEquals(out['node']['config'], dict())
 
         # make sure /clusters/<cluster_id>/nodes looks right
