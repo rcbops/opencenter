@@ -28,7 +28,60 @@ class ChefClient(backends.ConfigurationBackend):
         self.role_map = {}
 
     def notify(self, object_type, notification_type, old_object, new_object):
-        pass
+        fn = getattr(self, "_%s_%s" % (object_type, notification_type))
+        if fn:
+            fn(old_object, new_object)
+
+    def _node_update(old_object, new_object):
+        if old_object['cluster'] != new_object['cluster']:
+            _cluster_change(old_object, new_object)
+
+    def _cluster_delete(old_object, new_object):
+        if not self._cluster_exists(old_object['name']):
+            raise backends.ClusterDoesNotExist
+
+        env = chef.Environment(old_object['name'], self.api)
+        env.delete()
+
+    def _cluster_create(old_object, new_object):
+        env = chef.Environment.create(new_object['name'],
+                                      self.api,
+                                      description=new_object['description'],
+                                      override_attributes=new_object['config'])
+
+        try:
+            env.save()
+        except chef.ChefServerError as e:
+            raise backends.BackendError(e)
+
+    def _cluster_update(old_object, new_object):
+        if not self._cluster_exists(new_object['name']):
+            raise backends.ClusterDoesNotExist
+
+        env = chef.Environment(new_object['name'], self.api)
+        if new_object['description']:
+            env.description = new_object['description']
+
+        if new_object['settings']:
+            env.override_attributes = new_object['settings']
+        env.save()
+
+    def _cluster_change(old_object, new_object):
+        if not self._cluster_exists(new_object['cluster']):
+            raise backends.ClusterDoesNotExist
+
+        if not self._host_exists(new_object['hostname']):
+            raise backends.NodeDoesNotExist
+
+        node = chef.Node(node, self.api)
+        node.chef_environment = cluster
+        node.save()
+
+    def _cluster_exists(self, cluster_name):
+        return self._entity_exists('environment', 'name', cluster_name)
+
+    def _host_exists(self, host_name):
+        return self._entity_exists('node', 'name', host_name)
 
 
         # # load the role map
@@ -61,80 +114,6 @@ class ChefClient(backends.ConfigurationBackend):
     # def _entity_exists(self, entity, key, value):
     #     result = chef.Search(entity, '%s:%s' % (key, value), 1, 0, self.api)
     #     return len(result) == 1
-
-    # def _cluster_exists(self, cluster_name):
-    #     return self._entity_exists('environment', 'name', cluster_name)
-
-    # def _host_exists(self, host_name):
-    #     return self._entity_exists('node', 'name', host_name)
-
-    # def get_cluster_settings(self, cluster_name):
-    #     if not self._cluster_exists(cluster_name):
-    #         raise backends.ClusterDoesNotExist
-
-    #     return chef.Environment(cluster_name, self.api).override_attributes
-
-    # def set_cluster_settings(self, cluster_name, cluster_desc=None,
-    #                          cluster_settings=None):
-    #     if not self._cluster_exists(cluster_name):
-    #         raise backends.ClusterDoesNotExist
-
-    #     env = chef.Environment(cluster_name, self.api)
-    #     if cluster_desc is not None:
-    #         env.description = cluster_desc
-    #     if cluster_settings is not None:
-    #         env.override_attributes = cluster_settings
-    #     env.save()
-
-    # def create_cluster(self, cluster_name, cluster_desc=None,
-    #                    cluster_settings=None):
-    #         env = chef.Environment.create(cluster_name,
-    #                                       self.api,
-    #                                       description=cluster_desc,
-    #                                       override_attributes=cluster_
-# s
-# e
-# t
-# t
-# i
-# n
-# g
-# s
-# )
-
-
-    #         try:
-    #             env.save()
-    #         except chef.ChefServerError as e:
-    #             raise backends.BackendError(e)
-
-    # def delete_cluster(self, cluster_name):
-    #     if not self._cluster_exists(cluster_name):
-    #         raise backends.ClusterDoesNotExist
-
-    #     env = chef.Environment(cluster_name, self.api)
-    #     env.delete()
-
-    # def list_clusters(self):
-    #     env = chef.Search('environment', '*:*', 1000, 0, self.api)
-    #     return [x['name'] for x in env]
-
-    # def set_cluster_for_node(self, node, cluster):
-    #     if not self._cluster_exists(cluster):
-    #         raise backends.ClusterDoesNotExist
-
-    #     if not self._host_exists(node):
-    #         raise backends.NodeDoesNotExist
-
-    #     node = chef.Node(node, self.api)
-    #     node.chef_environment = cluster
-    #     node.save()
-
-    # def get_cluster_for_node(self, node):
-    #     if not self._host_exists(node):
-    #         raise backends.NodeDoesNotExist
-
-    #     return chef.Node(node, self.api).chef_environment
 
     # def get_node_settings(self, node):
     #     if not self._host_exists(node):
