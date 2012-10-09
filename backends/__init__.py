@@ -35,8 +35,11 @@ backend_list = {}
 #
 # still expects
 def load(path, config={}):
+    LOG.debug('Loading backends from %s' % path)
     if os.path.isdir(path):
         _load_path(path, config)
+    else:
+        _load_file(path, config)
 
 
 def backends():
@@ -50,24 +53,25 @@ def notify(object_type, notification_type, old_object, new_object):
     # Punt for now
 
     # for non-node, notify all backends
-    pass
 
-#    if object_type != 'node':
-#        backend_notification_list = backend_list.keys()
-#    else:
-#        if old_object and 'backend' not in old_object:
-#            pass
-#        else:
-#            backend_notification_list = [old_object.backend]
-#            if old_object.backend != new_object.backend:
-#                if new_object and 'backend' not in new_object:
-#                    pass
-#                else:
-#                    backend_notification_list.append(new_object.backend)
-#
-#    for backend in backend_notification_list:
-#        backend_list[backend].notify(object_type, notification_type,
-#                                     old_object, new_object)
+    backend_notification_list = []
+
+    if object_type == 'node':
+        old_backend = None
+        new_backend = None
+
+        if old_object and 'backend' in old_object:
+            backend_notification_list.append(old_object['backend'])
+
+        if new_object and 'backend' in new_object:
+            backend_notification_list.append(new_object['backend'])
+    else:
+        backend_notification_list = backend_list.keys()
+
+    for backend in backend_notification_list:
+        if backend in backend_list:
+            backend_list[backend].notify(object_type, notification_type,
+                                         old_object, new_object)
 
 
 def _load_path(path, config={}):
@@ -75,8 +79,10 @@ def _load_path(path, config={}):
     for relpath in dirlist:
         p = os.path.join(path, relpath)
 
-    if not os.path.isdir(p) and p.endswith('.py'):
-        _load_file(p, config)
+        # how do you pep8 this right?
+        if not os.path.isdir(p) and p.endswith('.py'):
+            if not p.startswith('__'):
+                _load_file(p, config)
 
 
 def _load_file(path, config={}):
@@ -103,7 +109,7 @@ def _ns_load(name, config={}):
         __import__(import_str)
         return getattr(sys.modules[import_str], class_str)(config[class_str])
     except Exception as e:
-        LOG.error('Could not load backend named %s (%s)' % (name, str(e)))
+        LOG.error('Could not load backend "%s"' % name)
 
     return None
 
@@ -112,4 +118,4 @@ def _ns_load(name, config={}):
 # Notification types: create, update, delete
 class ConfigurationBackend(object):
     def notify(self, object_type, notification_type, old_object, new_object):
-        raise NotImplementedError
+        pass

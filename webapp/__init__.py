@@ -13,7 +13,6 @@ from flask import Flask, jsonify
 from adventures import adventures
 from clusters import clusters
 from nodes import nodes
-# from roles import roles
 from index import index
 from tasks import tasks
 
@@ -88,9 +87,10 @@ class Thing(Flask):
                      'database_uri': 'sqlite:///',
                      'daemonize': False,
                      'pidfile': None},
-                    'opscodechef_backend':
+                    'ChefClientBackend':
                     {'role_location': '/etc/roush/roles.d'},
-                    'null_backend': {}}
+                    'ChefServerBackend': {},
+                    'UnprovisionedBackend': {}}
 
         if configfile:
             config = ConfigParser()
@@ -108,14 +108,7 @@ class Thing(Flask):
         if confighash:
             defaults.update(confighash)
 
-        # load the backends
-        backends.load(defaults['main']['backend'], defaults)
-
-        # set the notification dispatcher
-        self.dispatch = backends.notify
-
-        self.config.update(defaults['main'])
-
+        logging.basicConfig(level=logging.WARNING)
         LOG = logging.getLogger()
 
         if debug:
@@ -125,10 +118,6 @@ class Thing(Flask):
         else:
             LOG.setLevel(logging.WARNING)
 
-        print("daemonize: %s, debug: %s, configfile: %s, loglevel: %s " %
-              (daemonize, debug, configfile,
-               logging.getLevelName(LOG.getEffectiveLevel())))
-
         if 'logfile' in defaults['main']:
             for handler in LOG.handlers:
                 LOG.removeHandler(handler)
@@ -136,10 +125,21 @@ class Thing(Flask):
             handler = logging.FileHandler(defaults['main']['logfile'])
             LOG.addHandler(handler)
 
+        # load the backends
+        backends.load(defaults['main']['backend'], defaults)
+
+        # set the notification dispatcher
+        self.dispatch = backends.notify
+
+        self.config.update(defaults['main'])
+
+        print("daemonize: %s, debug: %s, configfile: %s, loglevel: %s " %
+              (daemonize, debug, configfile,
+               logging.getLevelName(LOG.getEffectiveLevel())))
+
         self.register_blueprint(index)
         self.register_blueprint(clusters, url_prefix='/clusters')
         self.register_blueprint(nodes, url_prefix='/nodes')
-        # self.register_blueprint(roles, url_prefix='/roles')
         self.register_blueprint(tasks, url_prefix='/tasks')
         self.register_blueprint(adventures, url_prefix='/adventures')
         self.testing = debug
