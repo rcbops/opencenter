@@ -37,7 +37,7 @@ def list_adventures():
         try:
             adventure = api.adventure_create(data)
             href = request.base_url + str(adventure['id'])
-            msg = {'status': 201, 'message': 'Adventure Create',
+            msg = {'status': 201, 'message': 'Adventure Created',
                    'ref': href,
                    'adventure': adventure}
             resp = jsonify(msg)
