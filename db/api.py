@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError, StatementError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.sql import and_, or_
 
+import backends as b
 from db.database import db_session
 from db import exceptions as exc
 from db.models import Adventures, Clusters, Nodes, Tasks
@@ -69,8 +70,11 @@ def _model_create(model, fields):
     db_session.add(r)
     try:
         db_session.commit()
-        return dict((c, getattr(r, c))
-                    for c in r.__table__.columns.keys())
+        ret = dict((c, getattr(r, c))
+                   for c in r.__table__.columns.keys())
+        print "Object_Type: %s" % model.rstrip('s')
+        b.notify(model.rstrip('s'), 'create', None, ret)
+        return ret
     except StatementError, e:
         db_session.rollback()
         # msg = e.message

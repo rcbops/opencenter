@@ -50,16 +50,24 @@ def notify(object_type, notification_type, old_object, new_object):
     # Punt for now
 
     # for non-node, notify all backends
-    if object_type != 'node':
-        backend_notification_list = backend_list.keys()
-    else:
-        backend_notification_list = [old_object.backend]
-        if old_object.backend != new_object.backend:
-            backend_notification_list.append(new_object.backend)
+    pass
 
-    for backend in backend_notification_list:
-        backend_list[backend].notify(object_type, notification_type,
-                                     old_object, new_object)
+#    if object_type != 'node':
+#        backend_notification_list = backend_list.keys()
+#    else:
+#        if old_object and 'backend' not in old_object:
+#            pass
+#        else:
+#            backend_notification_list = [old_object.backend]
+#            if old_object.backend != new_object.backend:
+#                if new_object and 'backend' not in new_object:
+#                    pass
+#                else:
+#                    backend_notification_list.append(new_object.backend)
+#
+#    for backend in backend_notification_list:
+#        backend_list[backend].notify(object_type, notification_type,
+#                                     old_object, new_object)
 
 
 def _load_path(path, config={}):
