@@ -13,7 +13,7 @@ from flask import Flask, jsonify
 from adventures import adventures
 from clusters import clusters
 from nodes import nodes
-from roles import roles
+# from roles import roles
 from index import index
 from tasks import tasks
 
@@ -139,7 +139,7 @@ class Thing(Flask):
         self.register_blueprint(index)
         self.register_blueprint(clusters, url_prefix='/clusters')
         self.register_blueprint(nodes, url_prefix='/nodes')
-        self.register_blueprint(roles, url_prefix='/roles')
+        # self.register_blueprint(roles, url_prefix='/roles')
         self.register_blueprint(tasks, url_prefix='/tasks')
         self.register_blueprint(adventures, url_prefix='/adventures')
         self.testing = debug

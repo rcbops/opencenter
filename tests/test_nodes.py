@@ -67,7 +67,7 @@ class NodeCreateTests(unittest2.TestCase):
         self.assertEquals(out['message'], 'Node Created')
         self.assertEquals(out['node']['hostname'], self.hostname)
         self.assertEquals(out['node']['cluster_id'], None)
-        self.assertEquals(out['node']['role_id'], None)
+        self.assertEquals(out['node']['role'], None)
         self.assertEquals(out['node']['config'], dict())
 
         # Cleanup the node we created
@@ -85,7 +85,7 @@ class NodeCreateTests(unittest2.TestCase):
         self.assertEquals(out['message'], 'Node Created')
         self.assertEquals(out['node']['hostname'], self.hostname)
         self.assertEquals(out['node']['cluster_id'], None)
-        self.assertEquals(out['node']['role_id'], None)
+        self.assertEquals(out['node']['role'], None)
         self.assertEquals(out['node']['config'], self.attribs)
 
         # Cleanup the node we created
@@ -104,7 +104,7 @@ class NodeCreateTests(unittest2.TestCase):
         self.assertEquals(out['message'], 'Node Created')
         self.assertEquals(out['node']['hostname'], self.hostname)
         self.assertEquals(out['node']['cluster_id'], self.clus1_id)
-        self.assertEquals(out['node']['role_id'], None)
+        self.assertEquals(out['node']['role'], None)
         self.assertEquals(out['node']['config'], self.attribs)
 
         # Cleanup the node we created
@@ -113,7 +113,7 @@ class NodeCreateTests(unittest2.TestCase):
     def test_create_node_with_hostname_config_cluster_role(self):
         data = {'hostname': self.hostname,
                 'cluster_id': self.clus1_id,
-                'role_id': 2,
+                'role': 'test-role',
                 'config': self.attribs}
         resp = self.app.post('/nodes/',
                              content_type=self.content_type,
@@ -125,7 +125,7 @@ class NodeCreateTests(unittest2.TestCase):
         self.assertEquals(out['message'], 'Node Created')
         self.assertEquals(out['node']['hostname'], self.hostname)
         self.assertEquals(out['node']['cluster_id'], self.clus1_id)
-        self.assertEquals(out['node']['role_id'], 2)
+        self.assertEquals(out['node']['role'], 'test-role')
         self.assertEquals(out['node']['config'], self.attribs)
 
         # Cleanup the node we created
@@ -164,7 +164,7 @@ class NodeUpdateTests(unittest2.TestCase):
         self.desc = _randomStr(30)
         self.attribs = {"package_component": "essex-final",
                         "monitoring": {"metric_provider": "null"}}
-        self.role_id = None
+        self.role = None
         self.cluster_id = None
         self.backend = "unprovisioned"
         self.backend_state = "unknown"
@@ -172,7 +172,7 @@ class NodeUpdateTests(unittest2.TestCase):
         self.shep = 30
         self.create_data = {'hostname': self.hostname,
                             'config': self.attribs,
-                            'role_id': self.role_id,
+                            'role': self.role,
                             'cluster_id': self.cluster_id,
                             'backend': self.backend,
                             'backend_state': self.backend_state}
@@ -200,7 +200,7 @@ class NodeUpdateTests(unittest2.TestCase):
         out = json.loads(resp.data)
         self.assertEquals(out['node']['id'], self.node_id)
         self.assertEquals(out['node']['hostname'], self.hostname)
-        self.assertEquals(out['node']['role_id'], self.role_id)
+        self.assertEquals(out['node']['role'], self.role)
         self.assertEquals(out['node']['cluster_id'], self.cluster_id)
         self.assertEquals(out['node']['backend'], self.backend)
         self.assertEquals(out['node']['backend_state'], self.backend_state)
@@ -229,12 +229,12 @@ class NodeUpdateTests(unittest2.TestCase):
         self.assertEquals(out['status'], 400)
         self.assertTrue('hostname is not modifiable' in out['message'])
 
-    def test_update_node_attribute_role_id(self):
+    def test_update_node_attribute_role(self):
         # TODO(shep): Not sure if this should work with a non-existent
         #             role_id
-        tmp_role_id = 99
-        payload = {'role_id': tmp_role_id}
-        resp = self.app.put('/nodes/%s/role_id' % self.node_id,
+        tmp_role = 'superfan99'
+        payload = {'role': tmp_role}
+        resp = self.app.put('/nodes/%s/role' % self.node_id,
                             content_type=self.content_type,
                             data=json.dumps(payload))
         self.assertEquals(resp.status_code, 200)
@@ -245,8 +245,8 @@ class NodeUpdateTests(unittest2.TestCase):
         self.assertEquals(out['node']['cluster_id'], self.cluster_id)
         self.assertEquals(out['node']['backend'], self.backend)
         self.assertEquals(out['node']['backend_state'], self.backend_state)
-        self.assertEquals(out['node']['role_id'], tmp_role_id)
-        self.assertNotEquals(out['node']['role_id'], self.role_id)
+        self.assertEquals(out['node']['role'], tmp_role)
+        self.assertNotEquals(out['node']['role'], self.role)
 
     def test_update_node_attribute_cluster_id(self):
         # TODO(shep): Not sure if this should work with a non-existent
@@ -261,7 +261,7 @@ class NodeUpdateTests(unittest2.TestCase):
         self.assertEquals(out['node']['id'], self.node_id)
         self.assertEquals(out['node']['hostname'], self.hostname)
         self.assertEquals(out['node']['config'], self.attribs)
-        self.assertEquals(out['node']['role_id'], self.role_id)
+        self.assertEquals(out['node']['role'], self.role)
         self.assertEquals(out['node']['backend'], self.backend)
         self.assertEquals(out['node']['backend_state'], self.backend_state)
         self.assertEquals(out['node']['cluster_id'], tmp_cluster_id)
@@ -278,7 +278,7 @@ class NodeUpdateTests(unittest2.TestCase):
         self.assertEquals(out['node']['id'], self.node_id)
         self.assertEquals(out['node']['hostname'], self.hostname)
         self.assertEquals(out['node']['config'], self.attribs)
-        self.assertEquals(out['node']['role_id'], self.role_id)
+        self.assertEquals(out['node']['role'], self.role)
         self.assertEquals(out['node']['cluster_id'], self.cluster_id)
         self.assertEquals(out['node']['backend_state'], self.backend_state)
         self.assertEquals(out['node']['backend'], tmp_backend)
@@ -295,7 +295,7 @@ class NodeUpdateTests(unittest2.TestCase):
         self.assertEquals(out['node']['id'], self.node_id)
         self.assertEquals(out['node']['hostname'], self.hostname)
         self.assertEquals(out['node']['config'], self.attribs)
-        self.assertEquals(out['node']['role_id'], self.role_id)
+        self.assertEquals(out['node']['role'], self.role)
         self.assertEquals(out['node']['cluster_id'], self.cluster_id)
         self.assertEquals(out['node']['backend'], self.backend)
         self.assertEquals(out['node']['backend_state'], tmp_backend_state)

@@ -38,21 +38,21 @@ class Nodes(Base):
     __tablename__ = 'nodes'
     id = Column(Integer, primary_key=True)
     hostname = Column(String(64), unique=True, nullable=False)
-    role_id = Column(Integer, ForeignKey('roles.id'))
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
     clusters = relationship('Clusters',
                             backref=backref('nodes',
                             lazy='dynamic'))
+    role = Column(String(30))
     backend = Column(String(30))  # Adventures.backend
     backend_state = Column(String(30))  # Adventures.backend_state
     config = Column(JsonBlob, default={})
 
-    def __init__(self, hostname, role_id=None, cluster_id=None, config=None,
+    def __init__(self, hostname, cluster_id=None, config=None, role=None,
                  backend=None, backend_state=None):
         self.hostname = hostname
-        self.role_id = role_id
         self.cluster_id = cluster_id
         self.config = config
+        self.role = role
         self.backend = backend
         self.backend_state = backend_state
 
@@ -76,21 +76,21 @@ class Adventures(Base):
         return '<Adventures %r>' % (self.name)
 
 
-class Roles(Base):
-    __tablename__ = 'roles'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(20), unique=True)
-    description = Column(String(80))
-    node = relationship('Nodes', backref=backref('role',
-                                                 uselist=False,
-                                                 lazy='dynamic'))
+# class Roles(Base):
+#     __tablename__ = 'roles'
+#     id = Column(Integer, primary_key=True)
+#     name = Column(String(20), unique=True)
+#     description = Column(String(80))
+#     node = relationship('Nodes', backref=backref('role',
+#                                                  uselist=False,
+#                                                  lazy='dynamic'))
 
-    def __init__(self, name, description):
-        self.name = name
-        self.description = description
+#     def __init__(self, name, description):
+#         self.name = name
+#         self.description = description
 
-    def __repr__(self):
-        return '<Roles %r>' % (self.name)
+#     def __repr__(self):
+#         return '<Roles %r>' % (self.name)
 
 
 class Clusters(Base):
