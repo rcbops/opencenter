@@ -192,7 +192,6 @@ class ClusterUpdateTests(unittest2.TestCase):
     def test_update_cluster_attribute_name_returns_a_400_TODO(self):
         # TODO(shep): currently this passes, but an update
         #             against the name attribute should fail
-
         tmp_name = _randomStr(10)
         payload = {'name': tmp_name}
         resp = self.app.put('/clusters/%s' % self.cluster_id,
@@ -297,15 +296,15 @@ class ClusterUpdateTests(unittest2.TestCase):
 
     def test_patch_on_cluster_attribute_config_bad_cluster_404(self):
         tmp_attribs = {'monitoring': {'metric_provider': 'collectd'}}
-        resp = self.app.get('/clusters/%s/config' % '99',
-                            data=json.dumps(tmp_attribs),
-                            content_type=self.content_type)
+        resp = self.app.patch('/clusters/%s/config' % '99',
+                              data=json.dumps(tmp_attribs),
+                              content_type=self.content_type)
         self.assertEquals(resp.status_code, 404)
         out = json.loads(resp.data)
         self.assertEquals(out['status'], 404)
         self.assertTrue('Not Found' in out['message'])
 
-    def test_update_cluster_with_no_data(self):
+    def test_400_returned_by_update_cluster_with_no_data(self):
         resp = self.app.put('/clusters/%s' % self.cluster_id,
                             data=None,
                             content_type=self.content_type)
@@ -355,6 +354,14 @@ class ClusterReadTests(unittest2.TestCase):
         self.assertEquals(out['cluster']['name'], self.name)
         self.assertEquals(out['cluster']['description'], self.desc)
 
+    def test_read_cluster_by_bad_id_404(self):
+        resp = self.app.get('/clusters/%s' % '99',
+                            content_type=self.content_type)
+        self.assertEquals(resp.status_code, 404)
+        out = json.loads(resp.data)
+        self.assertEquals(out['status'], 404)
+        self.assertTrue('Not Found' in out['message'])
+
     def test_read_cluster_attribute_name_by_uri_with_bad_id_404(self):
         resp = self.app.get('/clusters/%s/name' % '99',
                             content_type=self.content_type)
@@ -401,7 +408,7 @@ class ClusterUpdateAttributeTests(unittest2.TestCase):
         self.json = json.loads(tmp.data)
         self.cluster_id = self.json['cluster']['id']
 
-    def test_cluster_node_list_on_non_existent_cluster_id(self):
+    def test_cluster_node_list_on_non_existent_cluster_id_404(self):
         resp = self.app.get('/clusters/99/nodes',
                             content_type=self.content_type)
         self.assertEquals(resp.status_code, 404)
