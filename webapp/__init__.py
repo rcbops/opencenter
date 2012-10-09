@@ -82,7 +82,7 @@ class Thing(Flask):
         defaults = {'main':
                     {'bind_address': '0.0.0.0',
                      'bind_port': 8080,
-                     'backend': './backends',
+                     'backend': '/dev/null',
                      'loglevel': 'WARNING',
                      'database_uri': 'sqlite:///',
                      'daemonize': False,
