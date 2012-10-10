@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
+import logging
 import os
 import sys
-import logging
+import traceback
 
 LOG = logging.getLogger('backend.driver')
 
@@ -16,10 +17,6 @@ class NodeDoesNotExist(BackendException):
 
 
 class ClusterDoesNotExist(BackendException):
-    pass
-
-
-class RoleDoesNotExist(BackendException):
     pass
 
 
@@ -46,7 +43,7 @@ def backends():
     return backend_list.keys()
 
 
-def notify(object_type, notification_type, old_object, new_object):
+def notify(otype, ntype, old_object, new_object):
     # evaluate filter predicate, call all registered handlers
     #
 
@@ -54,9 +51,11 @@ def notify(object_type, notification_type, old_object, new_object):
 
     # for non-node, notify all backends
 
+    LOG.debug('Got "%s" for "%s"' % (ntype, otype))
+
     backend_notification_list = []
 
-    if object_type == 'node':
+    if otype == 'node':
         old_backend = None
         new_backend = None
 
@@ -68,11 +67,14 @@ def notify(object_type, notification_type, old_object, new_object):
     else:
         backend_notification_list = backend_list.keys()
 
-    for backend in backend_notification_list:
-        if backend in backend_list:
-            backend_list[backend].notify(object_type, notification_type,
-                                         old_object, new_object)
-
+    try:
+        for backend in backend_notification_list:
+            if backend in backend_list:
+                backend_list[backend].notify(otype, ntype,
+                                             old_object, new_object)
+    except:
+        LOG.info(traceback.format_exc())
+        raise BackendError
 
 def _load_path(path, config={}):
     dirlist = os.listdir(path)
