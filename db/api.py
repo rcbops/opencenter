@@ -1,10 +1,13 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
+# tab stops are 8.  ^^ this is wrong
 
 from itertools import islice
 import json
+import logging
 from time import time
+import traceback
 
-from sqlalchemy.exc import IntegrityError, StatementError
+from sqlalchemy.exc import IntegrityError, StatementError, InvalidRequestError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.sql import and_, or_
 
@@ -12,6 +15,8 @@ import backends as b
 from db.database import db_session
 from db import exceptions as exc
 from db.models import Adventures, Clusters, Nodes, Tasks
+
+LOG = logging.getLogger('db.api')
 
 
 def _model_get_all(model):
@@ -74,6 +79,10 @@ def _model_create(model, fields):
                    for c in r.__table__.columns.keys())
         b.notify(model.rstrip('s'), 'create', None, ret)
         return ret
+    except b.BackendException, e:
+        db_session.rollback()
+        msg = 'backend failure: %s' % str(e)
+        raise exc.CreateError(msg)
     except StatementError, e:
         db_session.rollback()
         # msg = e.message
@@ -105,9 +114,13 @@ def _model_delete_by_id(model, pk_id):
 
     try:
         db_session.delete(r)
-        db_session.commit()
         b.notify(model.rstrip('s'), 'delete', old_obj, None)
+        db_session.commit()
         return True
+    except b.BackendException, e:
+        db_session.rollback()
+        msg = 'backend failure: %s' % str(e)
+        raise exc.CreateError(msg)
     except UnmappedInstanceError, e:
         db_session.rollback()
         msg = "%s id does not exist" % (model.title())
@@ -173,6 +186,7 @@ def _model_update_by_id(model, pk_id, fields):
               'clusters': Clusters,
               'nodes': Nodes,
               'tasks': Tasks}
+
     field_list = [c for c in tables[model].__table__.columns.keys()]
     field_list.remove('id')
     r = tables[model].query.filter_by(id=pk_id).first()
@@ -187,17 +201,23 @@ def _model_update_by_id(model, pk_id, fields):
         if field in fields:
             r.__setattr__(field, fields[field])
     try:
-        db_session.commit()
         ret = dict((c, getattr(r, c))
                    for c in r.__table__.columns.keys())
         b.notify(model.rstrip('s'), 'update', old_obj, ret)
+        db_session.commit()
         return ret
+    except b.BackendException, e:
+        db_session.rollback()
+        msg = 'backend failure: %s' % str(e)
+        raise e
     except InvalidRequestError, e:
+        print "invalid req"
         db_session.rollback()
         msg = e.msg
         raise Foo(msg)
-    except Exception, e:
+    except:
         db_session.rollback()
+        raise
 
 
 def adventures_get_all():
