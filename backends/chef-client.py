@@ -79,8 +79,8 @@ class ChefClientBackend(backends.ConfigurationBackend):
         new_cluster_name = '_default'
 
         if new_object['cluster_id'] and new_object['backend'] == 'chef-client':
-            new_cluster = dbapi._model_get_by_id('clusters', new_object['cluster_id'])
-            new_cluster_name = new_cluster['name']
+            c = dbapi._model_get_by_id('clusters', new_object['cluster_id'])
+            new_cluster_name = c['name']
 
         if not self._cluster_exists(new_cluster_name):
             raise backends.ClusterDoesNotExist(

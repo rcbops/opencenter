@@ -76,6 +76,7 @@ def notify(otype, ntype, old_object, new_object):
         LOG.info(traceback.format_exc())
         raise BackendError
 
+
 def _load_path(path, config={}):
     dirlist = os.listdir(path)
     for relpath in dirlist:
