@@ -15,6 +15,7 @@ from webapp.errors import (
     http_not_found,
     http_not_implemented)
 
+import webapp.utility as utility
 from filters import AstBuilder, FilterTokenizer
 
 tasks = Blueprint('tasks', __name__)
@@ -26,18 +27,21 @@ def list_tasks():
         fields = api.task_get_columns()
         data = dict((field, request.json[field] if (field in request.json)
                      else None) for field in fields)
-        try:
-            task = api.task_create(data)
-            href = request.base_url + str(task['id'])
-            msg = {'status': 201,
-                   'message': 'Task Created',
-                   'task': task,
-                   'ref': href}
-            resp = jsonify(msg)
-            resp.status_code = 201
-            resp.headers['Location'] = href
-        except exc.CreateError, e:
-            return http_bad_request(e.message)
+
+        task = api.task_create(data)
+        if 'node_id' in task:
+            task_semaphore = 'task-for-%s' % task['node_id']
+            current_app.logger.debug('notifying event %s' % task_semaphore)
+            utility.notify(task_semaphore)
+
+        href = request.base_url + str(task['id'])
+        msg = {'status': 201,
+               'message': 'Task Created',
+               'task': task,
+               'ref': href}
+        resp = jsonify(msg)
+        resp.status_code = 201
+        resp.headers['Location'] = href
     else:
         tasks = api.tasks_get_all()
         resp = jsonify({'tasks': tasks})

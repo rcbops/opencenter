@@ -19,6 +19,7 @@ from errors import (
     http_not_found,
     http_not_implemented)
 
+import webapp.utility as utility
 from filters import AstBuilder, FilterTokenizer
 
 nodes = Blueprint('nodes', __name__)
@@ -65,6 +66,20 @@ def filter_nodes():
     builder = AstBuilder(FilterTokenizer(),
                          'nodes: %s' % request.json['filter'])
     return jsonify({'nodes': builder.eval()})
+
+
+@nodes.route('/<node_id>/tasks_blocking', methods=['GET'])
+def tasks_blocking_by_node_id(node_id):
+    task = api.task_get_by_filter({'node_id': node_id, 'state': 'pending'})
+    while not task:
+        semaphore = 'task-for-%s' % node_id
+        current_app.logger.debug('waiting on %s' % semaphore)
+        utility.wait(semaphore)
+        task = api.task_get_by_filter({'node_id': node_id, 'state': 'pending'})
+        if task:
+            utility.clear(semaphore)
+
+    return jsonify({'task': task})
 
 
 @nodes.route('/<node_id>/tasks', methods=['GET', 'PUT'])
