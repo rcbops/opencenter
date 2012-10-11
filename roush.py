@@ -2,6 +2,8 @@
 
 import sys
 
+from gevent.wsgi import WSGIServer
+
 from db.database import init_db
 from webapp import Thing
 
@@ -9,4 +11,7 @@ if __name__ == '__main__':
     foo = Thing("roush", argv=sys.argv[1:], configfile='local.conf',
                 debug=True)
     init_db(foo.config['database_uri'])
-    foo.run()
+
+    http_server = WSGIServer((foo.config['bind_address'],
+                              int(foo.config['bind_port'])), foo)
+    http_server.serve_forever()
