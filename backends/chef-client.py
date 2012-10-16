@@ -90,7 +90,7 @@ class ChefClientBackend(backends.ConfigurationBackend):
             raise backends.NodeDoesNotExist(
                 'node %s does not exist' % new_object['hostname'])
 
-        node = chef.Node(node, self.api)
+        node = chef.Node(new_object['hostname'], self.api)
         node.chef_environment = new_cluster_name
         node.save()
 
