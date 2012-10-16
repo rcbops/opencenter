@@ -32,12 +32,41 @@ class ChefClientBackend(backends.ConfigurationBackend):
 
         self.role_map = {}
 
+        if 'role_location' in self.config:
+            self._load_roles(self.config['role_location'])
+
+    def _load_roles(self, path):
+        if os.path.isdir(path):
+            self._load_role_directory(path)
+        else:
+            self._load_role_file(path)
+
+    def _load_role_directory(self, path):
+        dirlist = os.listdir(path)
+        for rel in dirlist:
+            f = os.path.join(path, rel)
+
+            if not os.path.isdir(f) and f.endswith(".map"):
+                self._load_role_file(f)
+
+    def _load_role_file(self, path):
+        with open(path, 'r') as f:
+            for line in f:
+                line = line.strip().split("#", 1)[0]
+                if '=' in line:
+                    key, roles = map(lambda x: x.strip(), line.split('='))
+                    self.role_map[key] = map(
+                        lambda x: x.strip(), roles.split(','))
+
     def notify(self, otype, ntype, old_object, new_object):
+        fn = None
         LOG.debug('chef-client: got %s for %s' % (ntype, otype))
 
-        LOG.debug(dir(self))
+        try:
+            fn = getattr(self, "_%s_%s" % (otype, ntype))
+        except AttributeError:
+            pass
 
-        fn = getattr(self, "_%s_%s" % (otype, ntype))
         if fn:
             LOG.debug('chef-client: dispatching to handler')
             fn(old_object, new_object)
@@ -45,6 +74,8 @@ class ChefClientBackend(backends.ConfigurationBackend):
     def _node_update(self, old_object, new_object):
         if old_object['cluster_id'] != new_object['cluster_id']:
             self.change_node_cluster(old_object, new_object)
+        if old_object['role'] != new_object['role']:
+            self.change_node_role(old_object, new_object)
 
     def _cluster_delete(self, old_object, new_object):
         if not self._cluster_exists(old_object['name']):
@@ -74,6 +105,18 @@ class ChefClientBackend(backends.ConfigurationBackend):
         if new_object['settings']:
             env.override_attributes = new_object['settings']
         env.save()
+
+    def change_node_role(self, old_object, new_object):
+        if new_object['role'] and new_object['backend'] == 'chef-client':
+            if not new_object['role'] in self.role_map:
+                raise backends.RoleDoesNotExist(new_object['role'])
+
+            if not self._host_exists(new_object['hostname']):
+                raise backends.NodeDoesNotExist(new_object['hostname'])
+
+            node = chef.Node(new_object['hostname'], self.api)
+            node.run_list = self.role_map[new_object['role']]
+            node.save
 
     def change_node_cluster(self, old_object, new_object):
         new_cluster_name = '_default'
@@ -105,31 +148,6 @@ class ChefClientBackend(backends.ConfigurationBackend):
         return len(result) == 1
 
         # # load the role map
-        # if 'role_location' in self.config:
-        #     self._load_roles(self.config['role_location'])
-
-    # def _load_roles(self, path):
-    #     if os.path.isdir(path):
-    #         self._load_role_directory(path)
-    #     else:
-    #         self._load_role_file(path)
-
-    # def _load_role_directory(self, path):
-    #     dirlist = os.listdir(path)
-    #     for rel in dirlist:
-    #         f = os.path.join(path, rel)
-
-    #         if not os.path.isdir(f) and f.endswith(".map"):
-    #             self._load_role_file(f)
-
-    # def _load_role_file(self, path):
-    #     with open(path, 'r') as f:
-    #         for line in f:
-    #             line = line.strip().split("#", 1)[0]
-    #             if '=' in line:
-    #                 key, roles = map(lambda x: x.strip(), line.split('='))
-    #                 self.role_map[key] = map(
-    #                     lambda x: x.strip(), roles.split(','))
 
     # def get_node_settings(self, node):
     #     if not self._host_exists(node):
@@ -166,17 +184,3 @@ class ChefClientBackend(backends.ConfigurationBackend):
     # def list_nodes(self):
     #     env = chef.Search('node', '*:*', 1000, 0, self.api)
     #     return [x['name'] for x in env]
-
-    # def set_role_for_node(self, node, role):
-    #     if not role in self.role_map:
-    #         raise backends.RoleDoesNotExist
-
-    #     if not self._host_exists(node):
-    #         raise backends.RoleDoesNotExist
-
-    #     node = chef.Node(node, self.api)
-    #     node.run_list = self.role_map[role]
-    #     node.save()
-
-    # def  get_role_for_node(self, node):
-    #     raise NotImplementedError
