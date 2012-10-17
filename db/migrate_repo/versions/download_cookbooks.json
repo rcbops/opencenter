@@ -1,0 +1,18 @@
+{
+    "start_state": "s1",
+    "states": {
+        "s1": {
+            "primitive": "run_task",
+            "parameters": {
+                "action": "download_cookbooks",
+                "payload": {}},
+            "on_success": "s2"
+        },
+        "s2": {
+            "primitive": "set_backend",
+            "parameters": {
+                "backend_state": "ready"
+            }
+        }
+    }
+}

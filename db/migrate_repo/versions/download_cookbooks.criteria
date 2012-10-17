@@ -1,0 +1,1 @@
+(backend='chef-server') and (backend_state='installed')
