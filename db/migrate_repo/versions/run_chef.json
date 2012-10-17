@@ -1,0 +1,12 @@
+{
+    "start_state": "s1",
+    "states": {
+        "s1": {
+            "primitive": "run_task",
+            "parameters": {
+                "action": "run_chef",
+                "payload": {}
+            }
+        }
+    }
+}

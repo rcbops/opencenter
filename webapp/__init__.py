@@ -9,17 +9,16 @@ import sys
 import traceback
 
 from ConfigParser import ConfigParser
-from flask import Flask
+from flask import Flask, jsonify
 from adventures import adventures
 from clusters import clusters
 from nodes import nodes
-from roles import roles
 from index import index
 from tasks import tasks
 
-import backends
+from db import api, models, database
 
-backend = None
+import backends
 
 
 # Stolen: http://code.activestate.com/recipes/\
@@ -56,6 +55,7 @@ class Thing(Flask):
     def __init__(self, name, argv=None, configfile=None,
                  confighash=None, debug=False):
         daemonize = False
+        self.registered_models = []
 
         super(Thing, self).__init__(name)
 
@@ -77,17 +77,20 @@ class Thing(Flask):
                     print "Bad option"
                     sys.exit(1)
 
+            sys.argv = [sys.argv[0]] + args
+
         defaults = {'main':
                     {'bind_address': '0.0.0.0',
                      'bind_port': 8080,
-                     'backend': 'null',
+                     'backend': '/dev/null',
                      'loglevel': 'WARNING',
                      'database_uri': 'sqlite:///',
                      'daemonize': False,
                      'pidfile': None},
-                    'opscodechef_backend':
+                    'ChefClientBackend':
                     {'role_location': '/etc/roush/roles.d'},
-                    'null_backend': {}}
+                    'ChefServerBackend': {},
+                    'UnprovisionedBackend': {}}
 
         if configfile:
             config = ConfigParser()
@@ -105,11 +108,7 @@ class Thing(Flask):
         if confighash:
             defaults.update(confighash)
 
-        backend_module = defaults['main']['backend']
-        self.backend = backends.load(
-            backend_module, defaults['%s_backend' % backend_module])
-        self.config.update(defaults['main'])
-
+        logging.basicConfig(level=logging.WARNING)
         LOG = logging.getLogger()
 
         if debug:
@@ -119,10 +118,6 @@ class Thing(Flask):
         else:
             LOG.setLevel(logging.WARNING)
 
-        print("daemonize: %s, debug: %s, configfile: %s, loglevel: %s " %
-              (daemonize, debug, configfile,
-               logging.getLevelName(LOG.getEffectiveLevel())))
-
         if 'logfile' in defaults['main']:
             for handler in LOG.handlers:
                 LOG.removeHandler(handler)
@@ -130,10 +125,21 @@ class Thing(Flask):
             handler = logging.FileHandler(defaults['main']['logfile'])
             LOG.addHandler(handler)
 
+        # load the backends
+        backends.load(defaults['main']['backend'], defaults)
+
+        # set the notification dispatcher
+        self.dispatch = backends.notify
+
+        self.config.update(defaults['main'])
+
+        print("daemonize: %s, debug: %s, configfile: %s, loglevel: %s " %
+              (daemonize, debug, configfile,
+               logging.getLevelName(LOG.getEffectiveLevel())))
+
         self.register_blueprint(index)
         self.register_blueprint(clusters, url_prefix='/clusters')
         self.register_blueprint(nodes, url_prefix='/nodes')
-        self.register_blueprint(roles, url_prefix='/roles')
         self.register_blueprint(tasks, url_prefix='/tasks')
         self.register_blueprint(adventures, url_prefix='/adventures')
         self.testing = debug
@@ -143,6 +149,32 @@ class Thing(Flask):
 
         if daemonize:
             self.config['daemonize'] = True
+
+    def register_blueprint(self, blueprint, url_prefix='/', **kwargs):
+        super(Thing, self).register_blueprint(blueprint,
+                                              url_prefix=url_prefix,
+                                              **kwargs)
+
+        # auto-register the schema url
+        def schema_details(what):
+            def f():
+                return jsonify(api._model_get_schema(what))
+            return f
+
+        def root_schema():
+            schema = {'schema': {'objects': self.registered_models}}
+            return jsonify(schema)
+
+        if url_prefix != '/' and hasattr(models, blueprint.name.capitalize()):
+            self.registered_models.append(blueprint.name)
+            url = '/%s/schema' % (blueprint.name)
+            self.add_url_rule(url, '%s.schema' % blueprint.name,
+                              schema_details(blueprint.name),
+                              methods=['GET'])
+        elif url_prefix == '/':
+            self.add_url_rule('/schema', 'root.schema',
+                              root_schema,
+                              methods=['GET'])
 
     def run(self):
         context = None

@@ -1,3 +1,6 @@
+import json
+import os
+
 from sqlalchemy import *
 from migrate import *
 
@@ -6,7 +9,9 @@ from migrate.changeset import schema
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, object_mapper
 
-from db.models import Nodes, Roles, Tasks, Clusters, Types, TypeStates
+from db.models import Adventures, Nodes, Tasks, Clusters
+from db import api as api
+
 
 # Base = declarative_base()
 meta = MetaData()
@@ -15,8 +20,31 @@ meta = MetaData()
 def upgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
 
-    types = Table('types', meta, autoload=True)
-    types.insert().values(name='Unprovisioned').execute()
+    adventures = [
+        {'name': 'install chef client',
+         'dsl': 'install_chef.json',
+         'criteria': 'install_chef.criteria'},
+        {'name': 'run chef',
+         'dsl': 'run_chef.json',
+         'criteria': 'run_chef.criteria'},
+        {'name': 'install chef server',
+         'dsl':  'install_chef_server.json',
+         'criteria': 'install_chef_server.criteria'},
+        {'name': 'install nova controller',
+         'dsl': 'install_nova_controller.json',
+         'criteria': 'install_nova_controller.criteria'},
+        {'name': 'install nova compute',
+         'dsl': 'install_nova_compute.json',
+         'criteria': 'install_nova_compute.criteria'}]
+
+    for adventure in adventures:
+        json_path = os.path.join(
+            os.path.dirname(__file__), adventure['dsl'])
+        criteria_path = os.path.join(
+            os.path.dirname(__file__), adventure['criteria'])
+        adventure['dsl'] = json.loads(open(json_path).read())
+        adventure['criteria'] = open(criteria_path).read()
+        adv = api.adventure_create(adventure)
 
 
 def downgrade(migrate_engine):

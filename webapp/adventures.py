@@ -18,6 +18,7 @@ from errors import (
     http_conflict,
     http_not_found,
     http_not_implemented)
+from filters import AstBuilder, FilterTokenizer
 
 adventures = Blueprint('adventures', __name__)
 
@@ -25,7 +26,8 @@ adventures = Blueprint('adventures', __name__)
 @adventures.route('/', methods=['GET', 'POST'])
 def list_adventures():
     if request.method == 'POST':
-        fields = ['name', 'language', 'dsl', 'backend', 'backend_state']
+        # RP: should this not come out of the model schema?
+        fields = ['name', 'language', 'dsl', 'criteria']
         data = {}
         for field in fields:
             if field in request.json:
@@ -35,9 +37,9 @@ def list_adventures():
         try:
             adventure = api.adventure_create(data)
             href = request.base_url + str(adventure['id'])
-            msg = {'status': 201, 'message': 'Adventure Create',
+            msg = {'status': 201, 'message': 'Adventure Created',
                    'ref': href,
-                    'adventure': adventure}
+                   'adventure': adventure}
             resp = jsonify(msg)
             resp.status_code = 201
             resp.headers['Location'] = href
@@ -48,27 +50,30 @@ def list_adventures():
         resp = jsonify({'adventures': adventures})
     return resp
 
+
 @adventures.route('/filter', methods=['POST'])
 def filter_adventures():
     builder = AstBuilder(FilterTokenizer(),
                          'adventures: %s' % request.json['filter'])
     return jsonify({'adventures': builder.eval()})
 
-@adventures.route('/schema', methods=['GET'])
-def schema():
-    return jsonify(api._model_get_schema('adventures'))
-
 
 @adventures.route('/<adventure_id>', methods=['GET', 'PUT', 'DELETE'])
 def adventure_by_id(adventure_id):
     if request.method == 'PUT':
-        pass
+        fields = api.adventure_get_columns()
+        data = dict((field, request.json[field]) for field in fields
+                    if field in request.json)
+        adventure = api.adventure_update_by_id(adventure_id, data)
+        resp = jsonify({'adventure': adventure})
+        return resp
     elif request.method == 'DELETE':
         try:
             api.adventure_delete_by_id(adventure_id)
             msg = {'status': 200, 'message': 'Adventure deleted'}
             resp = jsonify(msg)
             resp.status_code = 200
+            return resp
         except exc.AdventureNotFound, e:
             return http_not_found()
     else:
@@ -77,4 +82,4 @@ def adventure_by_id(adventure_id):
             return http_not_found()
         else:
             resp = jsonify({'adventure': adventure})
-    return resp
+            return resp

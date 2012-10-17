@@ -99,8 +99,10 @@ def create_virtualenv(venv=VENV):
 
 def install_dependencies(venv=VENV):
     print 'Installing dependencies with pip (this can take a while)...'
-    run_command(['tools/with_venv.sh', 'pip', 'install', '--upgrade', '-r',
-                PIP_REQUIRES], redirect_output=False)
+    # run_command(['tools/with_venv.sh', 'pip', 'install', '-q', '--upgrade',
+    #             '-r', PIP_REQUIRES], redirect_output=False)
+    run_command(['tools/with_venv.sh', 'pip', 'install', '--upgrade',
+                '-r', PIP_REQUIRES], redirect_output=False)
 
 
 def print_help():

@@ -1,0 +1,1 @@
+(backend='unprovisioned') and (count(filter('nodes', 'backend=\'chef-server\'')) = 0)

@@ -1,0 +1,16 @@
+{
+    "start_state": "s1",
+    "states": {
+        "s1": {
+            "primitive": "set_role",
+            "parameters": {"role": "nova-compute"},
+            "on_success": "s2"
+        },
+        "s2": {
+            "primitive": "run_task",
+            "parameters": {
+                "action": "run_chef",
+                "payload": {}}
+        }
+    }
+}
