@@ -116,7 +116,7 @@ class ChefClientBackend(backends.ConfigurationBackend):
 
             node = chef.Node(new_object['hostname'], self.api)
             node.run_list = self.role_map[new_object['role']]
-            node.save
+            node.save()
 
     def change_node_cluster(self, old_object, new_object):
         new_cluster_name = '_default'
