@@ -49,6 +49,16 @@ def upgrade(migrate_engine):
         adventure['criteria'] = open(criteria_path).read()
         adv = api.adventure_create(adventure)
 
+    canned_filters = [{'name': 'unprovisioned nodes',
+                       'filter_type': 'node',
+                       'expr': 'backend=\'unprovisioned\''},
+                      {'name': 'chef client nodes',
+                       'filter_type': 'node',
+                       'expr': 'backend=\'chef-client\''}]
+
+    for new_filter in canned_filters:
+        api._model_create('filters', new_filter)
+
 
 def downgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)

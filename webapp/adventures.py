@@ -18,7 +18,8 @@ from errors import (
     http_conflict,
     http_not_found,
     http_not_implemented)
-from filters import AstBuilder, FilterTokenizer
+
+from ast import AstBuilder, FilterTokenizer
 
 adventures = Blueprint('adventures', __name__)
 

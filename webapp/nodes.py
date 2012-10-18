@@ -20,7 +20,7 @@ from errors import (
     http_not_implemented)
 
 import webapp.utility as utility
-from filters import AstBuilder, FilterTokenizer
+from ast import AstBuilder, FilterTokenizer
 
 nodes = Blueprint('nodes', __name__)
 
