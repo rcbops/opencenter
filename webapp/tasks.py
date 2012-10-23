@@ -62,6 +62,12 @@ def task_by_id(task_id):
         data = dict((field, request.json[field]) for field in fields
                     if field in request.json)
         task = api.task_update_by_id(task_id, data)
+
+        if 'node_id' in task:
+            task_semaphore = 'task-for-%s' % task['node_id']
+            current_app.logger.debug('notifying event %s' % task_semaphore)
+            utility.notify(task_semaphore)
+
         resp = jsonify({'task': task})
         return resp
     elif request.method == 'DELETE':
