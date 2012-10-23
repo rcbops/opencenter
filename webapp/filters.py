@@ -74,7 +74,7 @@ def object_by_id(object_id):
         except exc.NodeNotFound, e:
             return http_not_found()
     else:
-        model_object = api._model_get_by_id(object_type, task_id)
+        model_object = api._model_get_by_id(object_type, object_id)
         if not model_object:
             return http_not_found()
         else:
