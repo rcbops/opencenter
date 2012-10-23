@@ -135,8 +135,10 @@ class Tasks(Base):
     action = Column(String(40))
     payload = Column(JsonBlob, default={})
     state = Column(
-        Enum('pending', 'running', 'done', 'timeout', 'cancelled'),
+        Enum('pending', 'delivered', 'running',
+             'done', 'timeout', 'cancelled'),
         default='pending')
+    parent_id = Column(Integer, ForeignKey('tasks.id'), default=None)
     result = Column(JsonBlob, default={})
     submitted = Column(Integer)
     completed = Column(Integer)
@@ -146,12 +148,13 @@ class Tasks(Base):
                                                  lazy='dynamic'))
 
     def __init__(self, node_id, action, payload, state,
-                 result=None, submitted=None, completed=None,
+                 parent_id=None, result=None, submitted=None, completed=None,
                  expires=None):
         self.node_id = node_id
         self.action = action
         self.payload = payload
         self.state = state
+        self.parent_id = parent_id
         self.result = result
         self.submitted = int(time())
         self.completed = completed

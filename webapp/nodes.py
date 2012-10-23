@@ -79,7 +79,10 @@ def tasks_blocking_by_node_id(node_id):
         if task:
             utility.clear(semaphore)
 
-    return jsonify({'task': task})
+    result = jsonify({'task': task})
+    task['state'] = 'delivered'
+    api._model_update_by_id('tasks', task['id'], task)
+    return result
 
 
 @nodes.route('/<node_id>/tasks', methods=['GET', 'PUT'])
@@ -90,6 +93,8 @@ def tasks_by_node_id(node_id):
         return http_not_found()
     else:
         resp = jsonify({'task': task})
+        task['state'] = 'delivered'
+        api._model_update_by_id('tasks', task['id'], task)
         return resp
 
 

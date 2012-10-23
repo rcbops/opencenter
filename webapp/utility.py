@@ -14,7 +14,9 @@ def _get_or_make_event(what):
 
 def notify(what):
     if what in util_conditions:
+        print 'notifying %s' % what
         util_conditions[what].set()
+        print 'done notifying %s' % what
 
 
 def clear(what):
@@ -24,4 +26,7 @@ def clear(what):
 
 def wait(what):
     event = _get_or_make_event(what)
+    print 'waiting for %s' % what
     event.wait()
+    event.clear()
+    print 'done waiting for %s' % what
