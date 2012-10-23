@@ -16,7 +16,7 @@ from webapp.errors import (
     http_not_implemented)
 
 import webapp.utility as utility
-from filters import AstBuilder, FilterTokenizer
+from ast import AstBuilder, FilterTokenizer
 
 tasks = Blueprint('tasks', __name__)
 

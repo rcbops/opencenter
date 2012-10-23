@@ -14,33 +14,27 @@ from sqlalchemy.sql import and_, or_
 import backends as b
 from db.database import db_session
 from db import exceptions as exc
-from db.models import Adventures, Clusters, Nodes, Tasks
+from db.models import Adventures, Clusters, Nodes, Tasks, Filters
 
 LOG = logging.getLogger('db.api')
 
 
+def _get_model_object(model):
+    return globals()[model.capitalize()]
+
+
 def _model_get_all(model):
-    tables = {'adventures': Adventures,
-              'clusters': Clusters,
-              'nodes': Nodes,
-              'tasks': Tasks}
-    result = [dict((c, getattr(r, c))
-              for c in r.__table__.columns.keys())
-              for r in tables[model].query.all()]
-    return result
+    return [dict((c, getattr(r, c))
+                 for c in r.__table__.columns.keys())
+            for r in _get_model_object(model).query.all()]
 
 
 def _model_get_columns(model):
-    tables = {'adventures': Adventures,
-              'clusters': Clusters,
-              'nodes': Nodes,
-              'tasks': Tasks}
-    result = [c for c in tables[model].__table__.columns.keys()]
-    return result
+    return [c for c in _get_model_object(model).__table__.columns.keys()]
 
 
 def _model_get_schema(model):
-    obj = globals()[model.capitalize()]
+    obj = _get_model_object(model)
     cols = obj.__table__.columns
 
     fields = {}
@@ -64,14 +58,11 @@ def _model_create(model, fields):
     :param model: name of the table model
     :param fields: dict of columns:values to create
     """
-    tables = {'adventures': Adventures,
-              'clusters': Clusters,
-              'nodes': Nodes,
-              'tasks': Tasks}
-    field_list = [c for c in tables[model].__table__.columns.keys()]
+    model_object = _get_model_object(model)
+    field_list = [c for c in model_object.__table__.columns.keys()]
     field_list.remove('id')
-    r = tables[model](**dict((field, fields[field])
-                             for field in field_list if field in fields))
+    r = model_object(**dict((field, fields[field])
+                            for field in field_list if field in fields))
     db_session.add(r)
     try:
         db_session.commit()
@@ -101,11 +92,7 @@ def _model_delete_by_id(model, pk_id):
     :param model: name of the table model
     :param pk_id: id to delete
     """
-    tables = {'adventures': Adventures,
-              'clusters': Clusters,
-              'nodes': Nodes,
-              'tasks': Tasks}
-    r = tables[model].query.filter_by(id=pk_id).first()
+    r = _get_model_object(model).query.filter_by(id=pk_id).first()
     # We need generate an object hash to pass to the backend notification
     old_obj = None
     if r is not None:
@@ -137,18 +124,14 @@ def _model_get_by_id(model, pk_id):
     :param model: name of the table model
     :param pk_id: id to delete
     """
-    tables = {'adventures': Adventures,
-              'clusters': Clusters,
-              'nodes': Nodes,
-              'tasks': Tasks}
-    r = tables[model].query.filter_by(id=pk_id).first()
+    r = _get_model_object(model).query.filter_by(id=pk_id).first()
 
     if not r:
         return None
 
     result = [dict((c, getattr(r, c))
                    for c in r.__table__.columns.keys())
-              for r in tables[model].query.all()]
+              for r in _get_model_object(model).query.all()]
 
     return result[0]
 
@@ -159,14 +142,10 @@ def _model_get_by_filter(model, filters):
     :param filters: dictionary of filters; that are combined with AND
                     to filter the result set.
     """
-    tables = {'adventures': Adventures,
-              'clusters': Clusters,
-              'nodes': Nodes,
-              'tasks': Tasks}
     filter_options = and_(
-        * [tables[model].__table__.columns[k] == v
+        * [_get_model_object(model).__table__.columns[k] == v
            for k, v in filters.iteritems()])
-    r = tables[model].query.filter(filter_options).first()
+    r = _get_model_object(model).query.filter(filter_options).first()
     if not r:
         result = None
     else:
@@ -182,14 +161,9 @@ def _model_update_by_id(model, pk_id, fields):
     :param pk_id: id to update
     :param pk_id: dict of columns:values to update
     """
-    tables = {'adventures': Adventures,
-              'clusters': Clusters,
-              'nodes': Nodes,
-              'tasks': Tasks}
-
-    field_list = [c for c in tables[model].__table__.columns.keys()]
+    field_list = [c for c in _get_model_object(model).__table__.columns.keys()]
     field_list.remove('id')
-    r = tables[model].query.filter_by(id=pk_id).first()
+    r = _get_model_object(model).query.filter_by(id=pk_id).first()
 
     # We need generate an object hash to pass to the backend notification
     old_obj = None

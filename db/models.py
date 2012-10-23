@@ -76,6 +76,22 @@ class Adventures(Base):
         return '<Adventures %r>' % (self.name)
 
 
+class Filters(Base):
+    __tablename__ = 'filters'
+    id = Column(Integer, primary_key=True)
+    name = Column(String(30))
+    filter_type = Column(String(30))
+    expr = Column(String(255))
+
+    def __init__(self, name, filter_type, expr):
+        self.name = name
+        self.filter_type = filter_type
+        self.expr = expr
+
+    def __repr__(self):
+        return '<Filter %r>' % (self.name)
+
+
 # class Roles(Base):
 #     __tablename__ = 'roles'
 #     id = Column(Integer, primary_key=True)

@@ -3,7 +3,7 @@
     "states": {
         "s1": {
             "primitive": "set_role",
-            "parameters": {"role": "nova-controller"},
+            "parameters": {"role": "controller"},
             "on_success": "s2"
         },
         "s2": {

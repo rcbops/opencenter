@@ -13,6 +13,15 @@
             "parameters": {
                 "backend": "chef-server",
                 "backend_state": "installed"
+            },
+            "on_success": "s3"
+        },
+        "s3": {
+            "primitive": "run_task",
+            "parameters": {
+                "action": "service_restart",
+                "payload": { "service": "roush",
+                             "sleep": 10}
             }
         }
     }
