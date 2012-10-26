@@ -407,8 +407,8 @@ class AdventureUpdateTests(unittest2.TestCase):
 #
 #    def test_cluster_node_list(self):
 #        # Create a node with cluster_id=self.cluster_id
-#        hostname = _randomStr(10)
-#        data = {'hostname': hostname,
+#        name = _randomStr(10)
+#        data = {'name': name,
 #                'cluster_id': self.cluster_id}
 #        resp = self.app.post('/nodes/',
 #                             content_type=self.content_type,
@@ -417,7 +417,7 @@ class AdventureUpdateTests(unittest2.TestCase):
 #        out = json.loads(resp.data)
 #        self.assertEquals(out['status'], 201)
 #        self.assertEquals(out['message'], 'Node Created')
-#        self.assertEquals(out['node']['hostname'], hostname)
+#        self.assertEquals(out['node']['name'], name)
 #        self.assertEquals(out['node']['cluster_id'], self.cluster_id)
 #        self.assertEquals(out['node']['role'], None)
 #        self.assertEquals(out['node']['config'], dict())
@@ -429,7 +429,7 @@ class AdventureUpdateTests(unittest2.TestCase):
 #        tmp = json.loads(resp.data)
 #        self.assertEquals(len(tmp['nodes']), 1)
 #        self.assertEquals(tmp['nodes'][0]['id'], out['node']['id'])
-#        self.assertEquals(tmp['nodes'][0]['hostname'], hostname)
+#        self.assertEquals(tmp['nodes'][0]['name'], name)
 #
 #        # Cleanup the node we created
 #        resp = self.app.delete('/nodes/%s' % out['node']['id'],

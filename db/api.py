@@ -327,7 +327,7 @@ def cluster_get_node_list(cluster_id):
         return None
     else:
         if r.nodes.count > 0:
-            return list({'id': x.id, 'hostname': x.hostname}
+            return list({'id': x.id, 'name': x.name}
                         for x in r.nodes)
         else:
             return list()
