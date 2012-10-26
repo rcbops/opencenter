@@ -36,14 +36,14 @@ def list_nodes():
         try:
             node = api.node_create(data)
             # current_app.backend.create_node(
-            #     node['hostname'],
+            #     node['name'],
             #     role=node['role_id'],
             #     cluster=node['cluster_id'],
             #     node_settings=node['config'])
             # if node['cluster_id'] is not None:
             #     cluster = api.cluster_get_by_id(node['cluster_id'])
             #     current_app.backend.set_cluster_for_node(
-            #         node=node['hostname'],
+            #         node=node['name'],
             #         cluster=cluster['name'])
             href = request.base_url + str(node['id'])
             msg = {'status': 201,
@@ -121,7 +121,7 @@ def attributes_by_node_id(node_id, key):
         return http_not_found()
     else:
         if request.method == 'PUT':
-            if key in ['id', 'hostname']:
+            if key in ['id', 'name']:
                 msg = "Attribute %s is not modifiable" % key
                 return http_bad_request(msg)
             else:
@@ -159,7 +159,7 @@ def node_by_id(node_id):
             # node = api.node_get_by_filter('id', node_id)
             node = api.node_get_by_id(node_id)
             if api.node_delete_by_id(node_id):
-                # current_app.backend.delete_node(node['hostname'])
+                # current_app.backend.delete_node(node['name'])
                 msg = {'status': 200, 'message': 'Node deleted'}
                 resp = jsonify(msg)
                 resp.status_code = 200
