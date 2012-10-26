@@ -52,13 +52,6 @@ def list_adventures():
     return resp
 
 
-@adventures.route('/filter', methods=['POST'])
-def filter_adventures():
-    builder = AstBuilder(FilterTokenizer(),
-                         'adventures: %s' % request.json['filter'])
-    return jsonify({'adventures': builder.eval()})
-
-
 @adventures.route('/<adventure_id>', methods=['GET', 'PUT', 'DELETE'])
 def adventure_by_id(adventure_id):
     if request.method == 'PUT':

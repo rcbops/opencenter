@@ -61,13 +61,6 @@ def list_nodes():
     return resp
 
 
-@nodes.route('/filter', methods=['POST'])
-def filter_nodes():
-    builder = AstBuilder(FilterTokenizer(),
-                         'nodes: %s' % request.json['filter'])
-    return jsonify({'nodes': builder.eval()})
-
-
 @nodes.route('/<node_id>/tasks_blocking', methods=['GET'])
 def tasks_blocking_by_node_id(node_id):
     task = api.task_get_by_filter({'node_id': node_id, 'state': 'pending'})

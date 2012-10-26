@@ -48,13 +48,6 @@ def list_tasks():
     return resp
 
 
-@tasks.route('/filter', methods=['POST'])
-def filter_tasks():
-    builder = AstBuilder(FilterTokenizer(),
-                         'tasks: %s' % request.json['filter'])
-    return jsonify({'tasks': builder.eval()})
-
-
 @tasks.route('/<task_id>', methods=['GET', 'PUT', 'DELETE'])
 def task_by_id(task_id):
     if request.method == 'PUT':

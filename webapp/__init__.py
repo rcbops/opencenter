@@ -9,13 +9,15 @@ import sys
 import traceback
 
 from ConfigParser import ConfigParser
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from adventures import adventures
 from clusters import clusters
 from nodes import nodes
 from index import index
 from tasks import tasks
 from filters import filters
+
+from ast import AstBuilder, FilterTokenizer
 
 from db import api, models, database
 
@@ -163,16 +165,28 @@ class Thing(Flask):
                 return jsonify(api._model_get_schema(what))
             return f
 
+        def filter_object(what):
+            def f():
+                builder = AstBuilder(FilterTokenizer(),
+                                     '%s: %s' % (what, request.json['filter']))
+                return jsonify({what: builder.eval()})
+            return f
+
         def root_schema():
             schema = {'schema': {'objects': self.registered_models}}
             return jsonify(schema)
 
         if url_prefix != '/' and hasattr(models, blueprint.name.capitalize()):
             self.registered_models.append(blueprint.name)
-            url = '/%s/schema' % (blueprint.name)
+            url = '/%s/schema' % (blueprint.name,)
             self.add_url_rule(url, '%s.schema' % blueprint.name,
                               schema_details(blueprint.name),
                               methods=['GET'])
+            filter_url = '/%s/filter' % (blueprint.name,)
+            self.add_url_rule(filter_url, '%s.filter' % blueprint.name,
+                              filter_object(blueprint.name),
+                              methods=['POST'])
+
         elif url_prefix == '/':
             self.add_url_rule('/schema', 'root.schema',
                               root_schema,
