@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
     @foo.after_request
     def allow_cors(response):
-        if foo.config.has_key('cors_uri'):
+        if 'cors_uri' in foo.config:
             response.headers['Access-Control-Allow-Origin'] = \
                 foo.config['cors_uri']
         return response
