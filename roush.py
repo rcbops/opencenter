@@ -13,8 +13,12 @@ if __name__ == '__main__':
 
     @foo.after_request
     def allow_xss(response):
-      response.headers['Access-Control-Allow-Origin'] = foo.config['xss_proto'] + '://' + foo.config['xss_host'] + ':' + foo.config['xss_port']
-      return response
+        response.headers['Access-Control-Allow-Origin'] =
+        foo.config['xss_proto']
+        + '://'
+        + foo.config['xss_host']
+        + ':' + foo.config['xss_port']
+        return response
 
     init_db(foo.config['database_uri'])
 
