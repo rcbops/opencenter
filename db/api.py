@@ -124,16 +124,8 @@ def _model_get_by_id(model, pk_id):
     :param model: name of the table model
     :param pk_id: id to delete
     """
-    r = _get_model_object(model).query.filter_by(id=pk_id).first()
 
-    if not r:
-        return None
-
-    result = [dict((c, getattr(r, c))
-                   for c in r.__table__.columns.keys())
-              for r in _get_model_object(model).query.all()]
-
-    return result[0]
+    return _model_get_by_filter(model, {'id': pk_id})
 
 
 def _model_get_by_filter(model, filters):
@@ -162,8 +154,13 @@ def _model_update_by_id(model, pk_id, fields):
     :param pk_id: dict of columns:values to update
     """
     field_list = [c for c in _get_model_object(model).__table__.columns.keys()]
-    field_list.remove('id')
+    # field_list.remove('id')
+
     r = _get_model_object(model).query.filter_by(id=pk_id).first()
+
+    if hasattr(r,'_non_updatable_fields'):
+        for d in r._non_updatable_fields:
+            field_list.remove(d)
 
     # We need generate an object hash to pass to the backend notification
     old_obj = None
