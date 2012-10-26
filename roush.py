@@ -12,10 +12,14 @@ if __name__ == '__main__':
                 debug=True)
 
     @foo.after_request
-    def bad_xss(response):
-        response.headers['Access-Control-Allow-Origin'] = '*'
+    def allow_cors(response):
+        if 'cors_uri' in foo.config:
+            response.headers['Access-Control-Allow-Origin'] = \
+                foo.config['cors_uri']
         return response
+
     init_db(foo.config['database_uri'])
+
     if 'key_file' in foo.config and 'cert_file' in foo.config:
         import ssl
         verification = ssl.CERT_NONE
