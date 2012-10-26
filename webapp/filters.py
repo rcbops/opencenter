@@ -47,13 +47,6 @@ def list():
     return resp
 
 
-@filters.route('/filter', methods=['POST'])
-def filter():
-    builder = AstBuilder(FilterTokenizer(),
-                         '%s: %s' % (object_type, request.json['filter']))
-    return jsonify({object_type: builder.eval()})
-
-
 @filters.route('/<object_id>', methods=['GET', 'PUT', 'DELETE'])
 def object_by_id(object_id):
     if request.method == 'PUT':
