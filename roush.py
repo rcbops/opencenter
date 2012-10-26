@@ -13,8 +13,9 @@ if __name__ == '__main__':
 
     @foo.after_request
     def allow_cors(response):
-        response.headers['Access-Control-Allow-Origin'] = \
-            foo.config['cors_url']
+        if foo.config.has_key('cors_uri'):
+            response.headers['Access-Control-Allow-Origin'] = \
+                foo.config['cors_uri']
         return response
 
     init_db(foo.config['database_uri'])
