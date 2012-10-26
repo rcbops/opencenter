@@ -10,6 +10,12 @@ from webapp import Thing
 if __name__ == '__main__':
     foo = Thing("roush", argv=sys.argv[1:], configfile='local.conf',
                 debug=True)
+
+    @foo.after_request
+    def allow_xss(response):
+      response.headers['Access-Control-Allow-Origin'] = foo.config['xss_proto'] + '://' + foo.config['xss_host'] + ':' + foo.config['xss_port']
+      return response
+
     init_db(foo.config['database_uri'])
 
     http_server = WSGIServer((foo.config['bind_address'],
