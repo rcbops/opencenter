@@ -38,6 +38,7 @@ class Nodes(Base):
     __tablename__ = 'nodes'
     id = Column(Integer, primary_key=True)
     hostname = Column(String(64), unique=True, nullable=False)
+    filter_id = Column(Integer, ForeignKey('filters.id'))
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
     clusters = relationship('Clusters',
                             backref=backref('nodes',
@@ -47,9 +48,10 @@ class Nodes(Base):
     backend_state = Column(String(30))  # Adventures.backend_state
     config = Column(JsonBlob, default={})
 
-    def __init__(self, hostname, cluster_id=None, config=None, role=None,
-                 backend=None, backend_state=None):
+    def __init__(self, hostname, filter_id=None, cluster_id=None, config=None,
+                 role=None, backend=None, backend_state=None):
         self.hostname = hostname
+        self.filter_id = filter_id
         self.cluster_id = cluster_id
         self.config = config
         self.role = role

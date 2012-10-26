@@ -42,11 +42,11 @@ def list_roles():
     return resp
 
 
-@roles.route('/filter', methods=['POST'])
-def filter_roles():
-    builder = AstBuilder(FilterTokenizer(),
-                         'roles: %s' % request.json['filter'])
-    return jsonify({'roles': builder.eval()})
+# @roles.route('/filter', methods=['POST'])
+# def filter_roles():
+#     builder = AstBuilder(FilterTokenizer(),
+#                          'roles: %s' % request.json['filter'])
+#     return jsonify({'roles': builder.eval()})
 
 
 @roles.route('/<role_id>/<key>', methods=['GET', 'PUT'])
