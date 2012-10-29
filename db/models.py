@@ -88,11 +88,12 @@ class Filters(Base):
     id = Column(Integer, primary_key=True)
     parent_id = Column(Integer, ForeignKey('filters.id'), default=None)
     name = Column(String(30))
-    parent = relationship('Filters')
+    parent = relationship('Filters', remote_side=[id])
     filter_type = Column(String(30))
     expr = Column(String(255))
 
     _non_updatable_fields = ['id']
+    _synthesized_fields = ['full_expr']
 
     def __init__(self, name, filter_type, expr, parent_id=None):
         self.name = name
@@ -106,7 +107,7 @@ class Filters(Base):
     @property
     def full_expr(self):
         if self.parent_id:
-            return "(%s) and %s" % (self.expr, self.parent.full_expr)
+            return "(%s) and (%s)" % (self.expr, self.parent.full_expr)
         else:
             return self.expr
 

@@ -27,13 +27,22 @@ def _get_model_object(model):
 
 
 def _model_get_all(model):
+    field_list = _model_get_columns(model)
+
     return [dict((c, getattr(r, c))
-                 for c in r.__table__.columns.keys())
+                 for c in field_list)
             for r in _get_model_object(model).query.all()]
 
 
 def _model_get_columns(model):
-    return [c for c in _get_model_object(model).__table__.columns.keys()]
+    mo = _get_model_object(model)
+
+    field_list = [c for c in mo.__table__.columns.keys()]
+
+    if hasattr(mo, '_synthesized_fields'):
+        field_list += mo._synthesized_fields
+
+    return field_list
 
 
 def _model_get_schema(model):
@@ -48,9 +57,20 @@ def _model_get_schema(model):
             fields[k]['type'] = 'JSON'
 
         fields[k]['unique'] = cols[k].unique or cols[k].primary_key
+        fields[k]['updatable'] = True
+
+        if hasattr(obj, '_non_updatable_fields'):
+            if k in obj._non_updatable_fields:
+                fields[k]['updatable'] = False
 
         if len(cols[k].foreign_keys) > 0:
             fields[k]['fk'] = list(cols[k].foreign_keys)[0].target_fullname
+
+    if hasattr(obj, '_synthesized_fields'):
+        for syn in obj._synthesized_fields:
+            fields[syn] = {'type': 'TEXT',
+                           'unique': False,
+                           'updatable': False}
 
     return {'schema': fields}
 
@@ -66,6 +86,7 @@ def _model_create(model, fields):
     field_list.remove('id')
     r = model_object(**dict((field, fields[field])
                             for field in field_list if field in fields))
+
     db_session.add(r)
     try:
         db_session.commit()
