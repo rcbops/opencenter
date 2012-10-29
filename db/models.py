@@ -83,7 +83,6 @@ class Adventures(Base):
         return '<Adventures %r>' % (self.name)
 
 
-
 class Filters(Base):
     __tablename__ = 'filters'
     id = Column(Integer, primary_key=True)

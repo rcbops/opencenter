@@ -27,7 +27,6 @@ def _get_model_object(model):
 
 
 def _model_get_all(model):
-    print 'getting all for model %s' % model
     return [dict((c, getattr(r, c))
                  for c in r.__table__.columns.keys())
             for r in _get_model_object(model).query.all()]
@@ -161,7 +160,7 @@ def _model_update_by_id(model, pk_id, fields):
 
     r = _get_model_object(model).query.filter_by(id=pk_id).first()
 
-    if hasattr(r,'_non_updatable_fields'):
+    if hasattr(r, '_non_updatable_fields'):
         for d in r._non_updatable_fields:
             field_list.remove(d)
 
@@ -201,13 +200,20 @@ for d in dir(db.models):
         model = d.lower()
         sing = model[:-1]
 
-        globals()['%s_get_all' % model] = partial(_model_get_all, model)
-        globals()['%s_delete_by_id' % sing] = partial(_model_delete_by_id, model)
-        globals()['%s_get_columns' % sing] = partial(_model_get_columns, model)
-        globals()['%s_get_by_filter' % sing] = partial(_model_get_by_filter, model)
-        globals()['%s_get_by_id' % sing] = partial(_model_get_by_id, model)
-        globals()['%s_create' % sing] = partial(_model_create, model)
-        globals()['%s_update_by_id' % sing] = partial(_model_update_by_id, model)
+        globals()['%s_get_all' % model] = partial(_model_get_all,
+                                                  model)
+        globals()['%s_delete_by_id' % sing] = partial(_model_delete_by_id,
+                                                      model)
+        globals()['%s_get_columns' % sing] = partial(_model_get_columns,
+                                                     model)
+        globals()['%s_get_by_filter' % sing] = partial(_model_get_by_filter,
+                                                       model)
+        globals()['%s_get_by_id' % sing] = partial(_model_get_by_id,
+                                                   model)
+        globals()['%s_create' % sing] = partial(_model_create,
+                                                model)
+        globals()['%s_update_by_id' % sing] = partial(_model_update_by_id,
+                                                      model)
 
 
 def adventures_get_by_node_id(node_id):
