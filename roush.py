@@ -6,6 +6,7 @@ from gevent.pywsgi import WSGIServer
 
 from db.database import init_db
 from webapp import Thing
+from flask import request
 
 if __name__ == '__main__':
     foo = Thing("roush", argv=sys.argv[1:], configfile='local.conf',
@@ -13,9 +14,15 @@ if __name__ == '__main__':
 
     @foo.after_request
     def allow_cors(response):
-        if 'cors_uri' in foo.config:
+        if 'cors_uri' in foo.config and \
+                'Origin' in request.headers and \
+                request.headers['Origin'] in foo.config['cors_uri']:
             response.headers['Access-Control-Allow-Origin'] = \
-                foo.config['cors_uri']
+                request.headers['Origin']
+            response.headers['Access-Control-Allow-Methods'] = \
+                'HEAD,GET,PUT,POST,OPTIONS,DELETE'
+            response.headers['Access-Control-Allow-Headers'] = \
+                'Content-Type'
         return response
 
     init_db(foo.config['database_uri'])
