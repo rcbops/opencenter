@@ -49,6 +49,8 @@ class Nodes(Base):
     backend_state = Column(String(30))  # Adventures.backend_state
     config = Column(JsonBlob, default={})
 
+    _non_updatable_fields = ['id', 'name']
+
     def __init__(self, name, filter_id=None, cluster_id=None, config=None,
                  role=None, backend=None, backend_state=None):
         self.name = name
@@ -70,7 +72,7 @@ class Adventures(Base):
     dsl = Column(JsonBlob, default={})
     criteria = Column(String(255))
 
-    _non_updatable_fields = ['id', 'name']
+    _non_updatable_fields = ['id']
 
     def __init__(self, name, dsl, criteria='1 = 1'):
         self.name = name
@@ -90,6 +92,8 @@ class Filters(Base):
     parent = relationship('Filters')
     filter_type = Column(String(30))
     expr = Column(String(255))
+
+    _non_updatable_fields = ['id']
 
     def __init__(self, name, filter_type, expr, parent_id=None):
         self.name = name
@@ -118,6 +122,8 @@ class Clusters(Base):
                                                  uselist=False,
                                                  lazy='dynamic'))
 
+    _non_updatable_fields = ['id', 'name']
+
     def __init__(self, name, description, config=None):
         self.name = name
         self.description = description
@@ -145,6 +151,8 @@ class Tasks(Base):
     node = relationship('Nodes', backref=backref('tasks',
                                                  uselist=False,
                                                  lazy='dynamic'))
+
+    _non_updatable_fields = ['id']
 
     def __init__(self, node_id, action, payload, state,
                  parent_id=None, result=None, submitted=None, completed=None,
