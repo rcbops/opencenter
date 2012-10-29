@@ -185,7 +185,7 @@ class NodeUpdateTests(unittest2.TestCase):
         #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
 
     def tearDown(self):
-        tmp_resp = self.app.delete('/nodes/%s' + str(self.node_id),
+        tmp_resp = self.app.delete('/nodes/%s' % str(self.node_id),
                                    content_type=self.content_type)
 
     def test_update_node_attribute_config(self):

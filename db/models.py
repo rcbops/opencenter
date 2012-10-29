@@ -6,6 +6,7 @@ from sqlalchemy import (Column, Integer, String, ForeignKey,
 from sqlalchemy.orm import relationship, backref
 import sqlalchemy.types as types
 from sqlalchemy.exc import InvalidRequestError
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from database import Base
 
@@ -48,6 +49,8 @@ class Nodes(Base):
     backend_state = Column(String(30))  # Adventures.backend_state
     config = Column(JsonBlob, default={})
 
+    _non_updatable_fields = ['id', 'name']
+
     def __init__(self, name, filter_id=None, cluster_id=None, config=None,
                  role=None, backend=None, backend_state=None):
         self.name = name
@@ -69,6 +72,8 @@ class Adventures(Base):
     dsl = Column(JsonBlob, default={})
     criteria = Column(String(255))
 
+    _non_updatable_fields = ['id']
+
     def __init__(self, name, dsl, criteria='1 = 1'):
         self.name = name
         self.dsl = dsl
@@ -81,34 +86,30 @@ class Adventures(Base):
 class Filters(Base):
     __tablename__ = 'filters'
     id = Column(Integer, primary_key=True)
+    parent_id = Column(Integer, ForeignKey('filters.id'), default=None)
     name = Column(String(30))
+    parent = relationship('Filters', remote_side=[id])
     filter_type = Column(String(30))
     expr = Column(String(255))
 
-    def __init__(self, name, filter_type, expr):
+    _non_updatable_fields = ['id']
+    _synthesized_fields = ['full_expr']
+
+    def __init__(self, name, filter_type, expr, parent_id=None):
         self.name = name
+        self.parent_id = parent_id
         self.filter_type = filter_type
         self.expr = expr
 
     def __repr__(self):
         return '<Filter %r>' % (self.name)
 
-
-# class Roles(Base):
-#     __tablename__ = 'roles'
-#     id = Column(Integer, primary_key=True)
-#     name = Column(String(20), unique=True)
-#     description = Column(String(80))
-#     node = relationship('Nodes', backref=backref('role',
-#                                                  uselist=False,
-#                                                  lazy='dynamic'))
-
-#     def __init__(self, name, description):
-#         self.name = name
-#         self.description = description
-
-#     def __repr__(self):
-#         return '<Roles %r>' % (self.name)
+    @property
+    def full_expr(self):
+        if self.parent_id:
+            return "(%s) and (%s)" % (self.expr, self.parent.full_expr)
+        else:
+            return self.expr
 
 
 class Clusters(Base):
@@ -120,6 +121,8 @@ class Clusters(Base):
     node = relationship('Nodes', backref=backref('cluster',
                                                  uselist=False,
                                                  lazy='dynamic'))
+
+    _non_updatable_fields = ['id', 'name']
 
     def __init__(self, name, description, config=None):
         self.name = name
@@ -148,6 +151,8 @@ class Tasks(Base):
     node = relationship('Nodes', backref=backref('tasks',
                                                  uselist=False,
                                                  lazy='dynamic'))
+
+    _non_updatable_fields = ['id']
 
     def __init__(self, node_id, action, payload, state,
                  parent_id=None, result=None, submitted=None, completed=None,

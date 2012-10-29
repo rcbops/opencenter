@@ -23,7 +23,7 @@ class AdventureNotFound(Exception):
 
 
 class IdNotFound(Exception):
-    message = "Generic ID not found"
+    message = "Object ID not found"
 
     def __init__(self, message=None):
         self.message = message
