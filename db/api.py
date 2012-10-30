@@ -165,6 +165,7 @@ def _model_get_first_by_filter(model, filters):
         return result[0]
     return None
 
+
 def _model_get_by_filter(model, filters):
     """Query helper that returns a node dict.
 
@@ -179,7 +180,7 @@ def _model_get_by_filter(model, filters):
         result = None
     else:
         result = [dict((c, getattr(res, c))
-                      for c in _model_get_columns(model)) for res in r]
+                       for c in _model_get_columns(model)) for res in r]
     return result
 
 

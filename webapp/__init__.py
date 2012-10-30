@@ -188,10 +188,15 @@ class Thing(Flask):
 
                 eval_result = builder.eval()
 
-                result['nodes'] = [x['id'] for x in eval_result if x['filter_id'] == None]
+                result['nodes'] = [x['id'] for x in
+                                   eval_result if x['filter_id'] is None]
 
-                child_filters = api._model_get_by_filter('filters', {'parent_id': filter_id})
-                container_list = [x['id'] for x in child_filters] if child_filters else []
+                child_filters = api._model_get_by_filter(
+                    'filters', {'parent_id': filter_id})
+
+                container_list = []
+                if child_filters:
+                    container_list = [x['id'] for x in child_filters]
 
                 for container in container_list:
                     result['containers'].append(f(container))
@@ -237,8 +242,8 @@ class Thing(Flask):
             self.add_url_rule(filter_url, '%s.filter' % blueprint.name,
                               filter_object(blueprint.name),
                               methods=['POST'])
-            specific_filter = '/%s/filter/<filter_id>' % (blueprint.name,)
-            self.add_url_rule(specific_filter, '%s.filter_by_id' % blueprint.name,
+            f_id_url = '/%s/filter/<filter_id>' % (blueprint.name,)
+            self.add_url_rule(f_id_url, '%s.filter_by_id' % blueprint.name,
                               filter_object_by_id(blueprint.name),
                               methods=['GET'])
 
