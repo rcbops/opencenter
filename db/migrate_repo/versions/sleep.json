@@ -1,0 +1,18 @@
+{
+    "start_state": "s1",
+    "states": {
+        "s1": {
+            "primitive": "run_task",
+            "parameters": {
+                "action": "sleep",
+                "payload": {}},
+            "on_success": "s2"
+        },
+        "s2": {
+            "primitive": "run_task",
+            "parameters": {
+                "action": "sleep",
+                "payload": {}}
+        }
+    }
+}
