@@ -2,7 +2,8 @@ import json
 from time import time
 
 from sqlalchemy import (Column, Integer, String, ForeignKey,
-                        Text, Enum, DateTime)
+                        Text, Enum, DateTime, UniqueConstraint,
+                        ForeignKeyConstraint)
 from sqlalchemy.orm import relationship, backref
 import sqlalchemy.types as types
 from sqlalchemy.exc import InvalidRequestError
@@ -35,6 +36,42 @@ class JsonBlob(types.TypeDecorator):
         return json.loads(value)
 
 
+class Tasks(Base):
+    __tablename__ = 'tasks'
+
+    id = Column(Integer, primary_key=True)
+    node_id = Column(Integer, ForeignKey('nodes.id'))
+    action = Column(String(40))
+    payload = Column(JsonBlob, default={})
+    state = Column(
+        Enum('pending', 'delivered', 'running',
+             'done', 'timeout', 'cancelled'),
+        default='pending')
+    parent_id = Column(Integer, ForeignKey('tasks.id'), default=None)
+    result = Column(JsonBlob, default={})
+    submitted = Column(Integer)
+    completed = Column(Integer)
+    expires = Column(Integer)
+
+    _non_updatable_fields = ['id']
+
+    def __init__(self, node_id, action, payload, state,
+                 parent_id=None, result=None, submitted=None, completed=None,
+                 expires=None):
+        self.node_id = node_id
+        self.action = action
+        self.payload = payload
+        self.state = state
+        self.parent_id = parent_id
+        self.result = result
+        self.submitted = int(time())
+        self.completed = completed
+        self.expires = expires
+
+    def __repr__(self):
+        return '<Task %r>' % (self.id)
+
+
 class Nodes(Base):
     __tablename__ = 'nodes'
     id = Column(Integer, primary_key=True)
@@ -48,11 +85,16 @@ class Nodes(Base):
     backend = Column(String(30))  # Adventures.backend
     backend_state = Column(String(30))  # Adventures.backend_state
     config = Column(JsonBlob, default={})
+    adventure_id = Column(Integer, ForeignKey('adventures.id'))
+    task_id = Column(Integer, ForeignKey('tasks.id',
+                                         use_alter=True,
+                                         name='fk_task_id'), default=None)
 
     _non_updatable_fields = ['id', 'name']
 
-    def __init__(self, name, filter_id=None, cluster_id=None, config=None,
-                 role=None, backend=None, backend_state=None):
+    def __init__(self, name, filter_id=None, cluster_id=None,
+                 config=None, role=None, backend=None, backend_state=None,
+                 adventure_id=None, task_id=None):
         self.name = name
         self.filter_id = filter_id
         self.cluster_id = cluster_id
@@ -60,6 +102,8 @@ class Nodes(Base):
         self.role = role
         self.backend = backend
         self.backend_state = backend_state
+        self.adventure_id = adventure_id
+        self.task_id = task_id
 
     def __repr__(self):
         return '<Nodes %r>' % (self.hostname)
@@ -128,44 +172,6 @@ class Clusters(Base):
         self.name = name
         self.description = description
         self.config = config
-
-    def __repr__(self):
-        return '<Clusters %r>' % (self.name)
-
-
-class Tasks(Base):
-    __tablename__ = 'tasks'
-    id = Column(Integer, primary_key=True)
-    node_id = Column(Integer, ForeignKey('nodes.id'))
-    action = Column(String(40))
-    payload = Column(JsonBlob, default={})
-    state = Column(
-        Enum('pending', 'delivered', 'running',
-             'done', 'timeout', 'cancelled'),
-        default='pending')
-    parent_id = Column(Integer, ForeignKey('tasks.id'), default=None)
-    result = Column(JsonBlob, default={})
-    submitted = Column(Integer)
-    completed = Column(Integer)
-    expires = Column(Integer)
-    node = relationship('Nodes', backref=backref('tasks',
-                                                 uselist=False,
-                                                 lazy='dynamic'))
-
-    _non_updatable_fields = ['id']
-
-    def __init__(self, node_id, action, payload, state,
-                 parent_id=None, result=None, submitted=None, completed=None,
-                 expires=None):
-        self.node_id = node_id
-        self.action = action
-        self.payload = payload
-        self.state = state
-        self.parent_id = parent_id
-        self.result = result
-        self.submitted = int(time())
-        self.completed = completed
-        self.expires = expires
 
     def __repr__(self):
         return '<Clusters %r>' % (self.name)
