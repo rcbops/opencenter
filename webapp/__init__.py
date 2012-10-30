@@ -174,8 +174,6 @@ class Thing(Flask):
 
         def filter_object_by_id(what):
             def f(filter_id):
-                print 'realizing filter %s' % filter_id
-
                 filter_obj = api.filter_get_by_id(filter_id)
                 full_expr = filter_obj['full_expr']
                 builder = AstBuilder(FilterTokenizer(),
@@ -183,20 +181,20 @@ class Thing(Flask):
 
                 result = {'name': filter_obj['name'],
                           'id': filter_obj['id'],
-                          'nodes': [],
+                          what: [],
                           'containers': []}
 
                 eval_result = builder.eval()
 
-                result['nodes'] = [x['id'] for x in
-                                   eval_result if x['filter_id'] is None]
+                result[what] = [x['id'] for x in
+                                eval_result if x['filter_id'] is None]
 
-                child_filters = api._model_get_by_filter(
-                    'filters', {'parent_id': filter_id})
+                subfilters = api._model_get_by_filter('filters',
+                                                      {'parent_id': filter_id})
 
                 container_list = []
-                if child_filters:
-                    container_list = [x['id'] for x in child_filters]
+                if subfilters:
+                    container_list = [x['id'] for x in subfilters]
 
                 for container in container_list:
                     result['containers'].append(f(container))
@@ -216,14 +214,25 @@ class Thing(Flask):
                     subnodelist += prune(container)
 
                 for d in subnodelist:
-                    result_dict['nodes'].remove(d)
+                    result_dict[what].remove(d)
 
-                subnodelist += result_dict['nodes']
+                subnodelist += result_dict[what]
                 return subnodelist
+
+            def deflense(result_dict):
+                for container in result_dict['containers']:
+                    deflense(container)
+
+                full_nodes = []
+                for node_id in result_dict[what]:
+                    full_nodes.append(api._model_get_by_id(what, node_id))
+
+                result_dict['nodes'] = full_nodes
 
             def jsonify_result(filter_id):
                 result = f(filter_id)
                 prune(result)
+                deflense(result)
                 return jsonify({'results': result})
 
             return jsonify_result

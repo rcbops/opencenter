@@ -150,8 +150,6 @@ def _model_get_by_id(model, pk_id):
     """
 
     result = _model_get_by_filter(model, {'id': pk_id})
-    print result
-    print len(result)
 
     if len(result) == 0:
         return None
