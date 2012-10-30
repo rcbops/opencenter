@@ -15,7 +15,8 @@ from clusters import clusters
 from nodes import nodes
 from index import index
 from tasks import tasks
-from filters import filters
+from filters import bp as filters
+from facts import bp as facts
 
 from ast import AstBuilder, FilterTokenizer
 
@@ -146,6 +147,7 @@ class Thing(Flask):
         self.register_blueprint(tasks, url_prefix='/tasks')
         self.register_blueprint(adventures, url_prefix='/adventures')
         self.register_blueprint(filters, url_prefix='/filters')
+        self.register_blueprint(facts, url_prefix='/facts')
         self.testing = debug
 
         if debug:

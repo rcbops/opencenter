@@ -16,7 +16,7 @@ import backends as b
 import db.models
 from db.database import db_session
 from db import exceptions as exc
-from db.models import Adventures, Clusters, Nodes, Tasks, Filters
+from db.models import Adventures, Clusters, Nodes, Tasks, Filters, Facts
 
 
 LOG = logging.getLogger('db.api')
@@ -55,6 +55,9 @@ def _model_get_schema(model):
         fields[k]['type'] = str(cols[k].type)
         if repr(cols[k].type) == 'JsonBlob()':
             fields[k]['type'] = 'JSON'
+
+        if repr(cols[k].type) == 'JsonEntry()':
+            fields[k]['type'] = 'JSON_ENTRY'
 
         fields[k]['unique'] = cols[k].unique or cols[k].primary_key
         fields[k]['updatable'] = True

@@ -36,6 +36,19 @@ class JsonBlob(types.TypeDecorator):
         return json.loads(value)
 
 
+class JsonEntry(types.TypeDecorator):
+
+    impl = types.Text
+
+    def process_bind_param(self, value, dialect):
+        return json.dumps(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            value = ''
+        return json.loads(value)
+
+
 class Tasks(Base):
     __tablename__ = 'tasks'
 
@@ -72,6 +85,21 @@ class Tasks(Base):
         return '<Task %r>' % (self.id)
 
 
+class Facts(Base):
+    __tablename__ = 'facts'
+    id = Column(Integer, primary_key=True)
+    node_id = Column(Integer, ForeignKey('nodes.id'), nullable=False)
+    key = Column(String(64), nullable=False)
+    value = Column(JsonEntry, default="")
+
+    _non_updatable_fields = ['id', 'node_id', 'key']
+
+    def __init__(self, node_id, key, value=None):
+        self.node_id = node_id
+        self.key = key
+        self.value = value
+
+
 class Nodes(Base):
     __tablename__ = 'nodes'
     id = Column(Integer, primary_key=True)
@@ -91,6 +119,7 @@ class Nodes(Base):
                                          name='fk_task_id'), default=None)
 
     _non_updatable_fields = ['id', 'name']
+    _synthesized_fields = ['facts']
 
     def __init__(self, name, filter_id=None, cluster_id=None,
                  config=None, role=None, backend=None, backend_state=None,
@@ -107,6 +136,16 @@ class Nodes(Base):
 
     def __repr__(self):
         return '<Nodes %r>' % (self.hostname)
+
+    @property
+    def facts(self):
+        facts = {}
+
+        fact_list = Facts.query.filter_by(node_id=self.id)
+        for fact in fact_list:
+            facts[fact.key] = fact.value
+
+        return facts
 
 
 class Adventures(Base):
