@@ -149,7 +149,21 @@ def _model_get_by_id(model, pk_id):
     :param pk_id: id to delete
     """
 
-    return _model_get_by_filter(model, {'id': pk_id})
+    result = _model_get_by_filter(model, {'id': pk_id})
+    print result
+    print len(result)
+
+    if len(result) == 0:
+        return None
+
+    return result[0]
+
+
+def _model_get_first_by_filter(model, filters):
+    result = _model_get_by_filter(model, filters)
+    if len(result):
+        return result[0]
+    return None
 
 
 def _model_get_by_filter(model, filters):
@@ -161,12 +175,12 @@ def _model_get_by_filter(model, filters):
     filter_options = and_(
         * [_get_model_object(model).__table__.columns[k] == v
            for k, v in filters.iteritems()])
-    r = _get_model_object(model).query.filter(filter_options).first()
+    r = _get_model_object(model).query.filter(filter_options)
     if not r:
         result = None
     else:
-        result = dict((c, getattr(r, c))
-                      for c in r.__table__.columns.keys())
+        result = [dict((c, getattr(res, c))
+                       for c in _model_get_columns(model)) for res in r]
     return result
 
 
@@ -221,20 +235,20 @@ for d in dir(db.models):
         model = d.lower()
         sing = model[:-1]
 
-        globals()['%s_get_all' % model] = partial(_model_get_all,
-                                                  model)
-        globals()['%s_delete_by_id' % sing] = partial(_model_delete_by_id,
-                                                      model)
-        globals()['%s_get_columns' % sing] = partial(_model_get_columns,
-                                                     model)
-        globals()['%s_get_by_filter' % sing] = partial(_model_get_by_filter,
-                                                       model)
-        globals()['%s_get_by_id' % sing] = partial(_model_get_by_id,
-                                                   model)
-        globals()['%s_create' % sing] = partial(_model_create,
-                                                model)
-        globals()['%s_update_by_id' % sing] = partial(_model_update_by_id,
-                                                      model)
+        globals()['%s_get_all' % model] = partial(
+            _model_get_all, model)
+        globals()['%s_delete_by_id' % sing] = partial(
+            _model_delete_by_id, model)
+        globals()['%s_get_columns' % sing] = partial(
+            _model_get_columns, model)
+        globals()['%s_get_first_by_filter' % sing] = partial(
+            _model_get_first_by_filter, model)
+        globals()['%s_get_by_id' % sing] = partial(
+            _model_get_by_id, model)
+        globals()['%s_create' % sing] = partial(
+            _model_create, model)
+        globals()['%s_update_by_id' % sing] = partial(
+            _model_update_by_id, model)
 
 
 def adventures_get_by_node_id(node_id):

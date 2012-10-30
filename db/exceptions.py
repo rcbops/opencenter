@@ -4,26 +4,26 @@
 class NodeNotFound(Exception):
     message = "Node not found"
 
-    def __init__(self, message=None):
+    def __init__(self, message=message):
         self.message = message
 
 
 class CreateError(Exception):
     message = "Generic unable to create error"
 
-    def __init__(self, message=None):
+    def __init__(self, message=message):
         self.message = message
 
 
 class AdventureNotFound(Exception):
     message = "Adventure not found"
 
-    def __init__(self, message=None):
+    def __init__(self, message=message):
         self.message = message
 
 
 class IdNotFound(Exception):
-    message = "Object ID not found"
+    message = "Object Not Found"
 
-    def __init__(self, message=None):
+    def __init__(self, message=message):
         self.message = message

@@ -172,6 +172,62 @@ class Thing(Flask):
                 return jsonify({what: builder.eval()})
             return f
 
+        def filter_object_by_id(what):
+            def f(filter_id):
+                print 'realizing filter %s' % filter_id
+
+                filter_obj = api.filter_get_by_id(filter_id)
+                full_expr = filter_obj['full_expr']
+                builder = AstBuilder(FilterTokenizer(),
+                                     '%s: %s' % (what, full_expr))
+
+                result = {'name': filter_obj['name'],
+                          'id': filter_obj['id'],
+                          'nodes': [],
+                          'containers': []}
+
+                eval_result = builder.eval()
+
+                result['nodes'] = [x['id'] for x in
+                                   eval_result if x['filter_id'] is None]
+
+                child_filters = api._model_get_by_filter(
+                    'filters', {'parent_id': filter_id})
+
+                container_list = []
+                if child_filters:
+                    container_list = [x['id'] for x in child_filters]
+
+                for container in container_list:
+                    result['containers'].append(f(container))
+
+                return result
+
+            def aggregate_nodes(result_dict):
+                nodelist = []
+                for container in result_dict['containers']:
+                    nodelist += aggregate_nodes(container)
+                return nodelist
+
+            def prune(result_dict):
+                subnodelist = []
+
+                for container in result_dict['containers']:
+                    subnodelist += prune(container)
+
+                for d in subnodelist:
+                    result_dict['nodes'].remove(d)
+
+                subnodelist += result_dict['nodes']
+                return subnodelist
+
+            def jsonify_result(filter_id):
+                result = f(filter_id)
+                prune(result)
+                return jsonify({'results': result})
+
+            return jsonify_result
+
         def root_schema():
             schema = {'schema': {'objects': self.registered_models}}
             return jsonify(schema)
@@ -186,6 +242,10 @@ class Thing(Flask):
             self.add_url_rule(filter_url, '%s.filter' % blueprint.name,
                               filter_object(blueprint.name),
                               methods=['POST'])
+            f_id_url = '/%s/filter/<filter_id>' % (blueprint.name,)
+            self.add_url_rule(f_id_url, '%s.filter_by_id' % blueprint.name,
+                              filter_object_by_id(blueprint.name),
+                              methods=['GET'])
 
         elif url_prefix == '/':
             self.add_url_rule('/schema', 'root.schema',
