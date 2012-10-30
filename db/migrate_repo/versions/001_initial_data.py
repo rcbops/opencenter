@@ -38,7 +38,10 @@ def upgrade(migrate_engine):
          'criteria': 'install_nova_compute.criteria'},
         {'name': 'download chef cookbooks',
          'dsl': 'download_cookbooks.json',
-         'criteria': 'download_cookbooks.criteria'}]
+         'criteria': 'download_cookbooks.criteria'},
+        {'name': 'sleep',
+         'dsl': 'sleep.json',
+         'criteria': 'sleep.criteria'}]
 
     for adventure in adventures:
         json_path = os.path.join(
