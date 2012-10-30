@@ -63,12 +63,12 @@ def list_nodes():
 
 @nodes.route('/<node_id>/tasks_blocking', methods=['GET'])
 def tasks_blocking_by_node_id(node_id):
-    task = api.task_get_by_filter({'node_id': node_id, 'state': 'pending'})
+    task = api.task_get_first_by_filter({'node_id': node_id, 'state': 'pending'})
     while not task:
         semaphore = 'task-for-%s' % node_id
         current_app.logger.debug('waiting on %s' % semaphore)
         utility.wait(semaphore)
-        task = api.task_get_by_filter({'node_id': node_id, 'state': 'pending'})
+        task = api.task_get_first_by_filter({'node_id': node_id, 'state': 'pending'})
         if task:
             utility.clear(semaphore)
 
@@ -81,7 +81,7 @@ def tasks_blocking_by_node_id(node_id):
 @nodes.route('/<node_id>/tasks', methods=['GET', 'PUT'])
 def tasks_by_node_id(node_id):
     # Display only tasks with state=pending
-    task = api.task_get_by_filter({'node_id': node_id, 'state': 'pending'})
+    task = api.task_get_first_by_filter({'node_id': node_id, 'state': 'pending'})
     if not task:
         return http_not_found()
     else:
@@ -155,8 +155,6 @@ def node_by_id(node_id):
         return resp
     elif request.method == 'DELETE':
         try:
-            # NOTE: This is a transactional problem
-            # node = api.node_get_by_filter('id', node_id)
             node = api.node_get_by_id(node_id)
             if api.node_delete_by_id(node_id):
                 # current_app.backend.delete_node(node['name'])
