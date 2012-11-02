@@ -4,9 +4,6 @@ import logging
 import re
 import sys
 
-# import db.database
-# from db import api
-
 
 # some common utility functions
 def util_nth(n, ary):
@@ -90,12 +87,11 @@ class FilterTokenizer:
             (r"\(", self.open_paren),
             (r"\)", self.close_paren),
             (r"'([^'\\]*(?:\\.[^'\\]*)*)'", self.qstring),
-#            (r"'((?:[^'\\]|\\.)*)'", self.qstring),
+            (r"\"([^\"\\]*(?:\\.[^\"\\]*)*)\"", self.qstring),
             (r"[a-zA-Z_]*:", self.typedef),
             (r"\<\=|\>\=", self.op),
             (r"\=|\<|\>", self.op),
             (r"[A-Za-z_\.]*", self.identifier),
-#            (r"'((?:[^'\\]|\\.)*)'", self.qstring),
         ])
         self.tokens = []
         self.remainer = ''
@@ -202,6 +198,9 @@ class AstBuilder:
     def eval(self):
         # avoid some circular includes
         import db.api as api
+
+        import db.database
+        from db import api
 
         # get a list of all the self.filter_types, and eval each in turn
         root_node = self.build()
@@ -517,29 +516,3 @@ class Node:
             return not result
 
         return result
-
-if __name__ == '__main__':
-    from db.database import init_db
-
-    from sqlalchemy.orm import sessionmaker, create_session, scoped_session
-    from sqlalchemy.ext.declarative import declarative_base
-
-    from roushclient.client import RoushEndpoint
-
-    logging.basicConfig(level=logging.DEBUG)
-
-    ep = RoushEndpoint()
-
-    db.database.init_db('sqlite:///roush.db')
-    db_session = scoped_session(lambda: create_session(autocommit=False,
-                                                       autoflush=False,
-                                                       bind=engine))
-
-    Base = declarative_base()
-    Base.query = db_session.query_property()
-
-    def run_filter(input_filter):
-        builder = AstBuilder(FilterTokenizer(), input_filter)
-        result = builder.eval()
-
-        print 'Result: %s' % result
