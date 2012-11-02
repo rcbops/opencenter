@@ -19,6 +19,7 @@ def list():
 def by_id(object_id):
     return generic.object_by_id(object_type, object_id)
 
+
 @bp.route('/<adventure_id>/execute', methods=['POST'])
 def execute_adventure(adventure_id):
     data = request.json
