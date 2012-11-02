@@ -10,7 +10,7 @@ import traceback
 
 from ConfigParser import ConfigParser
 from flask import Flask, jsonify, request
-from adventures import adventures
+from adventures import bp as adventures
 from clusters import clusters
 from nodes import nodes
 from index import index
