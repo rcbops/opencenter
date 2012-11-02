@@ -68,7 +68,7 @@ class Tasks(Base):
 
     _non_updatable_fields = ['id']
 
-    def __init__(self, node_id, action, payload, state,
+    def __init__(self, node_id, action, payload, state='pending',
                  parent_id=None, result=None, submitted=None, completed=None,
                  expires=None):
         self.node_id = node_id

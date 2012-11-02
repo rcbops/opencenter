@@ -1,79 +1,56 @@
 #!/usr/bin/env python
 
-import json
-from pprint import pprint
+from flask import Blueprint, Response, jsonify, url_for, request
 
-from flask import Blueprint, Flask, Response, request
-from flask import session, jsonify, url_for, current_app
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.exc import UnmappedInstanceError
+import db.api as api
+import generic
+import utility
 
-# import db.api as api
-from db import api as api
-from db import exceptions as exc
-from db.database import db_session
-from db.models import Adventures
-from errors import (
-    http_bad_request,
-    http_conflict,
-    http_not_found,
-    http_not_implemented)
-
-from ast import AstBuilder, FilterTokenizer
-
-adventures = Blueprint('adventures', __name__)
+object_type = 'adventures'
+bp = Blueprint(object_type, __name__)
 
 
-@adventures.route('/', methods=['GET', 'POST'])
-def list_adventures():
-    if request.method == 'POST':
-        # RP: should this not come out of the model schema?
-        fields = ['name', 'language', 'dsl', 'criteria']
-        data = {}
-        for field in fields:
-            if field in request.json:
-                data[field] = request.json[field]
-            else:
-                data[field] = None
-        try:
-            adventure = api.adventure_create(data)
-            href = request.base_url + str(adventure['id'])
-            msg = {'status': 201, 'message': 'Adventure Created',
-                   'ref': href,
-                   'adventure': adventure}
-            resp = jsonify(msg)
-            resp.status_code = 201
-            resp.headers['Location'] = href
-        except exc.CreateError, e:
-            return http_bad_request(e.message)
+@bp.route('/', methods=['GET', 'POST'])
+def list():
+    return generic.list(object_type)
+
+
+@bp.route('/<object_id>', methods=['GET', 'PUT', 'DELETE'])
+def by_id(object_id):
+    return generic.object_by_id(object_type, object_id)
+
+
+@bp.route('/<adventure_id>/execute', methods=['POST'])
+def execute_adventure(adventure_id):
+    data = request.json
+    data['adventure'] = adventure_id
+
+    nodes = utility.expand_nodelist(data['nodes'])
+    data['nodes'] = nodes
+
+    # find the node with the adventurator plugin
+    query = "'adventurator' in facts.roush_agent_output_modules"
+
+    adventure_nodes = api.nodes_query(query)
+
+    if len(adventure_nodes) > 0:
+        adventure_node = adventure_nodes.pop(0)['id']
+
+        task = api.task_create({'action': 'adventurate',
+                                'node_id': adventure_node,
+                                'payload': data})
+        utility.notify('task-for-%s' % adventure_node)
+
+        href = request.base_url + str(task['id'])
+        msg = {'status': 201,
+               'message': 'Task Created',
+               'task': task,
+               'ref': href}
     else:
-        adventures = api.adventures_get_all()
-        resp = jsonify({'adventures': adventures})
+        msg = {'status': 404,
+               'message': 'Cannot find adventure orchestrator'}
+
+    resp = jsonify(msg)
+    resp.status_code = msg['status']
+
     return resp
-
-
-@adventures.route('/<adventure_id>', methods=['GET', 'PUT', 'DELETE'])
-def adventure_by_id(adventure_id):
-    if request.method == 'PUT':
-        fields = api.adventure_get_columns()
-        data = dict((field, request.json[field]) for field in fields
-                    if field in request.json)
-        adventure = api.adventure_update_by_id(adventure_id, data)
-        resp = jsonify({'adventure': adventure})
-        return resp
-    elif request.method == 'DELETE':
-        try:
-            api.adventure_delete_by_id(adventure_id)
-            msg = {'status': 200, 'message': 'Adventure deleted'}
-            resp = jsonify(msg)
-            resp.status_code = 200
-            return resp
-        except exc.AdventureNotFound, e:
-            return http_not_found()
-    else:
-        adventure = api.adventure_get_by_id(adventure_id)
-        if not adventure:
-            return http_not_found()
-        else:
-            resp = jsonify({'adventure': adventure})
-            return resp

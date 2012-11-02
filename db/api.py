@@ -18,6 +18,7 @@ from db.database import db_session
 from db import exceptions as exc
 from db.models import Adventures, Clusters, Nodes, Tasks, Filters, Facts
 
+from webapp.ast import AstBuilder, FilterTokenizer
 
 LOG = logging.getLogger('db.api')
 
@@ -185,6 +186,15 @@ def _model_get_by_filter(model, filters):
     return result
 
 
+def _model_query(model, query):
+    query = '%s: %s' % (model, query)
+
+    builder = AstBuilder(FilterTokenizer(), query)
+    result = builder.eval()
+
+    return result
+
+
 def _model_update_by_id(model, pk_id, fields):
     """Query helper for updating a row
 
@@ -250,6 +260,8 @@ for d in dir(db.models):
             _model_create, model)
         globals()['%s_update_by_id' % sing] = partial(
             _model_update_by_id, model)
+        globals()['%s_query' % model] = partial(
+            _model_query, model)
 
 
 def adventures_get_by_node_id(node_id):
