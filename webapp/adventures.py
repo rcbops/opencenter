@@ -42,15 +42,8 @@ def execute_adventure(adventure_id):
         utility.notify('task-for-%s' % adventure_node)
 
         href = request.base_url + str(task['id'])
-        msg = {'status': 201,
-               'message': 'Task Created',
-               'task': task,
-               'ref': href}
-    else:
-        msg = {'status': 404,
-               'message': 'Cannot find adventure orchestrator'}
 
-    resp = jsonify(msg)
-    resp.status_code = msg['status']
+        return generic.http_response(201, 'Task Created', task=task,
+                                     ref=href)
 
-    return resp
+    return generic.http_response(404, 'cannot find orchestrator')
