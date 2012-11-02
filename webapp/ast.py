@@ -4,8 +4,8 @@ import logging
 import re
 import sys
 
-import db.database
-from db import api
+# import db.database
+# from db import api
 
 
 # some common utility functions
@@ -34,15 +34,6 @@ def util_int(what):
         return None
 
     return int(what)
-
-
-def util_includes(element, container):
-    try:
-        if element in container:
-            return True
-        return False
-    except Exception as e:
-        return False
 
 
 def util_max(ary):
@@ -92,6 +83,7 @@ class FilterTokenizer:
             (r"or", self.or_op),
             (r"and", self.and_op),
             (r"none", self.none),
+            (r"in", self.in_op),
             (r",", self.comma),
             (r"[ \t\n]+", None),
             (r"[0-9]+", self.number),
@@ -139,6 +131,9 @@ class FilterTokenizer:
 
     def and_op(self, scanner, token):
         return 'AND', token
+
+    def in_op(self, scanner, token):
+        return 'OP', 'IN'
 
     def comma(self, scanner, token):
         return 'COMMA', token
@@ -188,7 +183,6 @@ class AstBuilder:
                  filter_type=None, functions={'nth': util_nth,
                                               'str': util_str,
                                               'int': util_int,
-                                              'includes': util_includes,
                                               'max': util_max,
                                               'filter': util_filter,
                                               'count': util_count}):
@@ -206,6 +200,9 @@ class AstBuilder:
         return root_node
 
     def eval(self):
+        # avoid some circular includes
+        import db.api as api
+
         # get a list of all the self.filter_types, and eval each in turn
         root_node = self.build()
 
@@ -478,30 +475,41 @@ class Node:
         if type(rhs_val) == unicode:
             rhs_val = str(rhs_val)
 
-        if type(lhs_val) != type(rhs_val):
-            return False
-
         self.logger.debug('checking %s %s %s' % (lhs_val, self.op, rhs_val))
 
         if self.op == '=':
             if lhs_val == rhs_val:
                 result = True
         elif self.op == '<':
-            if lhs_val < rhs_val:
+            if type(lhs_val) != type(rhs_val):
+                result = False
+            elif lhs_val < rhs_val:
                 result = True
         elif self.op == '>':
-            if lhs_val > rhs_val:
+            if type(lhs_val) != type(rhs_val):
+                result = False
+            elif lhs_val > rhs_val:
                 result = True
         elif self.op == '<=':
-            if lhs_val <= rhs_val:
+            if type(lhs_val) != type(rhs_val):
+                result = False
+            elif lhs_val <= rhs_val:
                 result = True
         elif self.op == '>=':
-            if lhs_val >= rhs_val:
+            if type(lhs_val) != type(rhs_val):
+                result = False
+            elif lhs_val >= rhs_val:
                 result = True
         elif self.op == 'AND':
             result = lhs_val and rhs_val
         elif self.op == 'OR':
             result = lhs_val or rhs_val
+        elif self.op == 'IN':
+            try:
+                if lhs_val in rhs_val:
+                    result = True
+            except Exception:
+                result = False
         else:
             raise RuntimeError('bad op token (%s)' % self.op)
 
