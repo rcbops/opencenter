@@ -61,7 +61,7 @@ def object_by_id(object_type, object_id):
         try:
             if api._model_delete_by_id(object_type, object_id):
                 msg = {'status': 200,
-                       'message': '%s deleted' % (singular_object_type, )}
+                       'message': '%s deleted' % (singular_object_type.capitalize(), )}
                 resp = jsonify(msg)
                 resp.status_code = 200
                 return resp
