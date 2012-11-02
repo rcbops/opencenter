@@ -48,20 +48,20 @@ def list(object_type):
 
 
 def object_by_id(object_type, object_id):
-    singular_object_type = singularize(object_type)
+    s_obj = singularize(object_type)
 
     if request.method == 'PUT':
         fields = api._model_get_columns(object_type)
         data = dict((field, request.json[field]) for field in fields
                     if field in request.json)
         model_object = api._model_update_by_id(object_type, object_id, data)
-        resp = jsonify({singular_object_type: model_object})
+        resp = jsonify({s_obj: model_object})
         return resp
     elif request.method == 'DELETE':
         try:
             if api._model_delete_by_id(object_type, object_id):
                 msg = {'status': 200,
-                       'message': '%s deleted' % (singular_object_type.capitalize(), )}
+                       'message': '%s deleted' % s_obj.capitalize()}
                 resp = jsonify(msg)
                 resp.status_code = 200
                 return resp
@@ -72,5 +72,5 @@ def object_by_id(object_type, object_id):
         if not model_object:
             return http_not_found()
         else:
-            resp = jsonify({singular_object_type: model_object})
+            resp = jsonify({s_obj: model_object})
             return resp
