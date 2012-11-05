@@ -106,14 +106,8 @@ class Nodes(Base):
     name = Column(String(64), unique=True, nullable=False)
     parent_id = Column(Integer, ForeignKey('nodes.id'), default=None)
     parent = relationship('Nodes', remote_side=[id])
-    cluster_id = Column(Integer, ForeignKey('clusters.id'))
-    clusters = relationship('Clusters',
-                            backref=backref('nodes',
-                            lazy='dynamic'))
-    role = Column(String(30))
     backend = Column(String(30))  # Adventures.backend
     backend_state = Column(String(30))  # Adventures.backend_state
-    config = Column(JsonBlob, default={})
     adventure_id = Column(Integer, ForeignKey('adventures.id'))
     task_id = Column(Integer, ForeignKey('tasks.id',
                                          use_alter=True,
@@ -122,14 +116,11 @@ class Nodes(Base):
     _non_updatable_fields = ['id', 'name']
     _synthesized_fields = ['facts']
 
-    def __init__(self, name, parent_id=None, cluster_id=None,
-                 config=None, role=None, backend=None, backend_state=None,
+    def __init__(self, name, parent_id=None,
+                 backend=None, backend_state=None,
                  adventure_id=None, task_id=None):
         self.name = name
         self.parent_id = parent_id
-        self.cluster_id = cluster_id
-        self.config = config
-        self.role = role
         self.backend = backend
         self.backend_state = backend_state
         self.adventure_id = adventure_id
@@ -194,24 +185,3 @@ class Filters(Base):
             return "(%s) and (%s)" % (self.expr, self.parent.full_expr)
         else:
             return self.expr
-
-
-class Clusters(Base):
-    __tablename__ = 'clusters'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(20), unique=True)
-    description = Column(String(80))
-    config = Column(JsonBlob, default={})
-    node = relationship('Nodes', backref=backref('cluster',
-                                                 uselist=False,
-                                                 lazy='dynamic'))
-
-    _non_updatable_fields = ['id', 'name']
-
-    def __init__(self, name, description, config=None):
-        self.name = name
-        self.description = description
-        self.config = config
-
-    def __repr__(self):
-        return '<Clusters %r>' % (self.name)

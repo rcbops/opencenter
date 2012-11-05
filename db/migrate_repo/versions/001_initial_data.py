@@ -9,7 +9,7 @@ from migrate.changeset import schema
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, object_mapper
 
-from db.models import Adventures, Nodes, Tasks, Clusters
+from db.models import Adventures, Nodes, Tasks
 from db import api as api
 
 
