@@ -81,6 +81,8 @@ class FilterTokenizer:
             (r"and", self.and_op),
             (r"none", self.none),
             (r"in", self.in_op),
+            (r"true", self.bool_op),
+            (r"false", self.bool_op),
             (r",", self.comma),
             (r"[ \t\n]+", None),
             (r"[0-9]+", self.number),
@@ -112,6 +114,9 @@ class FilterTokenizer:
 
     def identifier(self, scanner, token):
         return 'IDENTIFIER', token
+
+    def bool_op(self, scanner, token):
+        return 'BOOL', token.upper()
 
     def qstring(self, scanner, token):
         return 'STRING', token[1:-1].replace("\\'", "'")
@@ -165,7 +170,7 @@ class FilterTokenizer:
 # andexpr -> orexpr { T_AND orexpr }
 # orexpr -> expr { T_OR expr }
 # expr -> T_OPENPAREN andexpr T_CLOSEPAREN | criterion
-# criterion -> evaluable_item { uneg } op evaluable_item
+# criterion -> evaluable_item [ { uneg } op evaluable_item ]
 # evalable_item -> function(evaluable_item, e_i, ...) | identifier | value
 #
 # field -> datatype.value
@@ -227,19 +232,23 @@ class AstBuilder:
 
         lhs = self.parse_evaluable_item()
 
-        token, val = self.tokenizer.scan()
+        token, val = self.tokenizer.peek()
 
-        if token == 'UNEG':
-            negate = True
+        if token == 'UNEG' or token == 'OP':
             token, val = self.tokenizer.scan()
 
-        if token != 'OP':
-            raise RuntimeError('expecting operator or unary negation')
+            if token == 'UNEG':
+                negate = True
+                token, val = self.tokenizer.scan()
 
-        op = val
+            if token != 'OP':
+                raise RuntimeError('Expecting {UNEG} BOOL | OP')
 
-        rhs = self.parse_evaluable_item()
-        return Node(lhs, op, rhs, negate)
+            op = val
+            rhs = self.parse_evaluable_item()
+            return Node(lhs, op, rhs, negate)
+        else:
+            return lhs
 
     # evaulable_item -> function(evalable_item, ...) | identifier | value
     def parse_evaluable_item(self):
@@ -250,6 +259,9 @@ class AstBuilder:
 
         if token == 'STRING':
             return Node(str(val), 'STRING', None)
+
+        if token == 'BOOL':
+            return Node(val, 'BOOL', None)
 
         if token == 'NONE':
             return Node(None, 'NONE', None)
@@ -418,6 +430,9 @@ class Node:
         if self.op == 'NUMBER':
             return str(int(self.lhs))
 
+        if self.op == 'BOOL':
+            return str(self.lhs)
+
         if self.op == 'IDENTIFIER':
             return 'IDENTIFIER %s' % self.lhs
 
@@ -438,12 +453,19 @@ class Node:
 
         self.logger.debug('evaluating %s' % str(self))
 
-        if self.op in ['STRING', 'NUMBER', 'IDENTIFIER', 'FUNCTION', 'NONE']:
+        if self.op in ['STRING', 'NUMBER', 'BOOL',
+                       'IDENTIFIER', 'FUNCTION', 'NONE']:
             if self.op == 'STRING':
                 retval = str(self.lhs)
 
             if self.op == 'NUMBER':
                 retval = int(self.lhs)
+
+            if self.op == 'BOOL':
+                if self.lhs == 'TRUE':
+                    retval = True
+                else:
+                    retval = False
 
             if self.op == 'IDENTIFIER':
                 retval = self.eval_identifier(node, self.lhs)

@@ -12,7 +12,7 @@ from sqlalchemy.orm.exc import UnmappedInstanceError
 from db import api as api
 from db import exceptions as exc
 from db.database import db_session
-from db.models import Nodes, Clusters, Tasks, Adventures
+from db.models import Nodes, Tasks, Adventures
 from errors import (
     http_bad_request,
     http_conflict,

@@ -71,4 +71,4 @@ def object_by_id(object_type, object_id):
         if not model_object:
             return http_response(404, 'not found')
         else:
-            return http_response({s_obj: model_object})
+            return http_response(200, {s_obj: model_object})

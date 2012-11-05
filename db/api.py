@@ -16,7 +16,7 @@ import backends as b
 import db.models
 from db.database import db_session
 from db import exceptions as exc
-from db.models import Adventures, Clusters, Nodes, Tasks, Filters, Facts
+from db.models import Adventures, Nodes, Tasks, Filters, Facts
 
 from webapp.ast import AstBuilder, FilterTokenizer
 
@@ -288,22 +288,6 @@ def adventures_get_by_node_id(node_id):
                    for c in r.__table__.columns.keys())
               for r in adventure_list]
     return result
-
-
-def cluster_get_node_list(cluster_id):
-    """Query helper that returns a dict of nodes
-
-    :param cluster_id: id of the cluster to look up
-    """
-    r = Clusters.query.filter_by(id=cluster_id).first()
-    if r is None:
-        return None
-    else:
-        if r.nodes.count > 0:
-            return list({'id': x.id, 'name': x.name}
-                        for x in r.nodes)
-        else:
-            return list()
 
 
 def task_update_by_id(task_id, fields):

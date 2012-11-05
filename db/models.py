@@ -104,15 +104,10 @@ class Nodes(Base):
     __tablename__ = 'nodes'
     id = Column(Integer, primary_key=True)
     name = Column(String(64), unique=True, nullable=False)
-    filter_id = Column(Integer, ForeignKey('filters.id'))
-    cluster_id = Column(Integer, ForeignKey('clusters.id'))
-    clusters = relationship('Clusters',
-                            backref=backref('nodes',
-                            lazy='dynamic'))
-    role = Column(String(30))
+    parent_id = Column(Integer, ForeignKey('nodes.id'), default=None)
+    parent = relationship('Nodes', remote_side=[id])
     backend = Column(String(30))  # Adventures.backend
     backend_state = Column(String(30))  # Adventures.backend_state
-    config = Column(JsonBlob, default={})
     adventure_id = Column(Integer, ForeignKey('adventures.id'))
     task_id = Column(Integer, ForeignKey('tasks.id',
                                          use_alter=True,
@@ -121,14 +116,11 @@ class Nodes(Base):
     _non_updatable_fields = ['id', 'name']
     _synthesized_fields = ['facts']
 
-    def __init__(self, name, filter_id=None, cluster_id=None,
-                 config=None, role=None, backend=None, backend_state=None,
+    def __init__(self, name, parent_id=None,
+                 backend=None, backend_state=None,
                  adventure_id=None, task_id=None):
         self.name = name
-        self.filter_id = filter_id
-        self.cluster_id = cluster_id
-        self.config = config
-        self.role = role
+        self.parent_id = parent_id
         self.backend = backend
         self.backend_state = backend_state
         self.adventure_id = adventure_id
@@ -141,11 +133,17 @@ class Nodes(Base):
     def facts(self):
         facts = {}
 
-        fact_list = Facts.query.filter_by(node_id=self.id)
-        for fact in fact_list:
-            facts[fact.key] = fact.value
+        def merge_upward(node, facts):
+            fact_list = Facts.query.filter_by(node_id=node.id)
+            for fact in fact_list:
+                facts[fact.key] = fact.value
 
-        return facts
+            if node.parent:
+                facts = merge_upward(node.parent, facts)
+
+            return facts
+
+        return merge_upward(self, facts)
 
 
 class Adventures(Base):
@@ -193,24 +191,3 @@ class Filters(Base):
             return "(%s) and (%s)" % (self.expr, self.parent.full_expr)
         else:
             return self.expr
-
-
-class Clusters(Base):
-    __tablename__ = 'clusters'
-    id = Column(Integer, primary_key=True)
-    name = Column(String(20), unique=True)
-    description = Column(String(80))
-    config = Column(JsonBlob, default={})
-    node = relationship('Nodes', backref=backref('cluster',
-                                                 uselist=False,
-                                                 lazy='dynamic'))
-
-    _non_updatable_fields = ['id', 'name']
-
-    def __init__(self, name, description, config=None):
-        self.name = name
-        self.description = description
-        self.config = config
-
-    def __repr__(self):
-        return '<Clusters %r>' % (self.name)

@@ -9,7 +9,7 @@ from migrate.changeset import schema
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, object_mapper
 
-from db.models import Adventures, Nodes, Tasks, Clusters
+from db.models import Adventures, Nodes, Tasks
 from db import api as api
 
 
@@ -57,7 +57,10 @@ def upgrade(migrate_engine):
                        'expr': 'backend=\'unprovisioned\''},
                       {'name': 'chef client nodes',
                        'filter_type': 'node',
-                       'expr': 'backend=\'chef-client\''}]
+                       'expr': 'backend=\'chef-client\''},
+                      {'name': 'chef-server',
+                       'filter_type': 'interface',
+                       'expr': 'facts.chef_server_uri != None'}]
 
     for new_filter in canned_filters:
         api._model_create('filters', new_filter)
