@@ -133,6 +133,7 @@ class Thing(Flask):
 
         # set the notification dispatcher
         self.dispatch = backends.notify
+        self._logger = LOG
 
         self.config.update(defaults['main'])
 
