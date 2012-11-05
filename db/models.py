@@ -133,11 +133,17 @@ class Nodes(Base):
     def facts(self):
         facts = {}
 
-        fact_list = Facts.query.filter_by(node_id=self.id)
-        for fact in fact_list:
-            facts[fact.key] = fact.value
+        def merge_upward(node, facts):
+            fact_list = Facts.query.filter_by(node_id = node.id)
+            for fact in fact_list:
+                facts[fact.key] = fact.value
 
-        return facts
+            if node.parent:
+                facts = merge_upward(node.parent, facts)
+
+            return facts
+
+        return merge_upward(self, facts)
 
 
 class Adventures(Base):
