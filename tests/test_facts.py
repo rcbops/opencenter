@@ -27,13 +27,13 @@ class DoAllTheFactThingsTests(unittest2.TestCase):
         self.client = self.app.test_client()
 
         self.c2 = self._model_create('node',
-                                    name=_randomStr())
+                                     name=_randomStr())
         self.c1 = self._model_create('node',
-                                    name=_randomStr(),
-                                    parent_id=self.c2['id'])
+                                     name=_randomStr(),
+                                     parent_id=self.c2['id'])
         self.n1 = self._model_create('node',
-                                    name=_randomStr(),
-                                    parent_id=self.c1['id'])
+                                     name=_randomStr(),
+                                     parent_id=self.c1['id'])
 
     def tearDown(self):
         c2_facts = self._model_get_by_filter('fact',

@@ -12,6 +12,7 @@ from functools import partial
 from db.database import init_db
 import webapp
 
+
 def _pluralize(what):
     return what + 's'
 
@@ -57,7 +58,7 @@ def model_get_by_filter(self, model, filter_str):
 
 
 def inject_self(self):
-    self._model_create=partial(model_create, self)
-    self._model_delete=partial(model_delete, self)
-    self._model_get_by_id=partial(model_get_by_id, self)
-    self._model_get_by_filter=partial(model_get_by_filter, self)
+    self._model_create = partial(model_create, self)
+    self._model_delete = partial(model_delete, self)
+    self._model_get_by_id = partial(model_get_by_id, self)
+    self._model_get_by_filter = partial(model_get_by_filter, self)
