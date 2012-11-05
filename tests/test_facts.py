@@ -36,14 +36,14 @@ class DoAllTheFactThingsTests(unittest2.TestCase):
                                      parent_id=self.c1['id'])
 
     def tearDown(self):
-        c2_facts = self._model_get_by_filter('fact',
-                                             'node_id=%s' % self.c2['id'])
+        c2_facts = self._model_filter('fact',
+                                      'node_id=%s' % self.c2['id'])
 
-        c1_facts = self._model_get_by_filter('fact',
-                                             'node_id=%s' % self.c1['id'])
+        c1_facts = self._model_filter('fact',
+                                      'node_id=%s' % self.c1['id'])
 
-        n1_facts = self._model_get_by_filter('fact',
-                                             'node_id=%s' % self.n1['id'])
+        n1_facts = self._model_filter('fact',
+                                      'node_id=%s' % self.n1['id'])
 
         for fact_id in [x['id'] for x in c2_facts + c1_facts + n1_facts]:
             self._model_delete('fact', fact_id)

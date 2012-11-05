@@ -80,7 +80,7 @@ class FilterTokenizer:
             (r"or", self.or_op),
             (r"and", self.and_op),
             (r"none", self.none),
-            (r"in", self.in_op),
+            (r"in ", self.in_op),
             (r"true", self.bool_op),
             (r"false", self.bool_op),
             (r",", self.comma),
@@ -89,7 +89,7 @@ class FilterTokenizer:
             (r"\(", self.open_paren),
             (r"\)", self.close_paren),
             (r"'([^'\\]*(?:\\.[^'\\]*)*)'", self.qstring),
-            (r"\"([^\"\\]*(?:\\.[^\"\\]*)*)\"", self.qstring),
+            (r'"([^"\\]*(?:\\.[^"\\]*)*)"', self.qstring),
             (r"[a-zA-Z_]*:", self.typedef),
             (r"\<\=|\>\=", self.op),
             (r"\=|\<|\>", self.op),
@@ -119,7 +119,12 @@ class FilterTokenizer:
         return 'BOOL', token.upper()
 
     def qstring(self, scanner, token):
-        return 'STRING', token[1:-1].replace("\\'", "'")
+        whatquote = token[0]
+        otherquote = '\\"'
+        if whatquote == '"':
+            otherquote = "\\'"
+
+        return 'STRING', token[1:-1].replace(otherquote, whatquote)
 
     def open_paren(self, scanner, token):
         return 'OPENPAREN', token
@@ -186,7 +191,8 @@ class AstBuilder:
                                               'int': util_int,
                                               'max': util_max,
                                               'filter': util_filter,
-                                              'count': util_count}):
+                                              'count': util_count,
+                                              'printf': util_printf}):
         self.tokenizer = tokenizer
         self.input_filter = input_filter
         self.logger = logging.getLogger('filter.astbuilder')
@@ -203,9 +209,8 @@ class AstBuilder:
     def eval(self):
         # avoid some circular includes
         import db.api as api
-
         import db.database
-        from db import api
+#        from db import api
 
         # get a list of all the self.filter_types, and eval each in turn
         root_node = self.build()
@@ -380,6 +385,8 @@ class Node:
         fd.write('"%s" -> "%s"' % (id(self), rhs_id) + ';\n')
 
     def eval_identifier(self, node, identifier):
+        import db.api as api
+
         self.logger.debug('resolving identifier "%s" on:\n%s' %
                           (identifier, node))
 
@@ -503,22 +510,22 @@ class Node:
                 result = True
         elif self.op == '<':
             if type(lhs_val) != type(rhs_val):
-                result = False
+                return False
             elif lhs_val < rhs_val:
                 result = True
         elif self.op == '>':
             if type(lhs_val) != type(rhs_val):
-                result = False
+                return False
             elif lhs_val > rhs_val:
                 result = True
         elif self.op == '<=':
             if type(lhs_val) != type(rhs_val):
-                result = False
+                return False
             elif lhs_val <= rhs_val:
                 result = True
         elif self.op == '>=':
             if type(lhs_val) != type(rhs_val):
-                result = False
+                return False
             elif lhs_val >= rhs_val:
                 result = True
         elif self.op == 'AND':
