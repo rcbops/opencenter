@@ -30,6 +30,14 @@ def model_create(self, model, **kwargs):
     return json.loads(resp.data)[model]
 
 
+def model_update(self, model, id, **kwargs):
+    resp = self.client.put('/%s/%s' % (_pluralize(model), id),
+                           content_type='application/json',
+                           data=json.dumps(kwargs))
+    self.assertEquals(resp.status_code, 200)
+    return json.loads(resp.data)[model]
+
+
 def model_delete(self, model, id):
     resp = self.client.delete('/%s/%s' % (_pluralize(model), id))
     self.assertEquals(resp.status_code, 200)
@@ -61,4 +69,5 @@ def inject_self(self):
     self._model_create = partial(model_create, self)
     self._model_delete = partial(model_delete, self)
     self._model_get_by_id = partial(model_get_by_id, self)
-    self._model_get_by_filter = partial(model_get_by_filter, self)
+    self._model_filter = partial(model_get_by_filter, self)
+    self._model_update = partial(model_update, self)
