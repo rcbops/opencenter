@@ -42,6 +42,7 @@ def model_delete(self, model, id):
     resp = self.client.delete('/%s/%s' % (_pluralize(model), id))
     self.assertEquals(resp.status_code, 200)
     out = json.loads(resp.data)
+    self.app.logger.debug('model_delete response: %s' % out)
     self.assertEquals(out['status'], 200)
     self.assertEquals(out['message'], '%s deleted' %
                       model.capitalize())
@@ -52,6 +53,7 @@ def model_get_by_id(self, model, id):
     self.assertEquals(resp.status_code, 200)
     out = json.loads(resp.data)
     # self.assertEquals(out['status'], 200)
+    self.app.logger.debug('model_get_by_id response: %s' % out)
     return out[model]
 
 
@@ -62,6 +64,15 @@ def model_get_by_filter(self, model, filter_str):
     self.app.logger.debug('response: %s' % resp)
     self.assertEquals(resp.status_code, 200)
     out = json.loads(resp.data)
+    self.app.logger.debug('model_get_by_filter response: %s' % out)
+    return out[_pluralize(model)]
+
+
+def model_get_all(self, model):
+    resp = self.client.get('/%s/' % _pluralize(model))
+    self.assertEquals(resp.status_code, 200)
+    out = json.loads(resp.data)
+    self.app.logger.debug('get_all response: %s' % out)
     return out[_pluralize(model)]
 
 
@@ -71,3 +82,4 @@ def inject_self(self):
     self._model_get_by_id = partial(model_get_by_id, self)
     self._model_filter = partial(model_get_by_filter, self)
     self._model_update = partial(model_update, self)
+    self._model_get_all = partial(model_get_all, self)

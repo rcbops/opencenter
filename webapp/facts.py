@@ -27,29 +27,29 @@ def create():
     data = dict((field, request.json[field] if (field in request.json)
                  else None) for field in fields)
 
+    model_object = None
+    resp = None
+
     if 'node_id' in data and 'key' in data:
         old_fact = api._model_get_first_by_filter(object_type,
                                                   {'node_id': data['node_id'],
                                                    'key': data['key']})
 
-    model_object = None
-    resp = None
-
     if old_fact:
         model_object = api._model_update_by_id(
             object_type, old_fact['id'], data)
-        resp = jsonify({singular_object_type: model_object})
     else:
         model_object = api._model_create(object_type, data)
-        href = request.base_url + str(model_object['id'])
-        msg = {'status': 201,
-               'message': '%s Created' % singular_object_type.capitalize(),
-               '%s' % singular_object_type: model_object,
-               'ref': href}
 
-        resp = jsonify(msg)
-        resp.status_code = 201
-        resp.headers['Location'] = href
+    href = request.base_url + str(model_object['id'])
+    msg = {'status': 201,
+           'message': '%s Created' % singular_object_type.capitalize(),
+           '%s' % singular_object_type: model_object,
+           'ref': href}
+
+    resp = jsonify(msg)
+    resp.status_code = 201
+    resp.headers['Location'] = href
 
     return resp
 
