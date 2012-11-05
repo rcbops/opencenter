@@ -104,7 +104,8 @@ class Nodes(Base):
     __tablename__ = 'nodes'
     id = Column(Integer, primary_key=True)
     name = Column(String(64), unique=True, nullable=False)
-    filter_id = Column(Integer, ForeignKey('filters.id'))
+    parent_id = Column(Integer, ForeignKey('nodes.id'), default=None)
+    parent = relationship('Nodes', remote_side=[id])
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
     clusters = relationship('Clusters',
                             backref=backref('nodes',
@@ -121,11 +122,11 @@ class Nodes(Base):
     _non_updatable_fields = ['id', 'name']
     _synthesized_fields = ['facts']
 
-    def __init__(self, name, filter_id=None, cluster_id=None,
+    def __init__(self, name, parent_id=None, cluster_id=None,
                  config=None, role=None, backend=None, backend_state=None,
                  adventure_id=None, task_id=None):
         self.name = name
-        self.filter_id = filter_id
+        self.parent_id = parent_id
         self.cluster_id = cluster_id
         self.config = config
         self.role = role
