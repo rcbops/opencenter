@@ -134,7 +134,7 @@ class Nodes(Base):
         facts = {}
 
         def merge_upward(node, facts):
-            fact_list = Facts.query.filter_by(node_id = node.id)
+            fact_list = Facts.query.filter_by(node_id=node.id)
             for fact in fact_list:
                 facts[fact.key] = fact.value
 
