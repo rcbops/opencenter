@@ -181,63 +181,9 @@ class Thing(Flask):
                 builder = AstBuilder(FilterTokenizer(),
                                      '%s: %s' % (what, full_expr))
 
-                result = {'name': filter_obj['name'],
-                          'id': filter_obj['id'],
-                          what: [],
-                          'containers': []}
+                return jsonify({what: builder.eval()})
 
-                eval_result = builder.eval()
-
-                result[what] = [x['id'] for x in
-                                eval_result if x['filter_id'] is None]
-
-                subfilters = api._model_get_by_filter('filters',
-                                                      {'parent_id': filter_id})
-
-                container_list = []
-                if subfilters:
-                    container_list = [x['id'] for x in subfilters]
-
-                for container in container_list:
-                    result['containers'].append(f(container))
-
-                return result
-
-            def aggregate_nodes(result_dict):
-                nodelist = []
-                for container in result_dict['containers']:
-                    nodelist += aggregate_nodes(container)
-                return nodelist
-
-            def prune(result_dict):
-                subnodelist = []
-
-                for container in result_dict['containers']:
-                    subnodelist += prune(container)
-
-                for d in subnodelist:
-                    result_dict[what].remove(d)
-
-                subnodelist += result_dict[what]
-                return subnodelist
-
-            def deflense(result_dict):
-                for container in result_dict['containers']:
-                    deflense(container)
-
-                full_nodes = []
-                for node_id in result_dict[what]:
-                    full_nodes.append(api._model_get_by_id(what, node_id))
-
-                result_dict['nodes'] = full_nodes
-
-            def jsonify_result(filter_id):
-                result = f(filter_id)
-                prune(result)
-                deflense(result)
-                return jsonify({'results': result})
-
-            return jsonify_result
+            return f
 
         def root_schema():
             schema = {'schema': {'objects': self.registered_models}}
