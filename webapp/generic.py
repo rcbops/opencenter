@@ -50,7 +50,7 @@ def list(object_type):
                              ref=href, **{s_obj: model_object})
     else:
         model_objects = api._model_get_all(object_type)
-        return http_response(200, **{object_type: model_objects})
+        return http_response(200, 'success', **{object_type: model_objects})
 
 
 def object_by_id(object_type, object_id):
@@ -71,4 +71,4 @@ def object_by_id(object_type, object_id):
         if not model_object:
             return http_response(404, 'not found')
         else:
-            return http_response(200, {s_obj: model_object})
+            return http_response(200, 'success', **{s_obj: model_object})

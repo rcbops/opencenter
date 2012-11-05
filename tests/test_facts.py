@@ -16,9 +16,9 @@ def _randomStr(size=20):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
 
 
-class DoAllTheFactThingsTests(unittest2.TestCase):
+class FactsTests(unittest2.TestCase):
     def __init__(self, *args, **kwargs):
-        super(DoAllTheFactThingsTests, self).__init__(*args, **kwargs)
+        super(FactsTests, self).__init__(*args, **kwargs)
         util.inject_self(self)
 
     def setUp(self):
@@ -108,3 +108,32 @@ class DoAllTheFactThingsTests(unittest2.TestCase):
         self._model_delete('fact', c1_fact['id'])
         n1 = self._model_get_by_id('node', self.n1['id'])
         self.assertEquals(n1['facts']['node_data'], 'blah')
+
+    def test_updating_facts(self):
+        self._model_create('fact', node_id=self.n1['id'],
+                           key='test_fact',
+                           value='test_value')
+        # now, do a create...
+        self._model_create('fact', node_id=self.n1['id'],
+                           key='test_fact',
+                           value='test_value2')
+        n1 = self._model_get_by_id('node', self.n1['id'])
+        self.assertEquals(n1['facts']['test_fact'], 'test_value2')
+
+    def test_list_all_facts(self):
+        self._model_create('fact', node_id=self.n1['id'],
+                           key='test_fact',
+                           value='test_value')
+        result = self._model_get_all('fact')
+        self.assertEquals(len(result), 1)
+
+    def test_request_bad_fact(self):
+        resp = self.client.get('/facts/9999')
+        self.assertEquals(resp.status_code, 404)
+
+    def test_request_fact(self):
+        fact = self._model_create('fact', node_id=self.n1['id'],
+                                  key='test_fact',
+                                  value='test_value')
+        self.app.logger.debug('fact: %s' % fact)
+        self._model_get_by_id('fact', fact['id'])
