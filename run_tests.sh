@@ -9,6 +9,7 @@ function usage {
   echo "  -f, --force              Force a clean re-build of the virtual environment. Useful when dependencies have been added."
   echo "  -p, --pep8               Just run pep8"
   echo "  -c, --coverage           Generate coverage report"
+  echo "  -H, --html               Generate coverage report html, if -c"
   echo "  -h, --help               Print this usage message"
   echo ""
   echo "Note: with no options specified, the script will try to run the tests in a virtual environment,"
@@ -25,6 +26,8 @@ function process_option {
     -f|--force) force=1;;
     -p|--pep8) just_pep8=1;;
     -c|--coverage) coverage=1;;
+    -H|--html) html=1;;
+
     -*) noseopts="$noseopts $1";;
     *) noseargs="$noseargs $1"
   esac
@@ -42,6 +45,7 @@ noseopts="-v"
 wrapper=""
 just_pep8=0
 coverage=0
+html=0
 
 
 for arg in "$@"; do
@@ -124,6 +128,6 @@ run_tests
 if [ $coverage -eq 1 ]; then
     echo "Generating coverage report in coverage/"
     # Don't compute coverage for common code, which is tested elsewhere
-    # ${wrapper} coverage html --include='webapp/*,db/*,backends/*' -d coverage -i
+    [ $html -eq 1 ] && ${wrapper} coverage html --include='roush/*' -d coverage -i
     ${wrapper} coverage xml --include='roush/*' -i
 fi
