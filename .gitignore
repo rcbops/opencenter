@@ -7,3 +7,4 @@ local.conf
 .coverage
 coverage.xml
 nosetests.xml
+*.egg-info
