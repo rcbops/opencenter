@@ -13,7 +13,7 @@ from flask import Flask, jsonify, request
 from adventures import bp as adventures
 from nodes import nodes
 from index import index
-from tasks import tasks
+from tasks import bp as tasks
 from filters import bp as filters
 from facts import bp as facts
 

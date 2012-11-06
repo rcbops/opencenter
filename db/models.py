@@ -1,7 +1,7 @@
 import json
-from time import time
+import time
 
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum, event
 from sqlalchemy.orm import relationship
 import sqlalchemy.types as types
 from sqlalchemy.exc import InvalidRequestError
@@ -63,7 +63,7 @@ class Tasks(Base):
     completed = Column(Integer)
     expires = Column(Integer)
 
-    _non_updatable_fields = ['id']
+    _non_updatable_fields = ['id', 'submitted']
 
     def __init__(self, node_id, action, payload, state='pending',
                  parent_id=None, result=None, submitted=None, completed=None,
@@ -74,12 +74,21 @@ class Tasks(Base):
         self.state = state
         self.parent_id = parent_id
         self.result = result
-        self.submitted = int(time())
+        self.submitted = int(time.time())
         self.completed = completed
         self.expires = expires
 
     def __repr__(self):
         return '<Task %r>' % (self.id)
+
+
+# set up a listener to auto-populate values in Task struct
+@event.listens_for(Tasks.state, 'set')
+def task_state_mungery(target, value, oldvalue, initiator):
+    non_t = ['pending', 'running', 'delivered']
+
+    if value not in non_t and target.completed is None:
+        target.completed = int(time.time())
 
 
 class Facts(Base):

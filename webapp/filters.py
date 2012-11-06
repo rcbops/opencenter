@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-import generic
-
-from flask import Blueprint
+import flask
+from webapp import generic
 
 object_type = 'filters'
-bp = Blueprint(object_type, __name__)
+bp = flask.Blueprint(object_type, __name__)
 
 
 @bp.route('/', methods=['GET', 'POST'])

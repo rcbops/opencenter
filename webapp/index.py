@@ -1,20 +1,22 @@
 #!/usr/bin/env python
 
 from flask import Blueprint, request, jsonify
+import flask
 
-
-index = Blueprint('index', __name__)
+index = flask.Blueprint('index', __name__)
 
 
 @index.route('/', methods=['GET'])
 def list_index():
+    url = flask.request.url
+
     msg = {
-        'url': request.url,
+        'url': flask.request.url,
         'resources': {
-            'clusters': {'url': request.url + 'clusters/'},
-            'nodes': {'url': request.url + 'nodes/'},
-            'roles': {'url': request.url + 'roles/'}},
+            'clusters': {'url': url + 'clusters/'},
+            'nodes': {'url': url + 'nodes/'},
+            'roles': {'url': url + 'roles/'}},
         'there_is_not_enough_keystone_up_in_this_bitch': True}
-    resp = jsonify(msg)
+    resp = flask.jsonify(msg)
     resp.status_code = 200
     return resp

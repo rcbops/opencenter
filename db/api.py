@@ -13,7 +13,7 @@ import backends as b
 import db.models
 from db.database import db_session
 from db import exceptions as exc
-from db.models import Adventures, Nodes
+from db.models import Adventures, Tasks, Nodes, Facts, Filters
 from webapp.ast import AstBuilder, FilterTokenizer
 
 LOG = logging.getLogger('db.api')
@@ -283,23 +283,4 @@ def adventures_get_by_node_id(node_id):
     result = [dict((c, getattr(r, c))
                    for c in r.__table__.columns.keys())
               for r in adventure_list]
-    return result
-
-
-def task_update_by_id(task_id, fields):
-    """Query helper that updates an task by task_id
-
-    :param task_id: id of the task to lookup
-    :param fields: dict of column:value to update
-    """
-    # submitted should never be updated
-    if 'submitted' in fields:
-        del fields['submitted']
-
-    # if state moves to a terminal one, update completed
-    if 'state' in fields:
-        if fields['state'] not in ['pending', 'running', 'delivered']:
-            fields['completed'] = int(time())
-
-    result = _model_update_by_id('tasks', task_id, fields)
     return result
