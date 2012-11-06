@@ -5,7 +5,7 @@ import os
 import sys
 import traceback
 
-LOG = logging.getLogger('backend.driver')
+LOG = logging.getLogger(__name__)
 
 
 class BackendException(Exception):

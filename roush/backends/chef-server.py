@@ -4,7 +4,7 @@ import logging
 
 import backends
 
-LOG = logging.getLogger('backend.driver.chef-server')
+LOG = logging.getLogger(__name__)
 
 
 class ChefServerBackend(backends.ConfigurationBackend):

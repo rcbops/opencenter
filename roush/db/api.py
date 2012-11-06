@@ -15,7 +15,7 @@ from roush.db import models
 
 from roush.webapp.ast import AstBuilder, FilterTokenizer
 
-LOG = logging.getLogger('db.api')
+LOG = logging.getLogger(__name__)
 
 
 def _get_model_object(model):

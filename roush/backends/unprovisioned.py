@@ -4,7 +4,7 @@ import logging
 
 import backends
 
-LOG = logging.getLogger('backend.driver.unprovisioned')
+LOG = logging.getLogger(__name__)
 
 
 class UnprovisionedBackend(backends.ConfigurationBackend):
