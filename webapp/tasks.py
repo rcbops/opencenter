@@ -16,7 +16,8 @@ def list():
         data = flask.request.json
         if 'node_id' in data:
             task_semaphore = 'task-for-%s' % data['node_id']
-            flask.current_app.logger.debug('notifying event %s' % task_semaphore)
+            flask.current_app.logger.debug('notifying event %s' %
+                                           task_semaphore)
             utility.notify(task_semaphore)
 
     return result
@@ -31,7 +32,8 @@ def task_by_id(object_id):
         if 'node_id' in task:
             flask.current_app.logger.debug('Task: %s' % task)
             task_semaphore = 'task-for-%s' % task['node_id']
-            flask.current_app.logger.debug('notifying event %s' % task_semaphore)
+            flask.current_app.logger.debug('notifying event %s' %
+                                           task_semaphore)
             utility.notify(task_semaphore)
 
     return result

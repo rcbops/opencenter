@@ -23,9 +23,6 @@ def create():
     # if we are creating with the same host_id and key, then we'll just update
     # fields = api._model_get_columns(object_type)
 
-    # data = dict((field, flask.request.json[field] if (field in flask.request.json)
-    #              else None) for field in fields)
-
     data = flask.request.json
 
     model_object = None
@@ -43,8 +40,9 @@ def create():
         model_object = api._model_create(object_type, data)
 
     href = flask.request.base_url + str(model_object['id'])
-    return generic.http_response(201, '%s Created' % singular_object_type.capitalize(),
-                                 ref=href, **{singular_object_type: model_object})
+    return generic.http_response(201, '%s Created' %
+                                 singular_object_type.capitalize(), ref=href,
+                                 **{singular_object_type: model_object})
 
 
 @bp.route('/<object_id>', methods=['GET', 'PUT', 'DELETE'])
