@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import flask
-from webapp import generic
-from webapp import utility
+
+from roush.webapp import generic
+from roush.webapp import utility
 
 object_type = 'tasks'
 bp = flask.Blueprint(object_type, __name__)

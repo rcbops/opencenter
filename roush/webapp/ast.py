@@ -207,7 +207,7 @@ class AstBuilder:
 
     def eval(self):
         # avoid some circular includes
-        import db.api as api
+        import roush.db.api as api
         # import db.database
 
         # get a list of all the self.filter_types, and eval each in turn
@@ -383,7 +383,7 @@ class Node:
         fd.write('"%s" -> "%s"' % (id(self), rhs_id) + ';\n')
 
     def eval_identifier(self, node, identifier):
-        import db.api as api
+        import roush.db.api as api
 
         self.logger.debug('resolving identifier "%s" on:\n%s' %
                           (identifier, node))

@@ -4,8 +4,8 @@ import random
 import string
 import unittest2
 
-from db.database import init_db
-import webapp
+from roush.db.database import init_db
+from roush import webapp
 
 
 def _randomStr(size):

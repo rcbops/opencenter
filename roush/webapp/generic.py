@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 import flask
-from db import api
-from db import exceptions
+
+from roush.db import api
+from roush.db import exceptions
 
 
 def singularize(what):

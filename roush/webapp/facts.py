@@ -3,7 +3,7 @@
 import generic
 import flask
 
-from db import api
+from roush.db import api
 
 object_type = 'facts'
 singular_object_type = generic.singularize(object_type)

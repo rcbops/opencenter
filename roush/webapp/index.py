@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from flask import Blueprint, request, jsonify
 import flask
 
 index = flask.Blueprint('index', __name__)

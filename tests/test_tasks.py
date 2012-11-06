@@ -6,7 +6,7 @@ import string
 import time
 import unittest2
 
-import webapp
+from roush import webapp
 
 
 def _randomStr(size):
