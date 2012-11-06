@@ -1,10 +1,4 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
-import json
-import os
-import random
-import string
-import sys
-import time
 import unittest2
 import util
 

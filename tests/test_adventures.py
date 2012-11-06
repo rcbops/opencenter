@@ -1,10 +1,8 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 import json
-import os
 import random
 import string
 import unittest2
-import time
 
 from db.database import init_db
 import webapp

@@ -1,9 +1,7 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 import json
-import os
 import random
 import string
-import time
 import unittest2
 
 from db.database import init_db
@@ -110,8 +108,8 @@ class NodeUpdateTests(unittest2.TestCase):
         #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
 
     def tearDown(self):
-        tmp_resp = self.app.delete('/nodes/%s' % str(self.node_id),
-                                   content_type=self.content_type)
+        self.app.delete('/nodes/%s' % str(self.node_id),
+                        content_type=self.content_type)
 
     def test_update_node_attribute_id_returns_400(self):
         tmp_id = 99

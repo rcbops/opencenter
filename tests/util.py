@@ -1,16 +1,7 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 import json
-import os
-import random
-import string
-import sys
-import time
-import unittest2
 
 from functools import partial
-
-from db.database import init_db
-import webapp
 
 
 def _pluralize(what):
