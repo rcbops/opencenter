@@ -29,7 +29,6 @@ class FactsTests(RoushTestCase):
         n1_facts = self._model_filter('fact',
                                       'node_id=%s' % self.n1['id'])
 
-
         for fact_id in [x['id'] for x in c2_facts + c1_facts + n1_facts]:
             self.app.logger.debug('deleting fact %s' % fact_id)
             self._model_delete('fact', fact_id)
@@ -38,8 +37,8 @@ class FactsTests(RoushTestCase):
         self._model_delete('node', self.c2['id'])
         self._model_delete('node', self.c1['id'])
 
-        all_facts=self._model_get_all('fact')
-        all_nodes=self._model_get_all('node')
+        all_facts = self._model_get_all('fact')
+        all_nodes = self._model_get_all('node')
 
         self.assertEquals(len(all_facts), 0)
         self.assertEquals(len(all_nodes), 0)

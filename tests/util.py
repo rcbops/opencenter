@@ -27,7 +27,8 @@ class RoushTestCase(unittest2.TestCase):
                 self._model_delete(what, what_id)
 
     def _random_str(self, size=20):
-        return "".join(random.choice(string.ascii_lowercase) for x in range(size))
+        return "".join(random.choice(string.ascii_lowercase)
+                       for x in range(size))
 
     def _pluralize(self, what):
         return what + 's'
@@ -100,6 +101,6 @@ class RoushTestCase(unittest2.TestCase):
         if not hasattr(self, 'base_object'):
             self.skipTest('no base_object')
 
-        ids=[]
+        ids = []
 
         schema = self._model_get_schema(self.base_object)
