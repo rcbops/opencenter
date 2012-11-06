@@ -5,7 +5,7 @@ import os
 import sys
 import traceback
 
-LOG = logging.getLogger('backend.driver')
+LOG = logging.getLogger(__name__)
 
 
 class BackendException(Exception):
@@ -56,9 +56,6 @@ def notify(otype, ntype, old_object, new_object):
     backend_notification_list = []
 
     if otype == 'node':
-        old_backend = None
-        new_backend = None
-
         if old_object and 'backend' in old_object:
             backend_notification_list.append(old_object['backend'])
 
@@ -111,7 +108,7 @@ def _ns_load(name, config={}):
     try:
         __import__(import_str)
         return getattr(sys.modules[import_str], class_str)(config[class_str])
-    except Exception as e:
+    except Exception:
         LOG.error('Could not load backend "%s"' % name)
 
     return None

@@ -1,30 +1,25 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 # tab stops are 8.  ^^ this is wrong
 
-from itertools import islice
-import json
 import logging
 from time import time
-import traceback
 from functools import partial
 
-from sqlalchemy.exc import IntegrityError, StatementError, InvalidRequestError
-from sqlalchemy.orm.exc import UnmappedInstanceError
-from sqlalchemy.sql import and_, or_
+import sqlalchemy
 
-import backends as b
-import db.models
-from db.database import db_session
-from db import exceptions as exc
-from db.models import Adventures, Nodes, Tasks, Filters, Facts
+from roush import backends
 
-from webapp.ast import AstBuilder, FilterTokenizer
+from roush.db.database import session
+from roush.db import exceptions
+from roush.db import models
 
-LOG = logging.getLogger('db.api')
+from roush.webapp.ast import AstBuilder, FilterTokenizer
+
+LOG = logging.getLogger(__name__)
 
 
 def _get_model_object(model):
-    return globals()[model.capitalize()]
+    return getattr(models, model.capitalize())
 
 
 def _model_get_all(model):
@@ -91,27 +86,27 @@ def _model_create(model, fields):
     r = model_object(**dict((field, fields[field])
                             for field in field_list if field in fields))
 
-    db_session.add(r)
+    session.add(r)
     try:
-        db_session.commit()
+        session.commit()
         ret = dict((c, getattr(r, c))
                    for c in r.__table__.columns.keys())
-        b.notify(model.rstrip('s'), 'create', None, ret)
+        backends.notify(model.rstrip('s'), 'create', None, ret)
         return ret
-    except b.BackendException, e:
-        db_session.rollback()
+    except backends.BackendException as e:
+        session.rollback()
         msg = 'backend failure: %s' % str(e)
-        raise exc.CreateError(msg)
-    except StatementError, e:
-        db_session.rollback()
+        raise exceptions.CreateError(msg)
+    except sqlalchemy.exc.StatementError as e:
+        session.rollback()
         # msg = e.message
         msg = "JSON object must be either type(dict) or type(list) " \
               "not %s" % (e.message)
-        raise exc.CreateError(msg)
-    except IntegrityError, e:
-        db_session.rollback()
+        raise exceptions.CreateError(msg)
+    except sqlalchemy.exc.IntegrityError as e:
+        session.rollback()
         msg = "Unable to create %s, duplicate entry" % (model.title())
-        raise exc.CreateError(message=msg)
+        raise exceptions.CreateError(message=msg)
 
 
 def _model_delete_by_id(model, pk_id):
@@ -128,22 +123,22 @@ def _model_delete_by_id(model, pk_id):
                        for c in r.__table__.columns.keys())
 
     try:
-        db_session.delete(r)
-        b.notify(model.rstrip('s'), 'delete', old_obj, None)
-        db_session.commit()
+        session.delete(r)
+        backends.notify(model.rstrip('s'), 'delete', old_obj, None)
+        session.commit()
         return True
-    except b.BackendException, e:
-        db_session.rollback()
+    except backends.BackendException as e:
+        session.rollback()
         msg = 'backend failure: %s' % str(e)
         raise exc.CreateError(msg)
-    except UnmappedInstanceError, e:
-        db_session.rollback()
+    except sqlalchemy.orm.exc.UnmappedInstanceError as e:
+        session.rollback()
         msg = "%s id does not exist" % (model.title())
         raise exc.IdNotFound(message=msg)
-    except InvalidRequestError, e:
-        db_session.rollback()
+    except sqlalchemy.exc.InvalidRequestError as e:
+        session.rollback()
         msg = e.msg
-        raise Foo(msg)
+        raise RuntimeError(msg)
 
 
 def _model_get_by_id(model, pk_id):
@@ -174,7 +169,7 @@ def _model_get_by_filter(model, filters):
     :param filters: dictionary of filters; that are combined with AND
                     to filter the result set.
     """
-    filter_options = and_(
+    filter_options = sqlalchemy.sql.and_(
         * [_get_model_object(model).__table__.columns[k] == v
            for k, v in filters.iteritems()])
     r = _get_model_object(model).query.filter(filter_options)
@@ -222,27 +217,27 @@ def _model_update_by_id(model, pk_id, fields):
     try:
         ret = dict((c, getattr(r, c))
                    for c in r.__table__.columns.keys())
-        b.notify(model.rstrip('s'), 'update', old_obj, ret)
-        db_session.commit()
+        backends.notify(model.rstrip('s'), 'update', old_obj, ret)
+        session.commit()
         return ret
-    except b.BackendException, e:
-        db_session.rollback()
+    except backends.BackendException as e:
+        session.rollback()
         msg = 'backend failure: %s' % str(e)
         raise e
-    except InvalidRequestError, e:
+    except sqlalchemy.exc.InvalidRequestError as e:
         print "invalid req"
-        db_session.rollback()
+        session.rollback()
         msg = e.msg
-        raise Foo(msg)
+        raise RuntimeError(msg)
     except:
-        db_session.rollback()
+        session.rollback()
         raise
 
 
 # set up the default boilerplate functions, then
 # allow overrides after that
-for d in dir(db.models):
-    if type(db.models.Nodes) == type(getattr(db.models, d)) and d != 'Base':
+for d in dir(models):
+    if type(models.Nodes) == type(getattr(models, d)) and d != 'Base':
         model = d.lower()
         sing = model[:-1]
 
@@ -276,34 +271,17 @@ def adventures_get_by_node_id(node_id):
     #    AND (nodes.backend_state = adventures.backend_state
     #         OR adventures.backend_state is null);
 
-    stmt1 = or_(Adventures.backend == Nodes.backend,
-                Adventures.backend == 'null')
-    stmt2 = or_(Adventures.backend_state == Nodes.backend_state,
-                Adventures.backend_state == 'null')
-    adventure_list = Adventures.query.join(
-        Nodes,
+    stmt1 = sqlalchemy.sql.or_(
+        models.Adventures.backend == models.Nodes.backend,
+        models.Adventures.backend == 'null')
+    stmt2 = sqlalchemy.sql.or_(
+        models.Adventures.backend_state == models.Nodes.backend_state,
+        models.Adventures.backend_state == 'null')
+    adventure_list = models.Adventures.query.join(
+        models.Nodes,
         and_(stmt1, stmt2, Nodes.id == node_id)).all()
 
     result = [dict((c, getattr(r, c))
                    for c in r.__table__.columns.keys())
               for r in adventure_list]
-    return result
-
-
-def task_update_by_id(task_id, fields):
-    """Query helper that updates an task by task_id
-
-    :param task_id: id of the task to lookup
-    :param fields: dict of column:value to update
-    """
-    # submitted should never be updated
-    if 'submitted' in fields:
-        del fields['submitted']
-
-    # if state moves to a terminal one, update completed
-    if 'state' in fields:
-        if fields['state'] not in ['pending', 'running', 'delivered']:
-            fields['completed'] = int(time())
-
-    result = _model_update_by_id('tasks', task_id, fields)
     return result

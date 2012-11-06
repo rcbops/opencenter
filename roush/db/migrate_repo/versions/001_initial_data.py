@@ -9,8 +9,8 @@ from migrate.changeset import schema
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, object_mapper
 
-from db.models import Adventures, Nodes, Tasks
-from db import api as api
+from roush.db.models import Adventures, Nodes, Tasks
+from roush.db import api as api
 
 
 # Base = declarative_base()

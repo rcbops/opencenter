@@ -50,9 +50,7 @@ done
 
 # If enabled, tell nose to collect coverage data
 if [ $coverage -eq 1 ]; then
-    noseopts="$noseopts --with-xunit --with-coverage --cover-package=webapp"
-    noseopts="$noseopts --cover-package=db"
-    noseopts="$noseopts --cover-package=backends"
+    noseopts="$noseopts --with-xunit --with-coverage --cover-package=roush"
 fi
 
 function run_tests {
@@ -127,5 +125,5 @@ if [ $coverage -eq 1 ]; then
     echo "Generating coverage report in coverage/"
     # Don't compute coverage for common code, which is tested elsewhere
     # ${wrapper} coverage html --include='webapp/*,db/*,backends/*' -d coverage -i
-    ${wrapper} coverage xml --include='webapp/*,db/*,backends/*' -i
+    ${wrapper} coverage xml --include='roush/*' -i
 fi

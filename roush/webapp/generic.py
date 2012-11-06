@@ -1,21 +1,9 @@
 #!/usr/bin/env python
 
-import json
-from time import time
+import flask
 
-from flask import Blueprint, Flask, Response, request
-from flask import session, jsonify, url_for, current_app
-
-from db import api as api
-import db.exceptions as exc
-from db.database import db_session
-from webapp.errors import (
-    http_bad_request,
-    http_conflict,
-    http_not_found,
-    http_not_implemented)
-
-from ast import AstBuilder, FilterTokenizer
+from roush.db import api
+from roush.db import exceptions
 
 
 def singularize(what):
@@ -28,23 +16,24 @@ def http_response(result=200, msg='did the needful', **kwargs):
 
     resp.update(kwargs)
 
-    jsonified_response = jsonify(resp)
+    jsonified_response = flask.jsonify(resp)
     jsonified_response.status_code = result
+
+    if 'ref' in kwargs:
+        jsonified_response.headers['Location'] = kwargs['ref']
+
     return jsonified_response
 
 
 def list(object_type):
     s_obj = singularize(object_type)
 
-    if request.method == 'POST':
-        fields = api._model_get_columns(object_type)
-
-        data = dict((field, request.json[field] if (field in request.json)
-                     else None) for field in fields)
+    if flask.request.method == 'POST':
+        data = flask.request.json
 
         model_object = api._model_create(object_type, data)
 
-        href = request.base_url + str(model_object['id'])
+        href = flask.request.base_url + str(model_object['id'])
 
         return http_response(201, '%s Created' % s_obj.capitalize(),
                              ref=href, **{s_obj: model_object})
@@ -56,15 +45,16 @@ def list(object_type):
 def object_by_id(object_type, object_id):
     s_obj = singularize(object_type)
 
-    if request.method == 'PUT':
+    if flask.request.method == 'PUT':
         model_object = api._model_update_by_id(object_type, object_id,
-                                               request.json)
-        return http_response({s_obj: model_object})
-    elif request.method == 'DELETE':
+                                               flask.request.json)
+        return http_response(200, '%s Updated' % s_obj.capitalize(),
+                             **{s_obj: model_object})
+    elif flask.request.method == 'DELETE':
         try:
             if api._model_delete_by_id(object_type, object_id):
                 return http_response(200, '%s deleted' % s_obj.capitalize())
-        except exc.IdNotFound, e:
+        except exceptions.IdNotFound:
             return http_response(404, 'not found')
     else:
         model_object = api._model_get_by_id(object_type, object_id)

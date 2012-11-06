@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 import logging
 import os
-import sys
-import traceback
 
 import chef
 
-import backends
+from roush import backends
 
 # FIXME: the eventing should pass through the interesting things
-from db import api as dbapi
+from roush.db import api as dbapi
 
-LOG = logging.getLogger('backend.driver.chef-client')
+LOG = logging.getLogger(__name__)
 
 
 class ChefClientBackend(backends.ConfigurationBackend):

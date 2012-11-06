@@ -1,16 +1,14 @@
 #!/usr/bin/env python
 
 import generic
+import flask
 
-
-from flask import Blueprint, Response, request, jsonify, url_for
-
-from db import api
+from roush.db import api
 
 object_type = 'facts'
 singular_object_type = generic.singularize(object_type)
 
-bp = Blueprint(object_type, __name__)
+bp = flask.Blueprint(object_type, __name__)
 
 
 @bp.route('/', methods=['GET'])
@@ -23,9 +21,9 @@ def create():
     old_fact = None
 
     # if we are creating with the same host_id and key, then we'll just update
-    fields = api._model_get_columns(object_type)
-    data = dict((field, request.json[field] if (field in request.json)
-                 else None) for field in fields)
+    # fields = api._model_get_columns(object_type)
+
+    data = flask.request.json
 
     model_object = None
     resp = None
@@ -41,17 +39,10 @@ def create():
     else:
         model_object = api._model_create(object_type, data)
 
-    href = request.base_url + str(model_object['id'])
-    msg = {'status': 201,
-           'message': '%s Created' % singular_object_type.capitalize(),
-           '%s' % singular_object_type: model_object,
-           'ref': href}
-
-    resp = jsonify(msg)
-    resp.status_code = 201
-    resp.headers['Location'] = href
-
-    return resp
+    href = flask.request.base_url + str(model_object['id'])
+    return generic.http_response(201, '%s Created' %
+                                 singular_object_type.capitalize(), ref=href,
+                                 **{singular_object_type: model_object})
 
 
 @bp.route('/<object_id>', methods=['GET', 'PUT', 'DELETE'])

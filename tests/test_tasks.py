@@ -2,12 +2,11 @@
 
 import json
 import random
-import roush
 import string
 import time
 import unittest2
 
-import webapp
+from roush import webapp
 
 
 def _randomStr(size):
@@ -115,8 +114,8 @@ class TaskUpdateTests(unittest2.TestCase):
         self.task_id = out['task']['id']
 
     def tearDown(self):
-        resp = self.app.delete('/tasks/%s' % self.task_id,
-                               content_type=self.content_type)
+        self.app.delete('/tasks/%s' % self.task_id,
+                        content_type=self.content_type)
 
     def test_update_task_attribute_node_id(self):
         tmp_node_id = 11
