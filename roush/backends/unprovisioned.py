@@ -2,7 +2,7 @@
 
 import logging
 
-import backends
+from roush import backends
 
 LOG = logging.getLogger(__name__)
 

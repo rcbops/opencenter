@@ -4,10 +4,10 @@ import os
 
 import chef
 
-import backends
+from roush import backends
 
 # FIXME: the eventing should pass through the interesting things
-from db import api as dbapi
+from roush.db import api as dbapi
 
 LOG = logging.getLogger(__name__)
 
