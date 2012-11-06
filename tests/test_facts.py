@@ -1,34 +1,22 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
-import random
-import string
 import unittest2
-import util
 
-from roush.db.database import init_db
-from roush import webapp
+from util import RoushTestCase
 
 
-def _randomStr(size=20):
-    return "".join(random.choice(string.ascii_lowercase) for x in range(size))
-
-
-class FactsTests(unittest2.TestCase):
-    def __init__(self, *args, **kwargs):
-        super(FactsTests, self).__init__(*args, **kwargs)
-        util.inject_self(self)
+class FactsTests(RoushTestCase):
+    base_object = 'fact'
 
     def setUp(self):
-        self.app = webapp.Thing('roush', configfile='test.conf', debug=True)
-        init_db(self.app.config['database_uri'])
-        self.client = self.app.test_client()
+        self._clean_all()
 
         self.c2 = self._model_create('node',
-                                     name=_randomStr())
+                                     name=self._random_str())
         self.c1 = self._model_create('node',
-                                     name=_randomStr(),
+                                     name=self._random_str(),
                                      parent_id=self.c2['id'])
         self.n1 = self._model_create('node',
-                                     name=_randomStr(),
+                                     name=self._random_str(),
                                      parent_id=self.c1['id'])
 
     def tearDown(self):
@@ -42,11 +30,18 @@ class FactsTests(unittest2.TestCase):
                                       'node_id=%s' % self.n1['id'])
 
         for fact_id in [x['id'] for x in c2_facts + c1_facts + n1_facts]:
+            self.app.logger.debug('deleting fact %s' % fact_id)
             self._model_delete('fact', fact_id)
 
         self._model_delete('node', self.n1['id'])
         self._model_delete('node', self.c2['id'])
         self._model_delete('node', self.c1['id'])
+
+        all_facts = self._model_get_all('fact')
+        all_nodes = self._model_get_all('node')
+
+        self.assertEquals(len(all_facts), 0)
+        self.assertEquals(len(all_nodes), 0)
 
     def test_001_add_fact(self):
         self._model_create('fact', node_id=self.n1['id'],
@@ -125,6 +120,12 @@ class FactsTests(unittest2.TestCase):
 
     def test_request_bad_fact(self):
         resp = self.client.get('/facts/9999')
+        self.assertEquals(resp.status_code, 404)
+
+    def update_bad_fact(self):
+        resp = self.client.put('/facts/9999',
+                               content_type='application/json',
+                               data=json.dumps({'value': 'test'}))
         self.assertEquals(resp.status_code, 404)
 
     def test_request_fact(self):

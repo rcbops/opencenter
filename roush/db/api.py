@@ -57,6 +57,7 @@ def _model_get_schema(model):
 
         fields[k]['unique'] = cols[k].unique or cols[k].primary_key
         fields[k]['updatable'] = True
+        fields[k]['required'] = not cols[k].nullable
 
         if hasattr(obj, '_non_updatable_fields'):
             if k in obj._non_updatable_fields:
@@ -69,6 +70,7 @@ def _model_get_schema(model):
         for syn in obj._synthesized_fields:
             fields[syn] = {'type': 'TEXT',
                            'unique': False,
+                           'nullable': False,
                            'updatable': False}
 
     return {'schema': fields}

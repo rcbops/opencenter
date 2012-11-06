@@ -1,21 +1,10 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 import unittest2
-import util
-
-from roush.db.database import init_db
-from roush import webapp
+from util import RoushTestCase
 
 
-class FiltersTests(unittest2.TestCase):
-    def __init__(self, *args, **kwargs):
-        super(FiltersTests, self).__init__(*args, **kwargs)
-        util.inject_self(self)
-
+class AstTests(RoushTestCase):
     def setUp(self):
-        self.app = webapp.Thing('roush', configfile='test.conf', debug=True)
-        init_db(self.app.config['database_uri'])
-        self.client = self.app.test_client()
-
         self.nodes = {}
 
         for d in range(1, 9):
