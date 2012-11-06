@@ -3,7 +3,7 @@
 import generic
 
 
-from flask import Blueprint, Response, request, jsonify, url_for
+from flask import Blueprint, request, jsonify
 
 from db import api
 

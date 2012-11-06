@@ -19,7 +19,7 @@ from facts import bp as facts
 
 from ast import AstBuilder, FilterTokenizer
 
-from db import api, models, database
+from db import api, models
 
 import backends
 

@@ -2,7 +2,6 @@
 
 import logging
 import re
-import sys
 
 
 # some common utility functions
@@ -209,8 +208,7 @@ class AstBuilder:
     def eval(self):
         # avoid some circular includes
         import db.api as api
-        import db.database
-#        from db import api
+        # import db.database
 
         # get a list of all the self.filter_types, and eval each in turn
         root_node = self.build()

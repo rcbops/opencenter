@@ -1,22 +1,12 @@
 #!/usr/bin/env python
 
-import json
-from time import time
-
-from flask import Blueprint, Flask, Response, request
-from flask import session, jsonify, url_for, current_app
+from flask import Blueprint, request, jsonify, current_app
 
 from db import api as api
 from db import exceptions as exc
-from db.database import db_session
-from webapp.errors import (
-    http_bad_request,
-    http_conflict,
-    http_not_found,
-    http_not_implemented)
+from webapp.errors import http_not_found
 
 import webapp.utility as utility
-from ast import AstBuilder, FilterTokenizer
 
 tasks = Blueprint('tasks', __name__)
 
@@ -70,7 +60,7 @@ def task_by_id(task_id):
                 resp = jsonify(msg)
                 resp.status_code = 200
                 return resp
-        except exc.NodeNotFound, e:
+        except exc.NodeNotFound:
             return http_not_found()
     else:
         task = api.task_get_by_id(task_id)

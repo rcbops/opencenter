@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker, create_session
+from sqlalchemy.orm import scoped_session, create_session
 from sqlalchemy.ext.declarative import declarative_base
 
 # engine = create_engine('sqlite:///roush.db', convert_unicode=True)
@@ -14,5 +14,4 @@ Base.query = db_session.query_property()
 def init_db(uri, **kwargs):
     global engine
     engine = create_engine(uri, **kwargs)
-    import models
     Base.metadata.create_all(bind=engine)

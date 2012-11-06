@@ -1,23 +1,13 @@
 #!/usr/bin/env python
 
-import json
-from pprint import pprint
-
-from flask import Blueprint, Flask, Response, request
-from flask import session, jsonify, url_for, current_app
-from sqlalchemy import or_, and_
-from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm.exc import UnmappedInstanceError
+from flask import Blueprint, request, jsonify, current_app
 
 from db import api as api
 from db import exceptions as exc
-from db.database import db_session
-from db.models import Nodes, Tasks, Adventures
+
 from errors import (
     http_bad_request,
-    http_conflict,
-    http_not_found,
-    http_not_implemented)
+    http_not_found)
 
 import webapp.utility as utility
 from ast import AstBuilder, FilterTokenizer
@@ -165,7 +155,7 @@ def node_by_id(node_id):
                 resp = jsonify(msg)
                 resp.status_code = 200
                 return resp
-        except exc.NodeNotFound, e:
+        except exc.NodeNotFound:
             return http_not_found()
     else:
         # node = api.node_get_by_filter({'id': node_id})

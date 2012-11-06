@@ -1,21 +1,9 @@
 #!/usr/bin/env python
 
-import json
-from time import time
-
-from flask import Blueprint, Flask, Response, request
-from flask import session, jsonify, url_for, current_app
+from flask import request, jsonify
 
 from db import api as api
 import db.exceptions as exc
-from db.database import db_session
-from webapp.errors import (
-    http_bad_request,
-    http_conflict,
-    http_not_found,
-    http_not_implemented)
-
-from ast import AstBuilder, FilterTokenizer
 
 
 def singularize(what):
@@ -64,7 +52,7 @@ def object_by_id(object_type, object_id):
         try:
             if api._model_delete_by_id(object_type, object_id):
                 return http_response(200, '%s deleted' % s_obj.capitalize())
-        except exc.IdNotFound, e:
+        except exc.IdNotFound:
             return http_response(404, 'not found')
     else:
         model_object = api._model_get_by_id(object_type, object_id)

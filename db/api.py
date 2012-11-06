@@ -1,11 +1,8 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 # tab stops are 8.  ^^ this is wrong
 
-from itertools import islice
-import json
 import logging
 from time import time
-import traceback
 from functools import partial
 
 from sqlalchemy.exc import IntegrityError, StatementError, InvalidRequestError
@@ -16,8 +13,7 @@ import backends as b
 import db.models
 from db.database import db_session
 from db import exceptions as exc
-from db.models import Adventures, Nodes, Tasks, Filters, Facts
-
+from db.models import Adventures, Nodes
 from webapp.ast import AstBuilder, FilterTokenizer
 
 LOG = logging.getLogger('db.api')
@@ -143,7 +139,7 @@ def _model_delete_by_id(model, pk_id):
     except InvalidRequestError, e:
         db_session.rollback()
         msg = e.msg
-        raise Foo(msg)
+        raise RuntimeError(msg)
 
 
 def _model_get_by_id(model, pk_id):
@@ -233,7 +229,7 @@ def _model_update_by_id(model, pk_id, fields):
         print "invalid req"
         db_session.rollback()
         msg = e.msg
-        raise Foo(msg)
+        raise RuntimeError(msg)
     except:
         db_session.rollback()
         raise
