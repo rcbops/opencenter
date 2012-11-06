@@ -94,17 +94,17 @@ def _model_create(model, fields):
                    for c in r.__table__.columns.keys())
         b.notify(model.rstrip('s'), 'create', None, ret)
         return ret
-    except b.BackendException, e:
+    except b.BackendException as e:
         db_session.rollback()
         msg = 'backend failure: %s' % str(e)
         raise exc.CreateError(msg)
-    except StatementError, e:
+    except StatementError as e:
         db_session.rollback()
         # msg = e.message
         msg = "JSON object must be either type(dict) or type(list) " \
               "not %s" % (e.message)
         raise exc.CreateError(msg)
-    except IntegrityError, e:
+    except IntegrityError as e:
         db_session.rollback()
         msg = "Unable to create %s, duplicate entry" % (model.title())
         raise exc.CreateError(message=msg)
@@ -128,15 +128,15 @@ def _model_delete_by_id(model, pk_id):
         b.notify(model.rstrip('s'), 'delete', old_obj, None)
         db_session.commit()
         return True
-    except b.BackendException, e:
+    except b.BackendException as e:
         db_session.rollback()
         msg = 'backend failure: %s' % str(e)
         raise exc.CreateError(msg)
-    except UnmappedInstanceError, e:
+    except UnmappedInstanceError as e:
         db_session.rollback()
         msg = "%s id does not exist" % (model.title())
         raise exc.IdNotFound(message=msg)
-    except InvalidRequestError, e:
+    except InvalidRequestError as e:
         db_session.rollback()
         msg = e.msg
         raise RuntimeError(msg)
@@ -221,11 +221,11 @@ def _model_update_by_id(model, pk_id, fields):
         b.notify(model.rstrip('s'), 'update', old_obj, ret)
         db_session.commit()
         return ret
-    except b.BackendException, e:
+    except b.BackendException as e:
         db_session.rollback()
         msg = 'backend failure: %s' % str(e)
         raise e
-    except InvalidRequestError, e:
+    except InvalidRequestError as e:
         print "invalid req"
         db_session.rollback()
         msg = e.msg

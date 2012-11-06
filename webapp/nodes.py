@@ -29,7 +29,7 @@ def list_nodes():
             resp = flask.jsonify(msg)
             resp.status_code = 201
             resp.headers['Location'] = href
-        except exceptions.CreateError, e:
+        except exceptions.CreateError as e:
             return errors.http_bad_request(e.message)
     else:
         nodes = api.nodes_get_all()
