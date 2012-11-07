@@ -55,6 +55,7 @@ def _model_get_schema(model):
         if repr(cols[k].type) == 'JsonEntry()':
             fields[k]['type'] = 'JSON_ENTRY'
 
+        fields[k]['primary_key'] = cols[k].primary_key
         fields[k]['unique'] = cols[k].unique or cols[k].primary_key
         fields[k]['updatable'] = True
         fields[k]['required'] = not cols[k].nullable
@@ -71,7 +72,8 @@ def _model_get_schema(model):
             fields[syn] = {'type': 'TEXT',
                            'unique': False,
                            'nullable': False,
-                           'updatable': False}
+                           'updatable': False,
+                           'primary_key': False}
 
     return {'schema': fields}
 
