@@ -28,7 +28,7 @@ class RoushTestCase(unittest2.TestCase):
 
     def _valid_rand(self, var_type):
         if var_type == 'INTEGER':
-            return random.randrange(1,100)
+            return random.randrange(1, 100)
         elif var_type == 'TEXT':
             return self._random_str(250)
         elif var_type == 'JSON_ENTRY':
@@ -133,9 +133,9 @@ class RoushTestCase(unittest2.TestCase):
 
         schema = self._model_get_schema(self.base_object)
 
-        req_fields = [x for x in schema if (schema[x]['required'] == True) and
-                      (schema[x]['primary_key'] == False)]
-        ro_fields = [x for x in schema if schema[x]['updatable'] == False]
+        req_fields = [x for x in schema if (schema[x]['required'] is True) and
+                      (schema[x]['primary_key'] is False)]
+        ro_fields = [x for x in schema if schema[x]['updatable'] is False]
 
         ids = []
 
