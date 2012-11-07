@@ -9,7 +9,7 @@ from roush.db.database import init_db
 from roush.webapp import Thing
 
 
-if __name__ == '__main__':
+def main():
     foo = Thing("roush", argv=sys.argv[1:], configfile='local.conf',
                 debug=True)
 
