@@ -166,7 +166,12 @@ class Nodes(Base):
 
             return facts
 
-        return merge_upward(self, facts)
+        fact_list = Facts.query.filter_by(node_id=self.id)
+        for fact in fact_list:
+            facts[fact.key] = fact.value
+
+        # return merge_upward(self, facts)
+        return facts
 
 
 class Adventures(Base):
