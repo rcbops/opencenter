@@ -18,7 +18,7 @@ class AstTests(RoushTestCase):
                                parent_id=self.cluster['id'])
 
         self._model_create('fact', node_id=self.nodes['node-1']['id'],
-                           key='array_fact', value=[1,2])
+                           key='array_fact', value=[1, 2])
 
     def tearDown(self):
         for name, node in self.nodes.items():
