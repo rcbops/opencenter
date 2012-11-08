@@ -96,13 +96,12 @@ class Primitives(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(64), unique=True, nullable=False)
-    args = Column(JsonBlob, default=[])
+    args = Column(JsonBlob, default={})
     constraints = Column(JsonBlob, default=[])
     consequences = Column(JsonBlob, default=[])
 
-    def __init__(self, id, name, args=None, constraints=None,
+    def __init__(self, name, args=None, constraints=None,
                  consequences=None):
-        self.id = id
         self.name = name
         self.args = args
         self.constraints = constraints

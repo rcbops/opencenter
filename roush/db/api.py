@@ -87,6 +87,7 @@ def _model_create(model, fields):
     model_object = _get_model_object(model)
     field_list = [c for c in model_object.__table__.columns.keys()]
     field_list.remove('id')
+
     r = model_object(**dict((field, fields[field])
                             for field in field_list if field in fields))
 
