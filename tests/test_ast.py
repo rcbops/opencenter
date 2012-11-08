@@ -17,6 +17,9 @@ class AstTests(RoushTestCase):
             self._model_update('node', node['id'],
                                parent_id=self.cluster['id'])
 
+        self._model_create('fact', node_id=self.nodes['node-1']['id'],
+                           key='array_fact', value=[1, 2])
+
     def tearDown(self):
         for name, node in self.nodes.items():
             self._model_delete('node', node['id'])
@@ -85,17 +88,21 @@ class AstTests(RoushTestCase):
                            value=[1, 2, 3])
         result = self._model_filter('node', '3 in facts.array')
         self.app.logger.debug('result: %s' % result)
-        self.assertEquals(len(result), len(self.nodes) + 1)
+        # non-inheritable facts
+        # self.assertEquals(len(result), len(self.nodes) + 1)
+        self.assertEquals(len(result), 1)
 
     def test_011_nth(self):
         result = self._model_filter('node', 'nth(0, facts.array) = 1')
         self.app.logger.debug('result: %s' % result)
-        self.assertEquals(len(result), len(self.nodes) + 1)
+        # self.assertEquals(len(result), len(self.nodes) + 1)
+        self.assertEquals(len(result), 1)
 
     def test_012_max(self):
         result = self._model_filter('node', 'max(facts.array) = 3')
         self.app.logger.debug('result: %s' % result)
-        self.assertEquals(len(result), len(self.nodes) + 1)
+        # self.assertEquals(len(result), len(self.nodes) + 1)
+        self.assertEquals(len(result), 1)
 
     def test_013_str(self):
         self._model_create('fact', node_id=self.cluster['id'],
@@ -103,7 +110,8 @@ class AstTests(RoushTestCase):
                            value=3)
         result = self._model_filter('node', 'str(facts.int) = "3"')
         self.app.logger.debug('result: %s' % result)
-        self.assertEquals(len(result), len(self.nodes) + 1)
+        # self.assertEquals(len(result), len(self.nodes) + 1)
+        self.assertEquals(len(result), 1)
 
     def test_014_int(self):
         self._model_create('fact', node_id=self.cluster['id'],
@@ -111,18 +119,33 @@ class AstTests(RoushTestCase):
                            value='3')
         result = self._model_filter('node', 'int(facts.string) = 3')
         self.app.logger.debug('result: %s' % result)
-        self.assertEquals(len(result), len(self.nodes) + 1)
+        # self.assertEquals(len(result), len(self.nodes) + 1)
+        self.assertEquals(len(result), 1)
 
     def test_015_count(self):
         result = self._model_filter('node', 'count(facts.array) = 3')
         self.app.logger.debug('result: %s' % result)
-        self.assertEquals(len(result), len(self.nodes) + 1)
+        # self.assertEquals(len(result), len(self.nodes) + 1)
+        self.assertEquals(len(result), 1)
 
     def test_016_filter(self):
         query = 'count(filter("nodes", printf("parent_id=%s", parent_id))) > 1'
         result = self._model_filter('node', query)
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), len(self.nodes))
+
+    def test_017_union(self):
+        query = 'count(union(facts.array_fact, 3)) > 1'
+        result = self._model_filter('node', query)
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 1)
+        self.assertTrue(result[0]['name'] == 'node-1')
+
+    def test_018_union_of_null(self):
+        query = '("node" in name) and (count(union(facts.array_fact, 3)) = 1)'
+        result = self._model_filter('node', query)
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), len(self.nodes) - 1)
 
 
     # fix this by db abstraction...

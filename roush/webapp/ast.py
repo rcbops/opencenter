@@ -44,6 +44,25 @@ def util_count(ary):
     return len(ary)
 
 
+def util_union(listish1, listish2):
+    # I'm not entirely sure how this should work.. this is
+    # likely not a very useful implementation
+    newlist = None
+
+    if listish1 is None:
+        listish1 = []
+
+    if isinstance(listish1, list):
+        if isinstance(listish2, list):
+            newlist = listish1 + [x for x in listish2 if x not in listish1]
+        else:
+            newlist = listish1
+            if not listish2 in newlist:
+                newlist.append(listish2)
+
+    return newlist
+
+
 def util_filter(node_type, input_filter):
     builder = AstBuilder(FilterTokenizer(), "%s: %s" % (node_type,
                                                         input_filter))
@@ -57,6 +76,15 @@ def util_printf(fmt, *args):
         return fmt % args
     except Exception:
         return None
+
+default_functions = {'nth': util_nth,
+                     'str': util_str,
+                     'int': util_int,
+                     'max': util_max,
+                     'filter': util_filter,
+                     'count': util_count,
+                     'printf': util_printf,
+                     'union': util_union}
 
 
 # Stupid tokenizer.  Use:
@@ -151,7 +179,7 @@ class FilterTokenizer:
         self.tokens.append(('EOF', None))
 
         if self.remainder != '':
-            raise RuntimeError(
+            raise SyntaxError(
                 'Cannot parse.  Input: %s\nTokens: %s\nRemainder %s' %
                 (input_filter, self.tokens, self.remainder))
 
@@ -185,13 +213,7 @@ class FilterTokenizer:
 # store both tokens and
 class AstBuilder:
     def __init__(self, tokenizer, input_filter,
-                 filter_type=None, functions={'nth': util_nth,
-                                              'str': util_str,
-                                              'int': util_int,
-                                              'max': util_max,
-                                              'filter': util_filter,
-                                              'count': util_count,
-                                              'printf': util_printf}):
+                 filter_type=None, functions=default_functions):
         self.tokenizer = tokenizer
         self.input_filter = input_filter
         self.logger = logging.getLogger('filter.astbuilder')
@@ -208,13 +230,12 @@ class AstBuilder:
     def eval(self):
         # avoid some circular includes
         import roush.db.api as api
-        # import db.database
 
         # get a list of all the self.filter_types, and eval each in turn
         root_node = self.build()
 
         if not self.filter_type:
-            raise RuntimeError('unknown filter type')
+            raise SyntaxError('unknown filter type')
 
         nodes = api._model_get_all(self.filter_type)
 
@@ -245,7 +266,7 @@ class AstBuilder:
                 token, val = self.tokenizer.scan()
 
             if token != 'OP':
-                raise RuntimeError('Expecting {UNEG} BOOL | OP')
+                raise SyntaxError('Expecting {UNEG} BOOL | OP')
 
             op = val
             rhs = self.parse_evaluable_item()
@@ -290,9 +311,9 @@ class AstBuilder:
                         return Node(function_name, 'FUNCTION', args)
 
                     if token != 'COMMA':
-                        raise RuntimeError('expecting comma or close paren')
+                        raise SyntaxError('expecting comma or close paren')
 
-        raise RuntimeError('expecting evaluable item')
+        raise SyntaxError('expecting evaluable item')
 
     # expr -> T_OPENPAREN andexpr T_CLOSEPAREN | criterion
     def parse_expr(self):
@@ -303,7 +324,7 @@ class AstBuilder:
             node = self.parse_andexpr()
             token, val = self.tokenizer.scan()
             if token != 'CLOSEPAREN':
-                raise RuntimeError('expecting close paren')
+                raise SyntaxError('expecting close paren')
             return node
         else:
             return self.parse_criterion()
@@ -344,7 +365,7 @@ class AstBuilder:
 
         token, val = self.tokenizer.scan()
         if token != 'EOF':
-            raise RuntimeError('expecting EOF')
+            raise SyntaxError('expecting EOF')
 
         return node
 
@@ -356,6 +377,44 @@ class Node:
         self.op = op
         self.negate = negate
         self.logger = logging.getLogger('filter.node')
+
+    def value_to_s(self):
+        if self.op == 'STRING':
+            return "'%s'" % self.lhs.replace("'", "\'")
+
+        return str(self.lhs)
+
+    def to_s(self):
+        if self.op in ['NUMBER', 'BOOL', 'STRING',
+                       'IDENTIFIER', 'NONE']:
+            return self.value_to_s()
+
+        if self.op == 'FUNCTION':
+            return '%s(%s)' % (self.lhs, map(lambda x: x.to_s(),
+                                             self.rhs).join(', '))
+
+        if self.op == 'AND' or self.op == 'OR':
+            return '(%s) %s (%s)' % (self.lhs.to_s(), self.op, self.rhs.to_s())
+
+        return '%s %s%s %s' % (self.lhs.to_s(), '!' if self.negate else '',
+                               self.op, self.rhs.to_s())
+
+    def invert(self):
+        # this is kind of strange, as it only inverts things it can invert,
+        # and isn't really complete.  It relies on the kindness of strangers.
+        if self.op == 'AND':
+            return self.lhs.invert() + self.rhs.invert()
+
+        if self.op == '=':
+            return ['%s := %s' % (self.lhs.value_to_s(),
+                                  self.rhs.value_to_s())]
+
+        if self.op == 'IN':
+            return ['%s := union(%s, %s)' % (self.rhs.value_to_s(),
+                                             self.rhs.value_to_s(),
+                                             self.lhs.value_to_s())]
+
+        raise SyntaxError('un-invertable operator: %s' % self.op)
 
     def dotty(self, fd):
         fd.write('"%s" [label = "%s"]' % (id(self), self.op) + ';\n')
@@ -480,7 +539,7 @@ class Node:
 
             if self.op == 'FUNCTION':
                 if not self.lhs in functions:
-                    raise RuntimeError('Cannot find external fn %s' % self.lhs)
+                    raise SyntaxError('unknown function %s' % self.lhs)
 
                 args = map(lambda x: x.eval_node(node, functions), self.rhs)
                 retval = functions[self.lhs](*args)
@@ -537,7 +596,7 @@ class Node:
             except Exception:
                 result = False
         else:
-            raise RuntimeError('bad op token (%s)' % self.op)
+            raise SyntaxError('bad op token (%s)' % self.op)
 
         if self.negate:
             return not result
