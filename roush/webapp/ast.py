@@ -44,6 +44,25 @@ def util_count(ary):
     return len(ary)
 
 
+def util_union(listish1, listish2):
+    # I'm not entirely sure how this should work.. this is
+    # likely not a very useful implementation
+    newlist = None
+
+    if listish1 is None:
+        listish1 = []
+
+    if isinstance(listish1, list):
+        if isinstance(listish2, list):
+            newlist = listish1 + [x for x in listish2 if x not in listish1]
+        else:
+            newlist = listish1
+            if not listish2 in newlist:
+                newlist.append(listish2)
+
+    return newlist
+
+
 def util_filter(node_type, input_filter):
     builder = AstBuilder(FilterTokenizer(), "%s: %s" % (node_type,
                                                         input_filter))
@@ -58,6 +77,14 @@ def util_printf(fmt, *args):
     except Exception:
         return None
 
+default_functions = {'nth': util_nth,
+                     'str': util_str,
+                     'int': util_int,
+                     'max': util_max,
+                     'filter': util_filter,
+                     'count': util_count,
+                     'printf': util_printf,
+                     'union': util_union}
 
 # Stupid tokenizer.  Use:
 #
@@ -185,13 +212,7 @@ class FilterTokenizer:
 # store both tokens and
 class AstBuilder:
     def __init__(self, tokenizer, input_filter,
-                 filter_type=None, functions={'nth': util_nth,
-                                              'str': util_str,
-                                              'int': util_int,
-                                              'max': util_max,
-                                              'filter': util_filter,
-                                              'count': util_count,
-                                              'printf': util_printf}):
+                 filter_type=None, functions=default_functions):
         self.tokenizer = tokenizer
         self.input_filter = input_filter
         self.logger = logging.getLogger('filter.astbuilder')

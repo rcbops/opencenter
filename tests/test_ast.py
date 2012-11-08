@@ -17,6 +17,9 @@ class AstTests(RoushTestCase):
             self._model_update('node', node['id'],
                                parent_id=self.cluster['id'])
 
+        self._model_create('fact', node_id=self.nodes['node-1']['id'],
+                           key='array_fact', value=[1,2])
+
     def tearDown(self):
         for name, node in self.nodes.items():
             self._model_delete('node', node['id'])
@@ -123,6 +126,19 @@ class AstTests(RoushTestCase):
         result = self._model_filter('node', query)
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), len(self.nodes))
+
+    def test_017_union(self):
+        query = 'count(union(facts.array_fact, 3)) > 1'
+        result = self._model_filter('node', query)
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 1)
+        self.assertTrue(result[0]['name'] == 'node-1')
+
+    def test_018_union_of_null(self):
+        query = '("node" in name) and (count(union(facts.array_fact, 3)) = 1)'
+        result = self._model_filter('node', query)
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), len(self.nodes) - 1)
 
 
     # fix this by db abstraction...
