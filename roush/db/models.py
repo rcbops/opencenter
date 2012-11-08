@@ -91,6 +91,24 @@ def task_state_mungery(target, value, oldvalue, initiator):
         target.completed = int(time.time())
 
 
+class Primitives(Base):
+    __tablename__ = 'primitives'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64), unique=True, nullable=False)
+    args = Column(JsonBlob, default=[])
+    constraints = Column(JsonBlob, default=[])
+    consequences = Column(JsonBlob, default=[])
+
+    def __init__(self, id, name, args=None, constraints=None,
+                 consequences=None):
+        self.id = id
+        self.name = name
+        self.args = args
+        self.constraints = constraints
+        self.consequences = consequences
+
+
 class Facts(Base):
     __tablename__ = 'facts'
     id = Column(Integer, primary_key=True)
