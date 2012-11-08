@@ -169,9 +169,21 @@ class Thing(Flask):
 
         def filter_object(what):
             def f():
+                resp = None
+
                 builder = AstBuilder(FilterTokenizer(),
                                      '%s: %s' % (what, request.json['filter']))
-                return jsonify({what: builder.eval()})
+                try:
+                    result = builder.eval()
+                    resp = jsonify({'status': 200,
+                                    'message': 'success',
+                                    what: result})
+                except SyntaxError as e:
+                    resp = jsonify({'status': 400,
+                                    'message': 'Syntax error: %s' % e.msg})
+                    resp.status_code = 400
+
+                return resp
             return f
 
         def filter_object_by_id(what):
