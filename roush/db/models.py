@@ -100,7 +100,8 @@ class Primitives(Base):
     constraints = Column(JsonBlob, default=[])
     consequences = Column(JsonBlob, default=[])
 
-    def __init__(self, id, name, args=None, constraints=None, consequences=None):
+    def __init__(self, id, name, args=None, constraints=None,
+                 consequences=None):
         self.id = id
         self.name = name
         self.args = args
