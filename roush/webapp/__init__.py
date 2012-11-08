@@ -20,7 +20,9 @@ from roush.webapp.facts import bp as facts
 from roush.webapp.filters import bp as filters
 from roush.webapp.index import index
 from roush.webapp.nodes import nodes
+from roush.webapp.primitives import bp as primitives
 from roush.webapp.tasks import bp as tasks
+
 
 
 # Stolen: http://code.activestate.com/recipes/\
@@ -146,6 +148,7 @@ class Thing(Flask):
         self.register_blueprint(adventures, url_prefix='/adventures')
         self.register_blueprint(filters, url_prefix='/filters')
         self.register_blueprint(facts, url_prefix='/facts')
+        self.register_blueprint(primitives, url_prefix='/primitives')
         self.testing = debug
 
         if debug:
