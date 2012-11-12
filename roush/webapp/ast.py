@@ -294,7 +294,6 @@ class ExpressionBuilder(AstBuilder):
         lhs = self.parse_evaluable_item()
         self.logger.debug('lhs: %s' % lhs)
 
-
         token, val = self.tokenizer.scan()
         if token == 'EOF':
             return lhs
@@ -377,21 +376,6 @@ class FilterBuilder(AstBuilder):
 
     def parse(self):
         return self.parse_phrase()
-        if not self.input_type:
-            raise RuntimeError('unknown filter type')
-
-        nodes = api._model_get_all(self.input_type)
-
-        result = []
-
-        for node in nodes:
-            logging.debug('Checking node %s' % node['id'])
-            if root_node.eval_node(node, self.functions):
-                result.append(node)
-
-        logging.debug("Found %d results" % len(result))
-
-        return result
 
     def eval(self):
         # avoid some circular includes
@@ -556,8 +540,8 @@ class Node:
             return self.value_to_s()
 
         if self.op == 'FUNCTION':
-            return '%s(%s)' % (self.lhs, map(lambda x: x.to_s(),
-                                             self.rhs).join(', '))
+            return '%s(%s)' % (self.lhs, ', '. join(map(lambda x: x.to_s(),
+                                                        self.rhs)))
 
         if self.op == 'AND' or self.op == 'OR':
             return '(%s) %s (%s)' % (self.lhs.to_s(), self.op, self.rhs.to_s())
@@ -574,7 +558,6 @@ class Node:
         if self.op == '=':
             return ['%s := %s' % (self.lhs.value_to_s(),
                                   self.rhs.value_to_s())]
-
         if self.op == 'IN':
             return ['%s := union(%s, %s)' % (self.rhs.value_to_s(),
                                              self.rhs.value_to_s(),
@@ -585,19 +568,26 @@ class Node:
     def dotty(self, fd):
         self.logger.debug("Dottying: %s %s %s" % (self.lhs, self.op, self.rhs))
 
-
         lhs_id = 'x'
         rhs_id = 'x'
 
         if self.op in ['NUMBER', 'BOOL', 'STRING', 'IDENTIFIER', 'NONE']:
-            fd.write('"%s" [label = "%s"]' % (id(self), self.lhs) + ';\n')
+            label = self.lhs
+            if self.op == 'STRING':
+                label = "'" + label + "'"
+
+            fd.write('"%s" [label = "%s"]' % (id(self), label) + ';\n')
         elif self.op == 'FUNCTION':
-            fd.write('"%s" [label = "%s"]' % (id(self), self.lhs) + ';\n')
+            fd.write('"%s" [label = "%s()"]' % (id(self), self.lhs) + ';\n')
+            arg = 0
             for d in self.rhs:
+                arg += 1
                 d.dotty(fd)
-                fd.write('"%s" -> "%s"' % (id(self), id(d)) + ';\n')
+                fd.write('"%s" -> "%s" [label="arg%d"]' %
+                         (id(self), id(d), arg) + ';\n')
         else:
-            fd.write('"%s" [label="%s"]' % (str(id(self)), str(self.op)) + ';\n')
+            fd.write('"%s" [label="%s"]' % (str(id(self)),
+                                            str(self.op)) + ';\n')
             self.lhs.dotty(fd)
             self.rhs.dotty(fd)
             fd.write('"%s" -> "%s"' % (id(self), id(self.lhs)) + ';\n')
@@ -767,5 +757,38 @@ class Node:
 
 
 class Solver:
-    def __init__(self, node, constraints):
-        pass
+    def __init__(self, node, cluster, constraints):
+        self.constraints = constraints
+        self.node = node
+        self.consequences = []
+        self.children = []
+        self.logger = logging.getLogger('%s.solver' % __name__)
+
+    def solve(self):
+        import roush.db.api as api
+        # walk through all the primitives, and see what primitives
+        # have constraints that are met, and spin off a new solver
+        # from that state.
+        primitives = api._model_get_all('primitives')
+
+        applied_primitives = []
+
+        for primitive in primitives:
+            self.logger.debug('evaluating primitive %s' % primitive['name'])
+            can_add = True
+            if primitive['constraints'] != []:
+                constraint_filter = ' AND '.join(map(lambda x: '(%s)' % x,
+                                                     primitive.constraints))
+                builder = FilterBuilder(FilterTokenizer, constraint_filter,
+                                        'nodes')
+                root_node = builder.build()
+
+                can_add = root_node.eval_node(self.node)
+
+            self.logger.debug('primitive "%s" meets constraints: %s' %
+                              (primitive['name'], can_add))
+            if can_add:
+                applied_primitives.append(primitive)
+
+        # now we have a list of primitives that can be applied, so
+        # nail down the arguments and apply the primitives
