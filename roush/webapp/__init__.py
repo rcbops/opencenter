@@ -15,7 +15,7 @@ from roush import backends
 from roush.db import api
 from roush.db import models
 from roush.webapp.adventures import bp as adventures
-from roush.webapp.ast import AstBuilder, FilterTokenizer
+from roush.webapp.ast import FilterBuilder, FilterTokenizer
 from roush.webapp.facts import bp as facts
 from roush.webapp.filters import bp as filters
 from roush.webapp.index import index
@@ -171,8 +171,9 @@ class Thing(Flask):
             def f():
                 resp = None
 
-                builder = AstBuilder(FilterTokenizer(),
-                                     '%s: %s' % (what, request.json['filter']))
+                builder = FilterBuilder(
+                    FilterTokenizer(),
+                    '%s: %s' % (what, request.json['filter']))
                 try:
                     result = builder.eval()
                     resp = jsonify({'status': 200,
@@ -190,8 +191,8 @@ class Thing(Flask):
             def f(filter_id):
                 filter_obj = api.filter_get_by_id(filter_id)
                 full_expr = filter_obj['full_expr']
-                builder = AstBuilder(FilterTokenizer(),
-                                     '%s: %s' % (what, full_expr))
+                builder = FilterBuilder(FilterTokenizer(),
+                                        '%s: %s' % (what, full_expr))
 
                 return jsonify({what: builder.eval()})
 

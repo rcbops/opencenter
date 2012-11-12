@@ -13,7 +13,7 @@ from roush.db.database import session
 from roush.db import exceptions
 from roush.db import models
 
-from roush.webapp.ast import AstBuilder, FilterTokenizer
+from roush.webapp.ast import FilterBuilder, FilterTokenizer
 
 LOG = logging.getLogger(__name__)
 
@@ -189,7 +189,7 @@ def _model_get_by_filter(model, filters):
 def _model_query(model, query):
     query = '%s: %s' % (model, query)
 
-    builder = AstBuilder(FilterTokenizer(), query)
+    builder = FilterBuilder(FilterTokenizer(), query)
     result = builder.eval()
 
     return result

@@ -64,8 +64,8 @@ def util_union(listish1, listish2):
 
 
 def util_filter(node_type, input_filter):
-    builder = AstBuilder(FilterTokenizer(), "%s: %s" % (node_type,
-                                                        input_filter))
+    builder = FilterBuilder(FilterTokenizer(), "%s: %s" % (node_type,
+                                                           input_filter))
 
     result = builder.eval()
     return result
@@ -87,6 +87,86 @@ default_functions = {'nth': util_nth,
                      'union': util_union}
 
 
+class AbstractTokenizer(object):
+    def __init__(self):
+        self.tokens = []
+        self.remainer = ''
+        self.logger = logging.getLogger('filter.tokenizer')
+
+    def parse(self, input_expression):
+        self.tokens, self.remainder = self.scanner.scan(input_expression)
+        self.tokens.append(('EOF', None))
+
+        if self.remainder != '':
+            raise RuntimeError(
+                'Cannot parse.  Input: %s\nTokens: %s\nRemainder %s' %
+                (input_filter, self.tokens, self.remainder))
+
+        self.logger.debug('Tokenized %s as %s' %
+                          (input_expression, self.tokens))
+        return True
+
+    def scan(self):
+        self.logger.debug('popping token %s' % str(self.peek()))
+        return self.tokens.pop(0)
+
+    def peek(self):
+        return self.tokens[0]
+
+
+class ExpressionTokenizer(AbstractTokenizer):
+    def __init__(self):
+        super(ExpressionTokenizer, self).__init__()
+
+        self.scanner = re.Scanner([
+            (r":=", self.assignment_op),
+            (r"[ \t\n]+", None),
+            (r"[0-9]+", self.number),
+            (r"none", self.none),
+            (r"true", self.bool_op),
+            (r"false", self.bool_op),
+            (r",", self.comma),
+            (r"\(", self.open_paren),
+            (r"\)", self.close_paren),
+            (r"'([^'\\]*(?:\\.[^'\\]*)*)'", self.qstring),
+            (r'"([^"\\]*(?:\\.[^"\\]*)*)"', self.qstring),
+            (r"[A-Za-z_\.]*", self.identifier),
+        ])
+
+    # token generators
+    def assignment_op(self, scanner, token):
+        return 'OP', token
+
+    def number(self, scanner, token):
+        return 'NUMBER', token
+
+    def identifier(self, scanner, token):
+        return 'IDENTIFIER', token
+
+    def bool_op(self, scanner, token):
+        return 'BOOL', token.upper()
+
+    def qstring(self, scanner, token):
+        whatquote = token[0]
+        otherquote = '\\"'
+        if whatquote == '"':
+            otherquote = "\\'"
+
+        return 'STRING', token[1:-1].replace(otherquote, whatquote)
+
+    def open_paren(self, scanner, token):
+        return 'OPENPAREN', token
+
+    def close_paren(self, scanner, token):
+        return 'CLOSEPAREN', token
+
+    def comma(self, scanner, token):
+        return 'COMMA', token
+
+    def none(self, scanner, token):
+        return 'NONE', token
+
+
 # Stupid tokenizer.  Use:
 #
 # ft.parse(filter)
@@ -100,8 +180,10 @@ default_functions = {'nth': util_nth,
 #
 # it's trivially easy to confuse this lexer.
 #
-class FilterTokenizer:
+class FilterTokenizer(AbstractTokenizer):
     def __init__(self):
+        super(FilterTokenizer, self).__init__()
+
         self.scanner = re.Scanner([
             (r"!", self.negation),
             (r"or", self.or_op),
@@ -122,9 +204,6 @@ class FilterTokenizer:
             (r"\=|\<|\>", self.op),
             (r"[A-Za-z_\.]*", self.identifier),
         ])
-        self.tokens = []
-        self.remainer = ''
-        self.logger = logging.getLogger('filter.tokenizer')
 
     # token generators
     def typedef(self, scanner, token):
@@ -174,24 +253,95 @@ class FilterTokenizer:
     def none(self, scanner, token):
         return 'NONE', token
 
-    def parse(self, input_filter):
-        self.tokens, self.remainder = self.scanner.scan(input_filter)
-        self.tokens.append(('EOF', None))
 
-        if self.remainder != '':
-            raise SyntaxError(
-                'Cannot parse.  Input: %s\nTokens: %s\nRemainder %s' %
-                (input_filter, self.tokens, self.remainder))
+class AstBuilder(object):
+    def __init__(self, tokenizer, input_expression, functions={}):
+        self.tokenizer = tokenizer
+        self.input_expression = input_expression
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug('New builder on expression: %s' %
+                          self.input_expression)
+        self.functions = functions
 
-        self.logger.debug('Tokenized %s as %s' % (input_filter, self.tokens))
-        return True
+    def build(self):
+        self.tokenizer.parse(self.input_expression)
+        root_node = self.parse()
+        return root_node
 
-    def scan(self):
-        self.logger.debug('popping token %s' % str(self.peek()))
-        return self.tokens.pop(0)
+    def eval(self):
+        raise NotImplementedError('eval not implemented')
 
-    def peek(self):
-        return self.tokens[0]
+    def parse(self):
+        raise NotImplementedError('parse not implemented')
+
+
+# these are small expressions.  :)
+# expression -> evalable_item | evalable_item op evalable_item
+# evalable_item -> function(evalable_item[, e_i [, ...]]) | identifier | value
+class ExpressionBuilder(AstBuilder):
+    def __init__(self, tokenizer, input_expression,
+                 input_type=None, functions={}):
+        super(ExpressionBuilder, self).__init__(tokenizer, input_expression,
+                                                functions=functions)
+        self.input_type = input_type
+
+    def parse(self):
+        return self.parse_expression()
+
+    def parse_expression(self):
+        lhs = self.parse_evaluable_item()
+
+        token, val = self.tokenizer.scan()
+        if token == 'EOF':
+            return lhs
+
+        if token != 'OP':
+            raise SyntaxError('Expecting op token')
+
+        op = val
+
+        rhs = self.parse_evaluable_item()
+        return Node(lhs, op, rhs)
+
+    def parse_evaluable_item(self):
+        token, val = self.tokenizer.scan()
+
+        if token == 'NUMBER':
+            return Node(int(val), 'NUMBER', None)
+
+        if token == 'STRING':
+            return Node(str(val), 'STRING', None)
+
+        if token == 'BOOL':
+            return Node(val, 'BOOL', None)
+
+        if token == 'NONE':
+            return Node(None, 'NONE', None)
+
+        if token == 'IDENTIFIER':
+            next_token, next_val = self.tokenizer.peek()
+            if next_token != 'OPENPAREN':
+                return Node(str(val), 'IDENTIFIER', None)
+            else:
+                self.tokenizer.scan()  # eat the paren
+
+                done = False
+                args = []
+                function_name = str(val)
+
+                while not done:
+                    args.append(self.parse_evaluable_item())
+
+                    token, val = self.tokenizer.scan()
+
+                    if token == 'CLOSEPAREN':
+                        # done parsing evaluable item
+                        return Node(function_name, 'FUNCTION', args)
+
+                    if token != 'COMMA':
+                        raise RuntimeError('expecting comma or close paren')
+
+        raise RuntimeError('expecting evaluable item')
 
 
 #
@@ -211,33 +361,42 @@ class FilterTokenizer:
 #
 # Lots of small problems here.. nodes should probably
 # store both tokens and
-class AstBuilder:
-    def __init__(self, tokenizer, input_filter,
-                 filter_type=None, functions=default_functions):
-        self.tokenizer = tokenizer
-        self.input_filter = input_filter
-        self.logger = logging.getLogger('filter.astbuilder')
-        self.logger.debug('Running input filter %s' % input_filter)
-        self.functions = functions
-        self.filter_type = filter_type
+class FilterBuilder(AstBuilder):
+    def __init__(self, tokenizer, input_expression,
+                 input_type=None, functions=default_functions):
+        super(FilterBuilder, self).__init__(tokenizer, input_expression,
+                                            functions=functions)
+        self.input_type = input_type
 
-    def build(self):
-        self.tokenizer.parse(self.input_filter)
+    def parse(self):
+        return self.parse_phrase()
+        if not self.input_type:
+            raise RuntimeError('unknown filter type')
 
-        root_node = self.parse_phrase()
-        return root_node
+        nodes = api._model_get_all(self.input_type)
+
+        result = []
+
+        for node in nodes:
+            logging.debug('Checking node %s' % node['id'])
+            if root_node.eval_node(node, self.functions):
+                result.append(node)
+
+        logging.debug("Found %d results" % len(result))
+
+        return result
 
     def eval(self):
         # avoid some circular includes
         import roush.db.api as api
 
-        # get a list of all the self.filter_types, and eval each in turn
+        # get a list of all the self.input_types, and eval each in turn
         root_node = self.build()
 
-        if not self.filter_type:
+        if not self.input_type:
             raise SyntaxError('unknown filter type')
 
-        nodes = api._model_get_all(self.filter_type)
+        nodes = api._model_get_all(self.input_type)
 
         result = []
 
@@ -358,7 +517,7 @@ class AstBuilder:
         token, val = self.tokenizer.peek()
 
         if token == 'TYPEDEF':
-            self.filter_type = val
+            self.input_type = val
             self.tokenizer.scan()
 
         node = self.parse_andexpr()
@@ -602,3 +761,8 @@ class Node:
             return not result
 
         return result
+
+
+class Solver:
+    def __init__(self, node, constraints):
+        pass
