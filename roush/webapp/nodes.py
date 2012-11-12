@@ -80,8 +80,8 @@ def adventures_by_node_id(node_id):
         all_adventures = api.adventures_get_all()
         available_adventures = []
         for adventure in all_adventures:
-            builder = ast.AstBuilder(ast.FilterTokenizer(),
-                                     adventure['criteria'])
+            builder = ast.FilterBuilder(ast.FilterTokenizer(),
+                                        adventure['criteria'])
             try:
                 root_node = builder.build()
                 if root_node.eval_node(node, builder.functions):
