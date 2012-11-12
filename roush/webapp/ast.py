@@ -100,7 +100,7 @@ class AbstractTokenizer(object):
         if self.remainder != '':
             raise RuntimeError(
                 'Cannot parse.  Input: %s\nTokens: %s\nRemainder %s' %
-                (input_filter, self.tokens, self.remainder))
+                (input_expression, self.tokens, self.remainder))
 
         self.logger.debug('Tokenized %s as %s' %
                           (input_expression, self.tokens))
@@ -289,7 +289,11 @@ class ExpressionBuilder(AstBuilder):
         return self.parse_expression()
 
     def parse_expression(self):
+        self.logger.debug('parsing expression')
+
         lhs = self.parse_evaluable_item()
+        self.logger.debug('lhs: %s' % lhs)
+
 
         token, val = self.tokenizer.scan()
         if token == 'EOF':
@@ -299,8 +303,11 @@ class ExpressionBuilder(AstBuilder):
             raise SyntaxError('Expecting op token')
 
         op = val
+        self.logger.debug('op: %s' % op)
 
         rhs = self.parse_evaluable_item()
+        self.logger.debug('rhs: %s' % rhs)
+
         return Node(lhs, op, rhs)
 
     def parse_evaluable_item(self):
@@ -576,29 +583,25 @@ class Node:
         raise SyntaxError('un-invertable operator: %s' % self.op)
 
     def dotty(self, fd):
-        fd.write('"%s" [label = "%s"]' % (id(self), self.op) + ';\n')
+        self.logger.debug("Dottying: %s %s %s" % (self.lhs, self.op, self.rhs))
+
 
         lhs_id = 'x'
         rhs_id = 'x'
 
-        if isinstance(self.lhs, int) or isinstance(self.lhs, str):
-            lhs_id = str(id(self)) + "lhs"
-            lhs_label = str(self.lhs)
-            fd.write('"%s" [label = "%s"]' % (lhs_id, lhs_label) + ';\n')
+        if self.op in ['NUMBER', 'BOOL', 'STRING', 'IDENTIFIER', 'NONE']:
+            fd.write('"%s" [label = "%s"]' % (id(self), self.lhs) + ';\n')
+        elif self.op == 'FUNCTION':
+            fd.write('"%s" [label = "%s"]' % (id(self), self.lhs) + ';\n')
+            for d in self.rhs:
+                d.dotty(fd)
+                fd.write('"%s" -> "%s"' % (id(self), id(d)) + ';\n')
         else:
-            lhs_id = id(self.lhs)
+            fd.write('"%s" [label="%s"]' % (str(id(self)), str(self.op)) + ';\n')
             self.lhs.dotty(fd)
-
-        if isinstance(self.rhs, int) or isinstance(self.rhs, str):
-            rhs_id = str(id(self)) + "rhs"
-            rhs_label = str(self.rhs)
-            fd.write('"%s" [label = "%s"]' % (rhs_id, rhs_label) + ';\n')
-        else:
-            rhs_id = id(self.rhs)
             self.rhs.dotty(fd)
-
-        fd.write('"%s" -> "%s"' % (id(self), lhs_id) + ';\n')
-        fd.write('"%s" -> "%s"' % (id(self), rhs_id) + ';\n')
+            fd.write('"%s" -> "%s"' % (id(self), id(self.lhs)) + ';\n')
+            fd.write('"%s" -> "%s"' % (id(self), id(self.rhs)) + ';\n')
 
     def eval_identifier(self, node, identifier):
         import roush.db.api as api
