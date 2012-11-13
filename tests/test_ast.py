@@ -19,6 +19,10 @@ class AstTests(RoushTestCase):
 
         self._model_create('fact', node_id=self.nodes['node-1']['id'],
                            key='array_fact', value=[1, 2])
+        self._model_create('fact', node_id=self.nodes['node-1']['id'],
+                           key='node-1', value=True)
+        self._model_create('fact', node_id=self.nodes['node-1']['id'],
+                           key='selfref', value='node-1')
 
     def tearDown(self):
         for name, node in self.nodes.items():
@@ -147,6 +151,17 @@ class AstTests(RoushTestCase):
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), len(self.nodes) - 1)
 
+    def test_019_identifier_interpolation(self):
+        query = 'facts.{name} = true'
+        result = self._model_filter('node', query)
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 1)
+
+    def test_020_string_interpolation(self):
+        query = 'facts.selfref = "{name}"'
+        result = self._model_filter('node', query)
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 1)
 
     # fix this by db abstraction...
     # def test_017_relations(self):
