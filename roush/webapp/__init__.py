@@ -23,7 +23,6 @@ from roush.webapp.nodes import nodes
 from roush.webapp.primitives import bp as primitives
 from roush.webapp.tasks import bp as tasks
 
-
 # Stolen: http://code.activestate.com/recipes/\
 #         577911-context-manager-for-a-daemon-pid-file/
 class PidFile(object):
