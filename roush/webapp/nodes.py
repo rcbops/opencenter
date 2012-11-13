@@ -15,6 +15,7 @@ nodes = flask.Blueprint('nodes', __name__)
 
 #all node activities require authentication
 
+
 @nodes.route('/', methods=['GET', 'POST'])
 @auth.requires_auth(roles=["admin", "user", "machine"])
 def list_nodes():
