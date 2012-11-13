@@ -8,11 +8,16 @@ from roush.db import exceptions
 from roush.webapp import ast
 from roush.webapp import utility
 from roush.webapp import errors
+from roush.webapp import auth
+from functools import partial
 
 nodes = flask.Blueprint('nodes', __name__)
 
+#all node activities require authentication
+
 
 @nodes.route('/', methods=['GET', 'POST'])
+@auth.requires_auth(roles=["admin", "user", "machine"])
 def list_nodes():
     if flask.request.method == 'POST':
         data = flask.request.json
