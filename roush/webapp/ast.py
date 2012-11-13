@@ -130,7 +130,7 @@ class ExpressionTokenizer(AbstractTokenizer):
             (r"\)", self.close_paren),
             (r"'([^'\\]*(?:\\.[^'\\]*)*)'", self.qstring),
             (r'"([^"\\]*(?:\\.[^"\\]*)*)"', self.qstring),
-            (r"[A-Za-z_\.]*", self.identifier),
+            (r"[A-Za-z_\-\.{}]*", self.identifier),
         ])
 
     # token generators
@@ -202,7 +202,7 @@ class FilterTokenizer(AbstractTokenizer):
             (r"[a-zA-Z_]*:", self.typedef),
             (r"\<\=|\>\=", self.op),
             (r"\=|\<|\>", self.op),
-            (r"[A-Za-z_\.]*", self.identifier),
+            (r"[A-Za-z_\.\-{}]*", self.identifier),
         ])
 
     # token generators
@@ -593,7 +593,7 @@ class Node:
             fd.write('"%s" -> "%s"' % (id(self), id(self.lhs)) + ';\n')
             fd.write('"%s" -> "%s"' % (id(self), id(self.rhs)) + ';\n')
 
-    def eval_identifier(self, node, identifier):
+    def eval_identifier(self, node, identifier, symbol_table={}):
         import roush.db.api as api
 
         self.logger.debug('resolving identifier "%s" on:\n%s' %
@@ -601,6 +601,18 @@ class Node:
 
         if not identifier:
             return None
+
+        if identifier in symbol_table:
+            return symbol_table[identifier]
+
+        # check for string interpolation in identifier.
+        match = re.match("(.*)\{(.*?)}(.*)", identifier)
+        if match is not None:
+            resolved_match_term = self.eval_identifier(node, match.group(2))
+            new_identifier = "%s%s%s" % (match.group(1), resolved_match_term,
+                                         match.group(3))
+
+            return self.eval_identifier(node, new_identifier)
 
         if identifier.find('.') == -1:
             if identifier in node:
@@ -672,7 +684,14 @@ class Node:
         if self.op in ['STRING', 'NUMBER', 'BOOL',
                        'IDENTIFIER', 'FUNCTION', 'NONE']:
             if self.op == 'STRING':
+                # check for string interpolation in identifier.
                 retval = str(self.lhs)
+                match = re.match("(.*)\{(.*?)}(.*)", retval)
+                if match is not None:
+                    resolved_match_term = self.eval_identifier(node,
+                                                               match.group(2))
+                    retval = "%s%s%s" % (match.group(1), resolved_match_term,
+                                         match.group(3))
 
             if self.op == 'NUMBER':
                 retval = int(self.lhs)
