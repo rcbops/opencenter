@@ -140,7 +140,7 @@ def tree_by_id(node_id):
 
         for child in children:
             if child['id'] in seen_nodes:
-                self.logger.error("Loop detected in data model")
+                flask.current_app.logger.error("Loop detected in data model")
             else:
                 seen_nodes.append(child['id'])
 
