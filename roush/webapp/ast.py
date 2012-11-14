@@ -793,6 +793,9 @@ class Solver:
         # see if the consequence expression can be forced
         # into the constraint form.
 
+        self.logger.debug('Trying to coerce %s' % consequence_node.to_s())
+        self.logger.debug('... to %s' % constraint_node.to_s())
+
         if constraint_node.op not in ['IDENTIFIER', 'STRING']:
             self.logger.debug('Cannot coerce vars not IDENTIFIER or STRING')
             return False, {}
@@ -839,10 +842,10 @@ class Solver:
         # symbol
 
         if constraint_ast.op != consequence_ast.op:
-            return False
+            return False, {}
 
         if constraint_ast.op != ':=':
-            return False
+            return False, {}
 
         # see if the "assigned" expression (lhs) is (or can be coerced)
         # into the other lhs.
@@ -853,7 +856,7 @@ class Solver:
                                                  consequence_ast.rhs)
 
         if not can_coerce_rhs or not can_coerce_lhs:
-            return False
+            return False, {}
 
         self.logger.debug('lhs bindings: %s' % ns_lhs)
         self.logger.debug('rhs bindings: %s' % ns_rhs)
@@ -864,12 +867,12 @@ class Solver:
                 self.logger.debug('cannot solve %s = %s AND %s' %
                                   (key, ns_rhs[key], ns_lhs[key]))
 
-                return False
+                return False, {}
 
         for key in ns_rhs.keys():
             ns_lhs[key] = ns_rhs[key]
 
-        return (True, ns_lhs)
+        return True, ns_lhs
 
     def solve_one(self):
         import roush.db.api as api
@@ -981,6 +984,7 @@ class Solver:
                               primitive['name'])
             for k, v in self.namespaces[primitive['name']].items():
                 self.logger.debug('"%s" => "%s"' % (k, v))
+
 
     def solve_arg(self, name, arg, ns):
         import roush.db.api as api
