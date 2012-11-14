@@ -787,6 +787,7 @@ class Solver:
         self.consequences = []
         self.children = []
         self.logger = logging.getLogger('%s.solver' % __name__)
+        self.namespaces = {}
 
     def can_coerce(self, constraint_node, consequence_node):
         # see if the consequence expression can be forced
@@ -926,12 +927,24 @@ class Solver:
             self.logger.debug('checking forwardness of %s' % primitive['name'])
 
             can_satisfy = False
+            ns = {}
+
             for constraint_ast in expression_asts:
                 for consequence in primitive['consequences']:
                     e_builder.set_input(consequence)
                     consequence_ast = e_builder.build()
-                    can_satisfy = can_satisfy or self.can_solve(constraint_ast,
-                                                                consequence_ast)
+
+                    satisfaction, ns = self.can_solve(constraint_ast,
+                                                      consequence_ast)
+
+                    if satisfaction:
+                        can_satisfy = True
+                        self.namespaces[primitive['name']] = {
+                            'primitive_id': primitive['id']}
+                        for k, v in ns.items():
+                            self.namespaces[primitive['name']][k] = v
+                        break;
+
             if not can_satisfy:
                 bad_primitives.append(primitive)
                 unmet_primitives.append('%s: does not further goal' %
@@ -942,48 +955,58 @@ class Solver:
         for primitive in bad_primitives:
             applied_primitives.remove(primitive)
 
-
         # now we have a list of primitives that can be applied, so
         # nail down the arguments and apply the primitives
-        # for primitive in applied_primitives:
-        #     self.logger.debug('Solving args for %s' % primitive['name'])
+        for primitive in applied_primitives:
+            self.logger.debug('Solving args for %s' % primitive['name'])
 
-        #     for arg, val in primitive['args'].items():
-        #         self.logger.debug('solving %s' % arg)
-        #         result = self.solve_arg(arg, val, primitive['consequences'])
-        #         self.logger.debug('%s -> %s' % (arg, result))
+            for arg, val in primitive['args'].items():
+                self.logger.debug('solving %s' % arg)
+                solvable, result = self.solve_arg(
+                    arg, val, self.namespaces[primitive['name']])
 
+                if solvable:
+                    self.namespaces[primitive['name']][arg] = result
+                else:
+                    pass
+
+                self.logger.debug('Arg "%s" solvable: %s (%s)' % (
+                        arg, solvable, result))
 
         self.logger.debug('unapplied_primitives: %s' %
                           ', '.join(unmet_primitives))
-        self.logger.debug('met primitives: %s' %
-                          ', '.join([x['name'] for x in applied_primitives]))
 
-    def solve_arg(self, name, arg, consequences):
+        for primitive in applied_primitives:
+            self.logger.debug('Met primitive "%s."  Namespace:' %
+                              primitive['name'])
+            for k, v in self.namespaces[primitive['name']].items():
+                self.logger.debug('"%s" => "%s"' % (k, v))
+
+    def solve_arg(self, name, arg, ns):
         import roush.db.api as api
+
+        if name in ns:
+            return (True, ns[name])
 
         if arg['type'] == 'interface':
             iname = arg['name']
             int_query = 'filter_type="interface" and name="%s"' % iname
             iface = api._model_query('filters', int_query)
             if len(iface) == 0:
-                return '@UNSOLVABLE: unknown interface "%s"' % iname
+                return (False, 'unkonwn interface "%s"' % iname)
 
             if len(iface) > 1:
-                return '@UNSOLVABLE: multiple definitions of "%s"' % iname
+                return (False, 'multiple definitions of "%s"' % iname)
 
             iface_query = iface[0]['full_expr']
             nodes = api._model_query('nodes', iface_query)
 
             if len(nodes) == 0:
-                return '@UNSOLVABLE: unsatisifed interface "%s"' % iname
+                return (False, 'unsatisifed interface "%s"' % iname)
 
             if len(nodes) == 1:
                 return ifaces[0]['id']
 
-            return "@CHOOSE " % ([x['id'] for x in ifaces],)
+            return (False, 'Choice: %s' % ([x['id'] for x in ifaces],))
 
-        if arg['required'] == False:
-            return "@USER"  # Is this true?
-
-        self.logger.debug('finding constraint match for %s' % name)
+        return (False, 'Somehow unknowable')
