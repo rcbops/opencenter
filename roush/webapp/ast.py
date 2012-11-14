@@ -573,9 +573,6 @@ class Node:
     def dotty(self, fd):
         self.logger.debug("Dottying: %s %s %s" % (self.lhs, self.op, self.rhs))
 
-        lhs_id = 'x'
-        rhs_id = 'x'
-
         if self.op in ['NUMBER', 'BOOL', 'STRING', 'IDENTIFIER', 'NONE']:
             label = self.lhs
             if self.op == 'STRING':
@@ -827,7 +824,7 @@ class Solver:
         if len(match.group(3)):
             value = value[:-len(match.group(3))]
 
-        return True, { key: value }
+        return True, {key: value}
 
     def can_solve(self, constraint_ast, consequence_ast):
         conseq_string = consequence_ast.to_s()
@@ -946,7 +943,7 @@ class Solver:
                             'primitive_id': primitive['id']}
                         for k, v in ns.items():
                             self.namespaces[primitive['name']][k] = v
-                        break;
+                        break
 
             if not can_satisfy:
                 bad_primitives.append(primitive)
@@ -973,8 +970,8 @@ class Solver:
                 else:
                     pass
 
-                self.logger.debug('Arg "%s" solvable: %s (%s)' % (
-                        arg, solvable, result))
+                self.logger.debug('Arg "%s" solvable: %s (%s)' %
+                                  (arg, solvable, result))
 
         self.logger.debug('unapplied_primitives: %s' %
                           ', '.join(unmet_primitives))
@@ -984,7 +981,6 @@ class Solver:
                               primitive['name'])
             for k, v in self.namespaces[primitive['name']].items():
                 self.logger.debug('"%s" => "%s"' % (k, v))
-
 
     def solve_arg(self, name, arg, ns):
         import roush.db.api as api
@@ -1009,8 +1005,8 @@ class Solver:
                 return (False, 'unsatisifed interface "%s"' % iname)
 
             if len(nodes) == 1:
-                return ifaces[0]['id']
+                return nodes[0]['id']
 
-            return (False, 'Choice: %s' % ([x['id'] for x in ifaces],))
+            return (False, 'Choice: %s' % ([x['id'] for x in nodes],))
 
         return (False, 'Somehow unknowable')
