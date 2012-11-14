@@ -255,13 +255,18 @@ class FilterTokenizer(AbstractTokenizer):
 
 
 class AstBuilder(object):
-    def __init__(self, tokenizer, input_expression, functions={}):
+    def __init__(self, tokenizer, input_expression=None, functions={}):
         self.tokenizer = tokenizer
         self.input_expression = input_expression
         self.logger = logging.getLogger(__name__)
         self.logger.debug('New builder on expression: %s' %
                           self.input_expression)
         self.functions = functions
+
+    def set_input(self, input_expression):
+        self.logger.debug('resetting input expression to %s' %
+                          input_expression)
+        self.input_expression = input_expression
 
     def build(self):
         self.tokenizer.parse(self.input_expression)
@@ -279,7 +284,7 @@ class AstBuilder(object):
 # expression -> evalable_item | evalable_item op evalable_item
 # evalable_item -> function(evalable_item[, e_i [, ...]]) | identifier | value
 class ExpressionBuilder(AstBuilder):
-    def __init__(self, tokenizer, input_expression,
+    def __init__(self, tokenizer, input_expression=None,
                  input_type=None, functions={}):
         super(ExpressionBuilder, self).__init__(tokenizer, input_expression,
                                                 functions=functions)
@@ -368,7 +373,7 @@ class ExpressionBuilder(AstBuilder):
 # Lots of small problems here.. nodes should probably
 # store both tokens and
 class FilterBuilder(AstBuilder):
-    def __init__(self, tokenizer, input_expression,
+    def __init__(self, tokenizer, input_expression=None,
                  input_type=None, functions=default_functions):
         super(FilterBuilder, self).__init__(tokenizer, input_expression,
                                             functions=functions)
@@ -567,9 +572,6 @@ class Node:
 
     def dotty(self, fd):
         self.logger.debug("Dottying: %s %s %s" % (self.lhs, self.op, self.rhs))
-
-        lhs_id = 'x'
-        rhs_id = 'x'
 
         if self.op in ['NUMBER', 'BOOL', 'STRING', 'IDENTIFIER', 'NONE']:
             label = self.lhs
@@ -782,14 +784,120 @@ class Solver:
         self.consequences = []
         self.children = []
         self.logger = logging.getLogger('%s.solver' % __name__)
+        self.namespaces = {}
 
-    def solve(self):
+    def can_coerce(self, constraint_node, consequence_node):
+        # see if the consequence expression can be forced
+        # into the constraint form.
+
+        self.logger.debug('Trying to coerce %s' % consequence_node.to_s())
+        self.logger.debug('... to %s' % constraint_node.to_s())
+
+        if constraint_node.op not in ['IDENTIFIER', 'STRING']:
+            self.logger.debug('Cannot coerce vars not IDENTIFIER or STRING')
+            return False, {}
+
+        if consequence_node.op not in ['IDENTIFIER', 'STRING']:
+            self.logger.debug('Cannot coerce vars not IDENTIFIER or STRING')
+            return False, {}
+
+        if consequence_node.op != constraint_node.op:
+            self.logger.debug('Cannot coerce dissimilar op types')
+            return False, {}
+
+        if consequence_node.lhs == constraint_node.lhs:
+            self.logger.debug('Equal literals!  Success!')
+            return True, {}
+
+        match = re.match("(.*)\{(.*?)}(.*)", consequence_node.lhs)
+        if match is None:
+            self.logger.debug('dissimilar literals')
+            return False, {}
+
+        if not constraint_node.lhs.startswith(match.group(1)) or \
+                not constraint_node.lhs.endswith(match.group(3)):
+            self.logger.debug('cant coerce even with var binding')
+            return False, {}
+
+        key = match.group(2)
+        value = constraint_node.lhs[len(match.group(1)):]
+        if len(match.group(3)):
+            value = value[:-len(match.group(3))]
+
+        return True, {key: value}
+
+    def can_solve(self, constraint_ast, consequence_ast):
+        conseq_string = consequence_ast.to_s()
+        constr_string = constraint_ast.to_s()
+
+        self.logger.debug('are "%s" and "%s" ast-illy identical?' %
+                          (conseq_string, constr_string))
+
+        # for a consequence to be _real_, it must do something.
+        # so something must be assigned to something, or at the minimum,
+        # some expression must be assigned to a (potentially expanded)
+        # symbol
+
+        if constraint_ast.op != consequence_ast.op:
+            return False, {}
+
+        if constraint_ast.op != ':=':
+            return False, {}
+
+        # see if the "assigned" expression (lhs) is (or can be coerced)
+        # into the other lhs.
+        can_coerce_lhs, ns_lhs = self.can_coerce(constraint_ast.lhs,
+                                                 consequence_ast.lhs)
+
+        can_coerce_rhs, ns_rhs = self.can_coerce(constraint_ast.rhs,
+                                                 consequence_ast.rhs)
+
+        if not can_coerce_rhs or not can_coerce_lhs:
+            return False, {}
+
+        self.logger.debug('lhs bindings: %s' % ns_lhs)
+        self.logger.debug('rhs bindings: %s' % ns_rhs)
+
+        key_union = [x for x in ns_lhs.keys() if x in ns_rhs.keys()]
+        for key in key_union:
+            if ns_rhs[key] != ns_lhs[key]:
+                self.logger.debug('cannot solve %s = %s AND %s' %
+                                  (key, ns_rhs[key], ns_lhs[key]))
+
+                return False, {}
+
+        for key in ns_rhs.keys():
+            ns_lhs[key] = ns_rhs[key]
+
+        return True, ns_lhs
+
+    def solve_one(self):
         import roush.db.api as api
+        # first, build up asts of all my unsolved constraints
+        f_builder = FilterBuilder(FilterTokenizer())
+        e_builder = ExpressionBuilder(ExpressionTokenizer())
+
+        constraint_asts = []
+        for constraint in self.constraints:
+            self.logger.debug('ast-izing constraint %s' % constraint)
+            f_builder.set_input(constraint)
+            root_node = f_builder.build()
+            constraint_asts.append(root_node)
+
+        expression_asts = []
+        for constraint_ast in constraint_asts:
+            for expression in constraint_ast.invert():
+                self.logger.debug('ast-izing inv constraint %s' % expression)
+                e_builder.set_input(expression)
+                root_node = e_builder.build()
+                expression_asts.append(root_node)
+
         # walk through all the primitives, and see what primitives
         # have constraints that are met, and spin off a new solver
         # from that state.
         primitives = api._model_get_all('primitives')
 
+        unmet_primitives = []
         applied_primitives = []
 
         for primitive in primitives:
@@ -803,11 +911,102 @@ class Solver:
                 root_node = builder.build()
 
                 can_add = root_node.eval_node(self.node)
-
             self.logger.debug('primitive "%s" meets constraints: %s' %
                               (primitive['name'], can_add))
             if can_add:
                 applied_primitives.append(primitive)
+            else:
+                unmet_primitives.append("%s: could not meet constraints" %
+                                        primitive['name'])
+
+        # see if any of the appliable primitives have consequences that
+        # could forward us to our goal.
+        bad_primitives = []
+
+        for primitive in applied_primitives:
+            self.logger.debug('checking forwardness of %s' % primitive['name'])
+
+            can_satisfy = False
+            ns = {}
+
+            for constraint_ast in expression_asts:
+                for consequence in primitive['consequences']:
+                    e_builder.set_input(consequence)
+                    consequence_ast = e_builder.build()
+
+                    satisfaction, ns = self.can_solve(constraint_ast,
+                                                      consequence_ast)
+
+                    if satisfaction:
+                        can_satisfy = True
+                        self.namespaces[primitive['name']] = {
+                            'primitive_id': primitive['id']}
+                        for k, v in ns.items():
+                            self.namespaces[primitive['name']][k] = v
+                        break
+
+            if not can_satisfy:
+                bad_primitives.append(primitive)
+                unmet_primitives.append('%s: does not further goal' %
+                                        primitive['name'])
+            self.logger.debug('%s can forward: %s' % (primitive['name'],
+                                                      can_satisfy))
+
+        for primitive in bad_primitives:
+            applied_primitives.remove(primitive)
 
         # now we have a list of primitives that can be applied, so
         # nail down the arguments and apply the primitives
+        for primitive in applied_primitives:
+            self.logger.debug('Solving args for %s' % primitive['name'])
+
+            for arg, val in primitive['args'].items():
+                self.logger.debug('solving %s' % arg)
+                solvable, result = self.solve_arg(
+                    arg, val, self.namespaces[primitive['name']])
+
+                if solvable:
+                    self.namespaces[primitive['name']][arg] = result
+                else:
+                    pass
+
+                self.logger.debug('Arg "%s" solvable: %s (%s)' %
+                                  (arg, solvable, result))
+
+        self.logger.debug('unapplied_primitives: %s' %
+                          ', '.join(unmet_primitives))
+
+        for primitive in applied_primitives:
+            self.logger.debug('Met primitive "%s."  Namespace:' %
+                              primitive['name'])
+            for k, v in self.namespaces[primitive['name']].items():
+                self.logger.debug('"%s" => "%s"' % (k, v))
+
+    def solve_arg(self, name, arg, ns):
+        import roush.db.api as api
+
+        if name in ns:
+            return (True, ns[name])
+
+        if arg['type'] == 'interface':
+            iname = arg['name']
+            int_query = 'filter_type="interface" and name="%s"' % iname
+            iface = api._model_query('filters', int_query)
+            if len(iface) == 0:
+                return (False, 'unkonwn interface "%s"' % iname)
+
+            if len(iface) > 1:
+                return (False, 'multiple definitions of "%s"' % iname)
+
+            iface_query = iface[0]['full_expr']
+            nodes = api._model_query('nodes', iface_query)
+
+            if len(nodes) == 0:
+                return (False, 'unsatisifed interface "%s"' % iname)
+
+            if len(nodes) == 1:
+                return nodes[0]['id']
+
+            return (False, 'Choice: %s' % ([x['id'] for x in nodes],))
+
+        return (False, 'Somehow unknowable')
