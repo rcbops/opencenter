@@ -7,6 +7,8 @@ import unittest2
 from roush.db.database import init_db
 from roush import webapp
 
+import util
+
 
 def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
@@ -207,3 +209,41 @@ class NodeInvalidHTTPMethodTests(unittest2.TestCase):
 
     def test_405_returned_by_patch_on_nodes_with_id(self):
         self._execute_method('patch', '/nodes/1', 405)
+
+
+class NodeOtherTests(util.RoushTestCase):
+    def setUp(self):
+        self.cluster = self._model_create('node', name='cluster-1')
+        self.node = self._model_create('node', name='node-1',
+                                       parent_id=self.cluster['id'])
+
+    def tearDown(self):
+        self._model_delete('node', self.node['id'])
+        self._model_delete('node', self.cluster['id'])
+
+    def test_hierarchical_tree_view(self):
+        resp = self._client_request('get', '/nodes/%s/tree' %
+                                    self.cluster['id'])
+
+        self.assertEquals(resp.status_code, 200)
+
+        data = json.loads(resp.data)['tree']
+
+        self.assertEquals(data['id'], self.cluster['id'])
+        self.assertEquals(len(data['children']), 1)
+        self.assertEquals(data['children'][0]['id'], self.node['id'])
+
+    def test_non_hierarchical_tree_view(self):
+        resp = self._client_request('get', '/nodes/%s/tree' %
+                                    self.node['id'])
+
+        self.assertEquals(resp.status_code, 200)
+
+        data = json.loads(resp.data)['tree']
+
+        self.assertEquals(data['id'], self.node['id'])
+        self.assertTrue('children' not in data)
+
+    def test_bad_tree_view(self):
+        resp = self._client_request('get', '/nodes/99/tree')
+        self.assertEquals(resp.status_code, 404)
