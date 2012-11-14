@@ -127,6 +127,40 @@ def attributes_by_node_id(node_id, key):
         return resp
 
 
+@nodes.route('/<node_id>/tree', methods=['GET'])
+def tree_by_id(node_id):
+    recurse = 'recurse' in flask.request.args
+    seen_nodes = []
+
+    def fill_children(node_hash):
+        node_id = node_hash['id']
+
+        children = api._model_get_by_filter(
+            'nodes', {'parent_id': node_id})
+
+        for child in children:
+            if child['id'] in seen_nodes:
+                self.logger.error("Loop detected in data model")
+            else:
+                seen_nodes.append(child['id'])
+
+                if not 'children' in node_hash:
+                    node_hash['children'] = []
+
+                node_hash['children'].append(child)
+                fill_children(child)
+
+    node = api.node_get_by_id(node_id)
+    seen_nodes.append(node_id)
+
+    if not node:
+        return errors.http_not_found()
+    else:
+        fill_children(node)
+        resp = flask.jsonify({'tree': node})
+        return resp
+
+
 @nodes.route('/<node_id>', methods=['GET', 'PUT', 'DELETE'])
 def node_by_id(node_id):
     if flask.request.method == 'PUT':
@@ -147,6 +181,7 @@ def node_by_id(node_id):
     else:
         # node = api.node_get_by_filter({'id': node_id})
         node = api.node_get_by_id(node_id)
+
         if not node:
             return errors.http_not_found()
         else:
