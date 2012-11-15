@@ -616,7 +616,6 @@ class Node:
 
         return identifier
 
-
     def assign_identifier(self, node, identifier, value, symbol_table={}):
         # there are all kinds of places where this can go wrong.
         # we can create arbitrary facts, but not attributes, and here
@@ -766,7 +765,8 @@ class Node:
                 if not self.lhs in functions:
                     raise SyntaxError('unknown function %s' % self.lhs)
 
-                args = map(lambda x: x.eval_node(node, functions, symbol_table),
+                args = map(lambda x: x.eval_node(node,
+                                                 functions, symbol_table),
                            self.rhs)
 
                 retval = functions[self.lhs](*args)
