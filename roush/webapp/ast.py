@@ -255,13 +255,15 @@ class FilterTokenizer(AbstractTokenizer):
 
 
 class AstBuilder(object):
-    def __init__(self, tokenizer, input_expression=None, functions={}):
+    def __init__(self, tokenizer, input_expression=None, functions={},
+                 ns={}):
         self.tokenizer = tokenizer
         self.input_expression = input_expression
         self.logger = logging.getLogger(__name__)
         self.logger.debug('New builder on expression: %s' %
                           self.input_expression)
         self.functions = functions
+        self.ns = ns
 
     def set_input(self, input_expression):
         self.logger.debug('resetting input expression to %s' %
@@ -285,9 +287,9 @@ class AstBuilder(object):
 # evalable_item -> function(evalable_item[, e_i [, ...]]) | identifier | value
 class ExpressionBuilder(AstBuilder):
     def __init__(self, tokenizer, input_expression=None,
-                 input_type=None, functions={}):
+                 input_type=None, functions={"union": util_union}, ns={}):
         super(ExpressionBuilder, self).__init__(tokenizer, input_expression,
-                                                functions=functions)
+                                                functions=functions, ns=ns)
         self.input_type = input_type
 
     def parse(self):
@@ -374,9 +376,11 @@ class ExpressionBuilder(AstBuilder):
 # store both tokens and
 class FilterBuilder(AstBuilder):
     def __init__(self, tokenizer, input_expression=None,
-                 input_type=None, functions=default_functions):
+                 input_type=None, functions=default_functions,
+                 ns={}):
         super(FilterBuilder, self).__init__(tokenizer, input_expression,
-                                            functions=functions)
+                                            functions=functions,
+                                            ns=ns)
         self.input_type = input_type
 
     def parse(self):
@@ -398,7 +402,7 @@ class FilterBuilder(AstBuilder):
 
         for node in nodes:
             logging.debug('Checking node %s' % node['id'])
-            if root_node.eval_node(node, self.functions):
+            if root_node.eval_node(node, self.functions, self.ns):
                 result.append(node)
 
         logging.debug("Found %d results" % len(result))
@@ -595,11 +599,57 @@ class Node:
             fd.write('"%s" -> "%s"' % (id(self), id(self.lhs)) + ';\n')
             fd.write('"%s" -> "%s"' % (id(self), id(self.rhs)) + ';\n')
 
+    def canonicalize_identifier(self, node, identifier, symbol_table={}):
+        if not identifier:
+            return None
+
+        # check for string interpolation in identifier.
+        match = re.match("(.*)\{(.*?)}(.*)", identifier)
+        if match is not None:
+            resolved_match_term = self.eval_identifier(node, match.group(2),
+                                                       symbol_table)
+            new_identifier = "%s%s%s" % (match.group(1), resolved_match_term,
+                                         match.group(3))
+
+            return self.canonicalize_identifier(node, new_identifier,
+                                                symbol_table)
+
+        return identifier
+
+
+    def assign_identifier(self, node, identifier, value, symbol_table={}):
+        # there are all kinds of places where this can go wrong.
+        # we can create arbitrary facts, but not attributes, and here
+        # we are just assuming that an expressed consequence is a valid
+        # one.
+        #
+        # right now we'll assume that if this is expressed as a consequence,
+        # it's actually realizable in the underlying data structure.  If not,
+        # well... bad things.
+        if not identifier:
+            return None
+
+        self.logger.debug('setting %s to %s' % (identifier, value))
+        canonical = self.canonicalize_identifier(node, identifier,
+                                                 symbol_table)
+
+        self.logger.debug('canonicalized %s to %s' % (identifier, canonical))
+        if canonical.find('.') == -1:
+            node[canonical] = value
+        else:
+            (attr, rest) = canonical.split('.', 1)
+
+            if attr not in node:
+                node[attr] = {}
+
+            self.assign_identifier(node[attr], rest, value,
+                                   symbol_table)
+
     def eval_identifier(self, node, identifier, symbol_table={}):
         import roush.db.api as api
 
-        self.logger.debug('resolving identifier "%s" on:\n%s' %
-                          (identifier, node))
+        self.logger.debug('resolving identifier "%s" on:\n%s with ns %s' %
+                          (identifier, node, symbol_table))
 
         if not identifier:
             return None
@@ -614,7 +664,7 @@ class Node:
             new_identifier = "%s%s%s" % (match.group(1), resolved_match_term,
                                          match.group(3))
 
-            return self.eval_identifier(node, new_identifier)
+            return self.eval_identifier(node, new_identifier, symbol_table)
 
         if identifier.find('.') == -1:
             if identifier in node:
@@ -631,7 +681,7 @@ class Node:
         self.logger.debug('checking for attr %s in %s' % (attr, node))
 
         if attr in node:
-            return self.eval_identifier(node[attr], rest)
+            return self.eval_identifier(node[attr], rest, symbol_table)
         else:
             self.logger.debug('no attr... try %s in link %s' % (rest, attr))
 
@@ -649,7 +699,7 @@ class Node:
                                           str(e))
                         return None
 
-                    return self.eval_identifier(new_node, rest)
+                    return self.eval_identifier(new_node, rest, symbol_table)
 
         return None
 
@@ -674,14 +724,15 @@ class Node:
 
         return '(%s) %s (%s)' % (str(self.lhs), self.op, str(self.rhs))
 
-    def eval_node(self, node, functions):
+    def eval_node(self, node, functions=default_functions, symbol_table={}):
         rhs_val = None
         lhs_val = None
         result = False
 
         retval = None
 
-        self.logger.debug('evaluating %s' % str(self))
+        self.logger.debug('evaluating %s with symbol_table %s' %
+                          (str(self), symbol_table))
 
         if self.op in ['STRING', 'NUMBER', 'BOOL',
                        'IDENTIFIER', 'FUNCTION', 'NONE']:
@@ -691,7 +742,8 @@ class Node:
                 match = re.match("(.*)\{(.*?)}(.*)", retval)
                 if match is not None:
                     resolved_match_term = self.eval_identifier(node,
-                                                               match.group(2))
+                                                               match.group(2),
+                                                               symbol_table)
                     retval = "%s%s%s" % (match.group(1), resolved_match_term,
                                          match.group(3))
 
@@ -705,7 +757,7 @@ class Node:
                     retval = False
 
             if self.op == 'IDENTIFIER':
-                retval = self.eval_identifier(node, self.lhs)
+                retval = self.eval_identifier(node, self.lhs, symbol_table)
 
             if self.op == 'NONE':
                 retval = None
@@ -714,7 +766,9 @@ class Node:
                 if not self.lhs in functions:
                     raise SyntaxError('unknown function %s' % self.lhs)
 
-                args = map(lambda x: x.eval_node(node, functions), self.rhs)
+                args = map(lambda x: x.eval_node(node, functions, symbol_table),
+                           self.rhs)
+
                 retval = functions[self.lhs](*args)
 
             self.logger.debug('evaluated %s to %s' % (str(self), retval))
@@ -723,8 +777,8 @@ class Node:
         self.logger.debug('arithmetic op, type %s' % self.op)
 
         # otherwise arithmetic op
-        lhs_val = self.lhs.eval_node(node, functions)
-        rhs_val = self.rhs.eval_node(node, functions)
+        lhs_val = self.lhs.eval_node(node, functions, symbol_table)
+        rhs_val = self.rhs.eval_node(node, functions, symbol_table)
 
         # wrong types is always false
         if type(lhs_val) == unicode:
@@ -768,6 +822,13 @@ class Node:
                     result = True
             except Exception:
                 result = False
+        elif self.op == ':=':
+            if self.lhs.op != 'IDENTIFIER':
+                raise SyntaxError('must assign to identifier: %s' %
+                                  (self.lhs.lhs))
+            self.logger.debug('setting %s to %s' % (self.lhs.lhs, rhs_val))
+            self.assign_identifier(node, self.lhs.lhs, rhs_val, symbol_table)
+            result = rhs_val
         else:
             raise SyntaxError('bad op token (%s)' % self.op)
 
