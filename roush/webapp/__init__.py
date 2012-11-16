@@ -175,7 +175,7 @@ class Thing(Flask):
                     FilterTokenizer(),
                     '%s: %s' % (what, request.json['filter']))
                 try:
-                    result = builder.eval()
+                    result = builder.filter()
                     resp = jsonify({'status': 200,
                                     'message': 'success',
                                     what: result})
@@ -194,7 +194,7 @@ class Thing(Flask):
                 builder = FilterBuilder(FilterTokenizer(),
                                         '%s: %s' % (what, full_expr))
 
-                return jsonify({what: builder.eval()})
+                return jsonify({what: builder.filter()})
 
             return f
 

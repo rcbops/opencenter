@@ -72,11 +72,26 @@ def util_filter(node_type, input_filter):
     return result
 
 
+def util_ifcount(iface_name):
+    import roush.db.api as api
+
+    interface_query = 'filter_type="interface" and name="%s"' % iface_name
+    filter_list = FilterBuilder(FilterTokenizer(), '%s: %s' %
+                                ('filters', interface_query)).eval()
+
+    if len(filter_list) != 1:
+        raise SyntaxError('bad interface type %s' % iface_name)
+
+    ifaces = api._model_query('nodes', filter_list[0]['full_expr'])
+    return len(ifaces)
+
+
 def util_printf(fmt, *args):
     try:
         return fmt % args
     except Exception:
         return None
+
 
 default_functions = {'nth': util_nth,
                      'str': util_str,
@@ -85,7 +100,8 @@ default_functions = {'nth': util_nth,
                      'filter': util_filter,
                      'count': util_count,
                      'printf': util_printf,
-                     'union': util_union}
+                     'union': util_union,
+                     'ifcount': util_ifcount}
 
 
 class AbstractTokenizer(object):
@@ -187,6 +203,7 @@ class FilterTokenizer(AbstractTokenizer):
 
         self.scanner = re.Scanner([
             (r"!", self.negation),
+            (r":=", self.op),
             (r"or", self.or_op),
             (r"and", self.and_op),
             (r"none", self.none),
@@ -384,20 +401,24 @@ class FilterBuilder(AstBuilder):
                                             ns=ns)
         self.input_type = input_type
 
+
     def parse(self):
         return self.parse_phrase()
 
-    def eval(self):
+    def filter(self, input_type=None):
         # avoid some circular includes
         import roush.db.api as api
+
+        if input_type is None:
+            input_type = self.input_type
 
         # get a list of all the self.input_types, and eval each in turn
         root_node = self.build()
 
-        if not self.input_type:
+        if input_type is None:
             raise SyntaxError('unknown filter type')
 
-        nodes = api._model_get_all(self.input_type)
+        nodes = api._model_get_all(input_type)
 
         result = []
 
@@ -407,8 +428,19 @@ class FilterBuilder(AstBuilder):
                 result.append(node)
 
         logging.debug("Found %d results" % len(result))
-
         return result
+
+    def eval_node(self, node, functions=None, symbol_table=None):
+        root_node = self.build()
+
+        if functions is None:
+            functions = self.functions
+
+        if symbol_table is None:
+            symbol_table = self.symbol_table
+
+        root_node.eval_node(node, functions=functions,
+                            symbol_table=symbol_table)
 
     # criterion -> evaluable_item { uneg } op evaluable_item
     def parse_criterion(self):
@@ -569,9 +601,28 @@ class Node:
             return ['%s := %s' % (self.lhs.value_to_s(),
                                   self.rhs.value_to_s())]
         if self.op == 'IN':
-            return ['%s := union(%s, %s)' % (self.rhs.value_to_s(),
-                                             self.rhs.value_to_s(),
-                                             self.lhs.value_to_s())]
+            if (self.lhs.op in ['NUMBER', 'BOOL', 'STRING',
+                                'IDENTIFIER', 'NONE'] and
+                self.rhs.op == 'IDENTIFIER'):
+                return ['%s := union(%s, %s)' % (self.rhs.value_to_s(),
+                                                 self.rhs.value_to_s(),
+                                                 self.lhs.value_to_s())]
+
+        # foo.facts.blah := "blah"
+        # foo.facts.blah := union(foo.facts, "blah")
+        if self.op == ':=':
+            if self.lhs.op == 'IDENTIFIER' and (self.rhs.op in ['NUMBER',
+                                                                'BOOL',
+                                                                'STRING',
+                                                                'IDENTIFIER',
+                                                                'NONE']):
+                return ['%s = %s' % (self.lhs.value_to_s(),
+                                     self.rhs.value_to_s())]
+            if (self.lhs.op == 'IDENTIFIER'
+                and (self.rhs.op == 'FUNCTION' and self.rhs.lhs == 'union')
+                and (self.lhs.lsh == self.rhs.rhs[0])):
+                return ['%s IN %s' % (self.rhs.rhs[0].value_to_s(),
+                                      self.rhs.rhs[1].value_to_s())]
 
         raise SyntaxError('un-invertable operator: %s' % self.op)
 

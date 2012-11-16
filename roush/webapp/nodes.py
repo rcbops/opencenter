@@ -17,7 +17,6 @@ nodes = flask.Blueprint('nodes', __name__)
 
 
 @nodes.route('/', methods=['GET', 'POST'])
-@auth.requires_auth(roles=["admin", "user", "machine"])
 def list_nodes():
     if flask.request.method == 'POST':
         data = flask.request.json
