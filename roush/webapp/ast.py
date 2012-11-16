@@ -1108,7 +1108,7 @@ class Solver:
         return len(self.constraints) == 0
 
     def solve(self):
-        current_leaves = [ self ]
+        current_leaves = [self]
         solution_node = None
         solution_track = []
 
@@ -1146,7 +1146,7 @@ class Solver:
         return result_plan
 
     def dotty(self, fd):
-        if self.parent == None:
+        if self.parent is None:
             print >>fd, 'digraph G {\n'
 
         print >>fd, '"%s" [shape=record, label="{%s|{Namespace|%s}' \
@@ -1160,7 +1160,7 @@ class Solver:
             print >>fd, '"%s" -> "%s"' % (id(self), id(child))
             child.dotty(fd)
 
-        if self.parent == None:
+        if self.parent is None:
             print >>fd, '}\n'
 
     # solves any args not necessary for meeting constraints,
