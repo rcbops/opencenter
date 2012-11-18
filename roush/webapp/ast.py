@@ -68,8 +68,22 @@ def util_filter(node_type, input_filter):
     builder = FilterBuilder(FilterTokenizer(), "%s: %s" % (node_type,
                                                            input_filter))
 
-    result = builder.eval()
+    result = builder.filter()
     return result
+
+
+def util_ifcount(iface_name):
+    import roush.db.api as api
+
+    interface_query = 'filter_type="interface" and name="%s"' % iface_name
+    filter_list = FilterBuilder(FilterTokenizer(), '%s: %s' %
+                                ('filters', interface_query)).filter()
+
+    if len(filter_list) != 1:
+        raise SyntaxError('bad interface type %s' % iface_name)
+
+    ifaces = api._model_query('nodes', filter_list[0]['full_expr'])
+    return len(ifaces)
 
 
 def util_printf(fmt, *args):
@@ -78,6 +92,7 @@ def util_printf(fmt, *args):
     except Exception:
         return None
 
+
 default_functions = {'nth': util_nth,
                      'str': util_str,
                      'int': util_int,
@@ -85,7 +100,8 @@ default_functions = {'nth': util_nth,
                      'filter': util_filter,
                      'count': util_count,
                      'printf': util_printf,
-                     'union': util_union}
+                     'union': util_union,
+                     'ifcount': util_ifcount}
 
 
 class AbstractTokenizer(object):
@@ -115,59 +131,6 @@ class AbstractTokenizer(object):
         return self.tokens[0]
 
 
-class ExpressionTokenizer(AbstractTokenizer):
-    def __init__(self):
-        super(ExpressionTokenizer, self).__init__()
-
-        self.scanner = re.Scanner([
-            (r":=", self.assignment_op),
-            (r"[ \t\n]+", None),
-            (r"[0-9]+", self.number),
-            (r"none", self.none),
-            (r"true", self.bool_op),
-            (r"false", self.bool_op),
-            (r",", self.comma),
-            (r"\(", self.open_paren),
-            (r"\)", self.close_paren),
-            (r"'([^'\\]*(?:\\.[^'\\]*)*)'", self.qstring),
-            (r'"([^"\\]*(?:\\.[^"\\]*)*)"', self.qstring),
-            (r"[A-Za-z_\-\.{}]*", self.identifier),
-        ])
-
-    # token generators
-    def assignment_op(self, scanner, token):
-        return 'OP', token
-
-    def number(self, scanner, token):
-        return 'NUMBER', token
-
-    def identifier(self, scanner, token):
-        return 'IDENTIFIER', token
-
-    def bool_op(self, scanner, token):
-        return 'BOOL', token.upper()
-
-    def qstring(self, scanner, token):
-        whatquote = token[0]
-        otherquote = '\\"'
-        if whatquote == '"':
-            otherquote = "\\'"
-
-        return 'STRING', token[1:-1].replace(otherquote, whatquote)
-
-    def open_paren(self, scanner, token):
-        return 'OPENPAREN', token
-
-    def close_paren(self, scanner, token):
-        return 'CLOSEPAREN', token
-
-    def comma(self, scanner, token):
-        return 'COMMA', token
-
-    def none(self, scanner, token):
-        return 'NONE', token
-
-
 # Stupid tokenizer.  Use:
 #
 # ft.parse(filter)
@@ -187,6 +150,7 @@ class FilterTokenizer(AbstractTokenizer):
 
         self.scanner = re.Scanner([
             (r"!", self.negation),
+            (r":=", self.op),
             (r"or", self.or_op),
             (r"and", self.and_op),
             (r"none", self.none),
@@ -283,81 +247,6 @@ class AstBuilder(object):
         raise NotImplementedError('parse not implemented')
 
 
-# these are small expressions.  :)
-# expression -> evalable_item | evalable_item op evalable_item
-# evalable_item -> function(evalable_item[, e_i [, ...]]) | identifier | value
-class ExpressionBuilder(AstBuilder):
-    def __init__(self, tokenizer, input_expression=None,
-                 input_type=None, functions={"union": util_union}, ns={}):
-        super(ExpressionBuilder, self).__init__(tokenizer, input_expression,
-                                                functions=functions, ns=ns)
-        self.input_type = input_type
-
-    def parse(self):
-        return self.parse_expression()
-
-    def parse_expression(self):
-        self.logger.debug('parsing expression')
-
-        lhs = self.parse_evaluable_item()
-        self.logger.debug('lhs: %s' % lhs)
-
-        token, val = self.tokenizer.scan()
-        if token == 'EOF':
-            return lhs
-
-        if token != 'OP':
-            raise SyntaxError('Expecting op token')
-
-        op = val
-        self.logger.debug('op: %s' % op)
-
-        rhs = self.parse_evaluable_item()
-        self.logger.debug('rhs: %s' % rhs)
-
-        return Node(lhs, op, rhs)
-
-    def parse_evaluable_item(self):
-        token, val = self.tokenizer.scan()
-
-        if token == 'NUMBER':
-            return Node(int(val), 'NUMBER', None)
-
-        if token == 'STRING':
-            return Node(str(val), 'STRING', None)
-
-        if token == 'BOOL':
-            return Node(val, 'BOOL', None)
-
-        if token == 'NONE':
-            return Node(None, 'NONE', None)
-
-        if token == 'IDENTIFIER':
-            next_token, next_val = self.tokenizer.peek()
-            if next_token != 'OPENPAREN':
-                return Node(str(val), 'IDENTIFIER', None)
-            else:
-                self.tokenizer.scan()  # eat the paren
-
-                done = False
-                args = []
-                function_name = str(val)
-
-                while not done:
-                    args.append(self.parse_evaluable_item())
-
-                    token, val = self.tokenizer.scan()
-
-                    if token == 'CLOSEPAREN':
-                        # done parsing evaluable item
-                        return Node(function_name, 'FUNCTION', args)
-
-                    if token != 'COMMA':
-                        raise RuntimeError('expecting comma or close paren')
-
-        raise RuntimeError('expecting evaluable item')
-
-
 #
 # This is a pretty trivial implementation.  The production
 # rules are as follows:
@@ -387,17 +276,22 @@ class FilterBuilder(AstBuilder):
     def parse(self):
         return self.parse_phrase()
 
-    def eval(self):
+    def filter(self, input_type=None):
         # avoid some circular includes
         import roush.db.api as api
 
         # get a list of all the self.input_types, and eval each in turn
         root_node = self.build()
 
-        if not self.input_type:
+        if input_type is None:
+            self.logger.debug('unspecified input type, using %s' %
+                              self.input_type)
+            input_type = self.input_type
+
+        if input_type is None:
             raise SyntaxError('unknown filter type')
 
-        nodes = api._model_get_all(self.input_type)
+        nodes = api._model_get_all(input_type)
 
         result = []
 
@@ -407,8 +301,19 @@ class FilterBuilder(AstBuilder):
                 result.append(node)
 
         logging.debug("Found %d results" % len(result))
-
         return result
+
+    def eval_node(self, node, functions=None, symbol_table=None):
+        root_node = self.build()
+
+        if functions is None:
+            functions = self.functions
+
+        if symbol_table is None:
+            symbol_table = self.symbol_table
+
+        root_node.eval_node(node, functions=functions,
+                            symbol_table=symbol_table)
 
     # criterion -> evaluable_item { uneg } op evaluable_item
     def parse_criterion(self):
@@ -520,6 +425,7 @@ class FilterBuilder(AstBuilder):
         if token == 'TYPEDEF':
             self.input_type = val
             self.tokenizer.scan()
+            self.logger.debug('Set input type to %s' % self.input_type)
 
         node = self.parse_andexpr()
 
@@ -569,9 +475,31 @@ class Node:
             return ['%s := %s' % (self.lhs.value_to_s(),
                                   self.rhs.value_to_s())]
         if self.op == 'IN':
-            return ['%s := union(%s, %s)' % (self.rhs.value_to_s(),
-                                             self.rhs.value_to_s(),
-                                             self.lhs.value_to_s())]
+            if (self.lhs.op in ['NUMBER',
+                                'BOOL',
+                                'STRING',
+                                'IDENTIFIER',
+                                'NONE'] and self.rhs.op == 'IDENTIFIER'):
+                return ['%s := union(%s, %s)' % (self.rhs.value_to_s(),
+                                                 self.rhs.value_to_s(),
+                                                 self.lhs.value_to_s())]
+
+        # foo.facts.blah := "blah"
+        # foo.facts.blah := union(foo.facts, "blah")
+        if self.op == ':=':
+            if self.lhs.op == 'IDENTIFIER' and (self.rhs.op in ['NUMBER',
+                                                                'BOOL',
+                                                                'STRING',
+                                                                'IDENTIFIER',
+                                                                'NONE']):
+                return ['%s = %s' % (self.lhs.value_to_s(),
+                                     self.rhs.value_to_s())]
+            if (self.lhs.op == 'IDENTIFIER' and (
+                    self.rhs.op == 'FUNCTION' and (
+                        self.rhs.lhs == 'union')) and (
+                    self.lhs.lsh == self.rhs.rhs[0])):
+                return ['%s IN %s' % (self.rhs.rhs[0].value_to_s(),
+                                      self.rhs.rhs[1].value_to_s())]
 
         raise SyntaxError('un-invertable operator: %s' % self.op)
 
@@ -943,7 +871,6 @@ class Solver:
 
         # first, build up asts of all my unsolved constraints
         f_builder = FilterBuilder(FilterTokenizer())
-        e_builder = ExpressionBuilder(ExpressionTokenizer())
 
         constraint_asts = []
         for constraint in self.constraints:
@@ -957,8 +884,8 @@ class Solver:
         for constraint_struct in constraint_asts:
             for expression in constraint_struct['ast'].invert():
                 self.logger.debug('ast-izing inv constraint %s' % expression)
-                e_builder.set_input(expression)
-                root_node = e_builder.build()
+                f_builder.set_input(expression)
+                root_node = f_builder.build()
                 expression_asts.append({'constraint':
                                         constraint_struct['constraint'],
                                         'ast': root_node})
@@ -1005,8 +932,8 @@ class Solver:
                     prim_name = primitive['name']
                     prim_id = primitive['id']
 
-                    e_builder.set_input(consequence)
-                    consequence_ast = e_builder.build()
+                    f_builder.set_input(consequence)
+                    consequence_ast = f_builder.build()
 
                     constraint_ast = constraint_struct['ast']
                     satisfaction, ns = self.can_solve(constraint_ast,
@@ -1088,8 +1015,8 @@ class Solver:
                 # and apply...
                 for consequence in solution['prim']['consequences']:
                     self.logger.debug('applying consequence %s' % consequence)
-                    e_builder.set_input(consequence)
-                    cons_ast = e_builder.build()
+                    f_builder.set_input(consequence)
+                    cons_ast = f_builder.build()
                     cons_ast.eval_node(new_node, symbol_table=solution['ns'])
 
             self.logger.debug('node after consequence: %s' % new_node)

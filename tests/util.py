@@ -15,13 +15,14 @@ class RoushTestCase(unittest2.TestCase):
         cls.app = webapp.Thing('roush', configfile='test.conf', debug=True)
         init_db(cls.app.config['database_uri'])
         cls.client = cls.app.test_client()
+        cls.logger = cls.app.logger
 
     @classmethod
     def tearDownClass(cls):
         pass
 
     def _clean_all(self):
-        for what in ['task', 'node', 'fact']:
+        for what in ['task', 'node', 'fact', 'filter']:
             all_results = self._model_get_all(what)
             for what_id in [x['id'] for x in all_results]:
                 self._model_delete(what, what_id)
