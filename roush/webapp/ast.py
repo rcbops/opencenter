@@ -131,59 +131,6 @@ class AbstractTokenizer(object):
         return self.tokens[0]
 
 
-# class ExpressionTokenizer(AbstractTokenizer):
-#     def __init__(self):
-#         super(ExpressionTokenizer, self).__init__()
-
-#         self.scanner = re.Scanner([
-#             (r":=", self.assignment_op),
-#             (r"[ \t\n]+", None),
-#             (r"[0-9]+", self.number),
-#             (r"none", self.none),
-#             (r"true", self.bool_op),
-#             (r"false", self.bool_op),
-#             (r",", self.comma),
-#             (r"\(", self.open_paren),
-#             (r"\)", self.close_paren),
-#             (r"'([^'\\]*(?:\\.[^'\\]*)*)'", self.qstring),
-#             (r'"([^"\\]*(?:\\.[^"\\]*)*)"', self.qstring),
-#             (r"[A-Za-z_\-\.{}]*", self.identifier),
-#         ])
-
-#     # token generators
-#     def assignment_op(self, scanner, token):
-#         return 'OP', token
-
-#     def number(self, scanner, token):
-#         return 'NUMBER', token
-
-#     def identifier(self, scanner, token):
-#         return 'IDENTIFIER', token
-
-#     def bool_op(self, scanner, token):
-#         return 'BOOL', token.upper()
-
-#     def qstring(self, scanner, token):
-#         whatquote = token[0]
-#         otherquote = '\\"'
-#         if whatquote == '"':
-#             otherquote = "\\'"
-
-#         return 'STRING', token[1:-1].replace(otherquote, whatquote)
-
-#     def open_paren(self, scanner, token):
-#         return 'OPENPAREN', token
-
-#     def close_paren(self, scanner, token):
-#         return 'CLOSEPAREN', token
-
-#     def comma(self, scanner, token):
-#         return 'COMMA', token
-
-#     def none(self, scanner, token):
-#         return 'NONE', token
-
-
 # Stupid tokenizer.  Use:
 #
 # ft.parse(filter)
@@ -298,81 +245,6 @@ class AstBuilder(object):
 
     def parse(self):
         raise NotImplementedError('parse not implemented')
-
-
-# these are small expressions.  :)
-# expression -> evalable_item | evalable_item op evalable_item
-# evalable_item -> function(evalable_item[, e_i [, ...]]) | identifier | value
-# class ExpressionBuilder(AstBuilder):
-#     def __init__(self, tokenizer, input_expression=None,
-#                  input_type=None, functions={"union": util_union}, ns={}):
-#         super(ExpressionBuilder, self).__init__(tokenizer, input_expression,
-#                                                 functions=functions, ns=ns)
-#         self.input_type = input_type
-
-#     def parse(self):
-#         return self.parse_expression()
-
-#     def parse_expression(self):
-#         self.logger.debug('parsing expression')
-
-#         lhs = self.parse_evaluable_item()
-#         self.logger.debug('lhs: %s' % lhs)
-
-#         token, val = self.tokenizer.scan()
-#         if token == 'EOF':
-#             return lhs
-
-#         if token != 'OP':
-#             raise SyntaxError('Expecting op token')
-
-#         op = val
-#         self.logger.debug('op: %s' % op)
-
-#         rhs = self.parse_evaluable_item()
-#         self.logger.debug('rhs: %s' % rhs)
-
-#         return Node(lhs, op, rhs)
-
-#     def parse_evaluable_item(self):
-#         token, val = self.tokenizer.scan()
-
-#         if token == 'NUMBER':
-#             return Node(int(val), 'NUMBER', None)
-
-#         if token == 'STRING':
-#             return Node(str(val), 'STRING', None)
-
-#         if token == 'BOOL':
-#             return Node(val, 'BOOL', None)
-
-#         if token == 'NONE':
-#             return Node(None, 'NONE', None)
-
-#         if token == 'IDENTIFIER':
-#             next_token, next_val = self.tokenizer.peek()
-#             if next_token != 'OPENPAREN':
-#                 return Node(str(val), 'IDENTIFIER', None)
-#             else:
-#                 self.tokenizer.scan()  # eat the paren
-
-#                 done = False
-#                 args = []
-#                 function_name = str(val)
-
-#                 while not done:
-#                     args.append(self.parse_evaluable_item())
-
-#                     token, val = self.tokenizer.scan()
-
-#                     if token == 'CLOSEPAREN':
-#                         # done parsing evaluable item
-#                         return Node(function_name, 'FUNCTION', args)
-
-#                     if token != 'COMMA':
-#                         raise RuntimeError('expecting comma or close paren')
-
-#         raise RuntimeError('expecting evaluable item')
 
 
 #
@@ -997,7 +869,6 @@ class Solver:
 
         # first, build up asts of all my unsolved constraints
         f_builder = FilterBuilder(FilterTokenizer())
-        e_builder = ExpressionBuilder(ExpressionTokenizer())
 
         constraint_asts = []
         for constraint in self.constraints:
@@ -1011,8 +882,8 @@ class Solver:
         for constraint_struct in constraint_asts:
             for expression in constraint_struct['ast'].invert():
                 self.logger.debug('ast-izing inv constraint %s' % expression)
-                e_builder.set_input(expression)
-                root_node = e_builder.build()
+                f_builder.set_input(expression)
+                root_node = f_builder.build()
                 expression_asts.append({'constraint':
                                         constraint_struct['constraint'],
                                         'ast': root_node})
@@ -1059,8 +930,8 @@ class Solver:
                     prim_name = primitive['name']
                     prim_id = primitive['id']
 
-                    e_builder.set_input(consequence)
-                    consequence_ast = e_builder.build()
+                    f_builder.set_input(consequence)
+                    consequence_ast = f_builder.build()
 
                     constraint_ast = constraint_struct['ast']
                     satisfaction, ns = self.can_solve(constraint_ast,
@@ -1142,8 +1013,8 @@ class Solver:
                 # and apply...
                 for consequence in solution['prim']['consequences']:
                     self.logger.debug('applying consequence %s' % consequence)
-                    e_builder.set_input(consequence)
-                    cons_ast = e_builder.build()
+                    f_builder.set_input(consequence)
+                    cons_ast = f_builder.build()
                     cons_ast.eval_node(new_node, symbol_table=solution['ns'])
 
             self.logger.debug('node after consequence: %s' % new_node)
