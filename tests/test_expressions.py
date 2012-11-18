@@ -1,9 +1,9 @@
 #
 
-import unittest2
 from util import RoushTestCase
 
 from roush.webapp import ast
+
 
 class ExpressionTestCase(RoushTestCase):
     def setUp(self):

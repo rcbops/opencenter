@@ -273,7 +273,6 @@ class FilterBuilder(AstBuilder):
                                             ns=ns)
         self.input_type = input_type
 
-
     def parse(self):
         return self.parse_phrase()
 
@@ -476,9 +475,11 @@ class Node:
             return ['%s := %s' % (self.lhs.value_to_s(),
                                   self.rhs.value_to_s())]
         if self.op == 'IN':
-            if (self.lhs.op in ['NUMBER', 'BOOL', 'STRING',
-                                'IDENTIFIER', 'NONE'] and
-                self.rhs.op == 'IDENTIFIER'):
+            if (self.lhs.op in ['NUMBER',
+                                'BOOL',
+                                'STRING',
+                                'IDENTIFIER',
+                                'NONE'] and self.rhs.op == 'IDENTIFIER'):
                 return ['%s := union(%s, %s)' % (self.rhs.value_to_s(),
                                                  self.rhs.value_to_s(),
                                                  self.lhs.value_to_s())]
@@ -493,9 +494,10 @@ class Node:
                                                                 'NONE']):
                 return ['%s = %s' % (self.lhs.value_to_s(),
                                      self.rhs.value_to_s())]
-            if (self.lhs.op == 'IDENTIFIER'
-                and (self.rhs.op == 'FUNCTION' and self.rhs.lhs == 'union')
-                and (self.lhs.lsh == self.rhs.rhs[0])):
+            if (self.lhs.op == 'IDENTIFIER' and (
+                    self.rhs.op == 'FUNCTION' and (
+                        self.rhs.lhs == 'union')) and (
+                    self.lhs.lsh == self.rhs.rhs[0])):
                 return ['%s IN %s' % (self.rhs.rhs[0].value_to_s(),
                                       self.rhs.rhs[1].value_to_s())]
 
