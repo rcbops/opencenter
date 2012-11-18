@@ -190,7 +190,7 @@ def _model_query(model, query):
     query = '%s: %s' % (model, query)
 
     builder = FilterBuilder(FilterTokenizer(), query)
-    result = builder.eval()
+    result = builder.filter()
 
     return result
 

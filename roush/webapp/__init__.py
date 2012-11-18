@@ -174,15 +174,16 @@ class Thing(Flask):
                 builder = FilterBuilder(
                     FilterTokenizer(),
                     '%s: %s' % (what, request.json['filter']))
-                try:
-                    result = builder.filter()
-                    resp = jsonify({'status': 200,
-                                    'message': 'success',
-                                    what: result})
-                except SyntaxError as e:
-                    resp = jsonify({'status': 400,
-                                    'message': 'Syntax error: %s' % e.msg})
-                    resp.status_code = 400
+
+                # try:
+                result = builder.filter()
+                resp = jsonify({'status': 200,
+                                'message': 'success',
+                                what: result})
+                # except SyntaxError as e:
+                #     resp = jsonify({'status': 400,
+                #                     'message': 'Syntax error: %s' % e.msg})
+                #     resp.status_code = 400
 
                 return resp
             return f

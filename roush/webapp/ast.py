@@ -68,7 +68,7 @@ def util_filter(node_type, input_filter):
     builder = FilterBuilder(FilterTokenizer(), "%s: %s" % (node_type,
                                                            input_filter))
 
-    result = builder.eval()
+    result = builder.filter()
     return result
 
 
@@ -77,7 +77,7 @@ def util_ifcount(iface_name):
 
     interface_query = 'filter_type="interface" and name="%s"' % iface_name
     filter_list = FilterBuilder(FilterTokenizer(), '%s: %s' %
-                                ('filters', interface_query)).eval()
+                                ('filters', interface_query)).filter()
 
     if len(filter_list) != 1:
         raise SyntaxError('bad interface type %s' % iface_name)
@@ -131,57 +131,57 @@ class AbstractTokenizer(object):
         return self.tokens[0]
 
 
-class ExpressionTokenizer(AbstractTokenizer):
-    def __init__(self):
-        super(ExpressionTokenizer, self).__init__()
+# class ExpressionTokenizer(AbstractTokenizer):
+#     def __init__(self):
+#         super(ExpressionTokenizer, self).__init__()
 
-        self.scanner = re.Scanner([
-            (r":=", self.assignment_op),
-            (r"[ \t\n]+", None),
-            (r"[0-9]+", self.number),
-            (r"none", self.none),
-            (r"true", self.bool_op),
-            (r"false", self.bool_op),
-            (r",", self.comma),
-            (r"\(", self.open_paren),
-            (r"\)", self.close_paren),
-            (r"'([^'\\]*(?:\\.[^'\\]*)*)'", self.qstring),
-            (r'"([^"\\]*(?:\\.[^"\\]*)*)"', self.qstring),
-            (r"[A-Za-z_\-\.{}]*", self.identifier),
-        ])
+#         self.scanner = re.Scanner([
+#             (r":=", self.assignment_op),
+#             (r"[ \t\n]+", None),
+#             (r"[0-9]+", self.number),
+#             (r"none", self.none),
+#             (r"true", self.bool_op),
+#             (r"false", self.bool_op),
+#             (r",", self.comma),
+#             (r"\(", self.open_paren),
+#             (r"\)", self.close_paren),
+#             (r"'([^'\\]*(?:\\.[^'\\]*)*)'", self.qstring),
+#             (r'"([^"\\]*(?:\\.[^"\\]*)*)"', self.qstring),
+#             (r"[A-Za-z_\-\.{}]*", self.identifier),
+#         ])
 
-    # token generators
-    def assignment_op(self, scanner, token):
-        return 'OP', token
+#     # token generators
+#     def assignment_op(self, scanner, token):
+#         return 'OP', token
 
-    def number(self, scanner, token):
-        return 'NUMBER', token
+#     def number(self, scanner, token):
+#         return 'NUMBER', token
 
-    def identifier(self, scanner, token):
-        return 'IDENTIFIER', token
+#     def identifier(self, scanner, token):
+#         return 'IDENTIFIER', token
 
-    def bool_op(self, scanner, token):
-        return 'BOOL', token.upper()
+#     def bool_op(self, scanner, token):
+#         return 'BOOL', token.upper()
 
-    def qstring(self, scanner, token):
-        whatquote = token[0]
-        otherquote = '\\"'
-        if whatquote == '"':
-            otherquote = "\\'"
+#     def qstring(self, scanner, token):
+#         whatquote = token[0]
+#         otherquote = '\\"'
+#         if whatquote == '"':
+#             otherquote = "\\'"
 
-        return 'STRING', token[1:-1].replace(otherquote, whatquote)
+#         return 'STRING', token[1:-1].replace(otherquote, whatquote)
 
-    def open_paren(self, scanner, token):
-        return 'OPENPAREN', token
+#     def open_paren(self, scanner, token):
+#         return 'OPENPAREN', token
 
-    def close_paren(self, scanner, token):
-        return 'CLOSEPAREN', token
+#     def close_paren(self, scanner, token):
+#         return 'CLOSEPAREN', token
 
-    def comma(self, scanner, token):
-        return 'COMMA', token
+#     def comma(self, scanner, token):
+#         return 'COMMA', token
 
-    def none(self, scanner, token):
-        return 'NONE', token
+#     def none(self, scanner, token):
+#         return 'NONE', token
 
 
 # Stupid tokenizer.  Use:
@@ -303,76 +303,76 @@ class AstBuilder(object):
 # these are small expressions.  :)
 # expression -> evalable_item | evalable_item op evalable_item
 # evalable_item -> function(evalable_item[, e_i [, ...]]) | identifier | value
-class ExpressionBuilder(AstBuilder):
-    def __init__(self, tokenizer, input_expression=None,
-                 input_type=None, functions={"union": util_union}, ns={}):
-        super(ExpressionBuilder, self).__init__(tokenizer, input_expression,
-                                                functions=functions, ns=ns)
-        self.input_type = input_type
+# class ExpressionBuilder(AstBuilder):
+#     def __init__(self, tokenizer, input_expression=None,
+#                  input_type=None, functions={"union": util_union}, ns={}):
+#         super(ExpressionBuilder, self).__init__(tokenizer, input_expression,
+#                                                 functions=functions, ns=ns)
+#         self.input_type = input_type
 
-    def parse(self):
-        return self.parse_expression()
+#     def parse(self):
+#         return self.parse_expression()
 
-    def parse_expression(self):
-        self.logger.debug('parsing expression')
+#     def parse_expression(self):
+#         self.logger.debug('parsing expression')
 
-        lhs = self.parse_evaluable_item()
-        self.logger.debug('lhs: %s' % lhs)
+#         lhs = self.parse_evaluable_item()
+#         self.logger.debug('lhs: %s' % lhs)
 
-        token, val = self.tokenizer.scan()
-        if token == 'EOF':
-            return lhs
+#         token, val = self.tokenizer.scan()
+#         if token == 'EOF':
+#             return lhs
 
-        if token != 'OP':
-            raise SyntaxError('Expecting op token')
+#         if token != 'OP':
+#             raise SyntaxError('Expecting op token')
 
-        op = val
-        self.logger.debug('op: %s' % op)
+#         op = val
+#         self.logger.debug('op: %s' % op)
 
-        rhs = self.parse_evaluable_item()
-        self.logger.debug('rhs: %s' % rhs)
+#         rhs = self.parse_evaluable_item()
+#         self.logger.debug('rhs: %s' % rhs)
 
-        return Node(lhs, op, rhs)
+#         return Node(lhs, op, rhs)
 
-    def parse_evaluable_item(self):
-        token, val = self.tokenizer.scan()
+#     def parse_evaluable_item(self):
+#         token, val = self.tokenizer.scan()
 
-        if token == 'NUMBER':
-            return Node(int(val), 'NUMBER', None)
+#         if token == 'NUMBER':
+#             return Node(int(val), 'NUMBER', None)
 
-        if token == 'STRING':
-            return Node(str(val), 'STRING', None)
+#         if token == 'STRING':
+#             return Node(str(val), 'STRING', None)
 
-        if token == 'BOOL':
-            return Node(val, 'BOOL', None)
+#         if token == 'BOOL':
+#             return Node(val, 'BOOL', None)
 
-        if token == 'NONE':
-            return Node(None, 'NONE', None)
+#         if token == 'NONE':
+#             return Node(None, 'NONE', None)
 
-        if token == 'IDENTIFIER':
-            next_token, next_val = self.tokenizer.peek()
-            if next_token != 'OPENPAREN':
-                return Node(str(val), 'IDENTIFIER', None)
-            else:
-                self.tokenizer.scan()  # eat the paren
+#         if token == 'IDENTIFIER':
+#             next_token, next_val = self.tokenizer.peek()
+#             if next_token != 'OPENPAREN':
+#                 return Node(str(val), 'IDENTIFIER', None)
+#             else:
+#                 self.tokenizer.scan()  # eat the paren
 
-                done = False
-                args = []
-                function_name = str(val)
+#                 done = False
+#                 args = []
+#                 function_name = str(val)
 
-                while not done:
-                    args.append(self.parse_evaluable_item())
+#                 while not done:
+#                     args.append(self.parse_evaluable_item())
 
-                    token, val = self.tokenizer.scan()
+#                     token, val = self.tokenizer.scan()
 
-                    if token == 'CLOSEPAREN':
-                        # done parsing evaluable item
-                        return Node(function_name, 'FUNCTION', args)
+#                     if token == 'CLOSEPAREN':
+#                         # done parsing evaluable item
+#                         return Node(function_name, 'FUNCTION', args)
 
-                    if token != 'COMMA':
-                        raise RuntimeError('expecting comma or close paren')
+#                     if token != 'COMMA':
+#                         raise RuntimeError('expecting comma or close paren')
 
-        raise RuntimeError('expecting evaluable item')
+#         raise RuntimeError('expecting evaluable item')
 
 
 #
@@ -409,11 +409,13 @@ class FilterBuilder(AstBuilder):
         # avoid some circular includes
         import roush.db.api as api
 
-        if input_type is None:
-            input_type = self.input_type
-
         # get a list of all the self.input_types, and eval each in turn
         root_node = self.build()
+
+        if input_type is None:
+            self.logger.debug('unspecified input type, using %s' %
+                              self.input_type)
+            input_type = self.input_type
 
         if input_type is None:
             raise SyntaxError('unknown filter type')
@@ -552,6 +554,7 @@ class FilterBuilder(AstBuilder):
         if token == 'TYPEDEF':
             self.input_type = val
             self.tokenizer.scan()
+            self.logger.debug('Set input type to %s' % self.input_type)
 
         node = self.parse_andexpr()
 
