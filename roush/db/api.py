@@ -6,8 +6,6 @@ from functools import partial
 
 import sqlalchemy
 
-from roush import backends
-
 from roush.db.database import session
 from roush.db import exceptions
 from roush.db import models
@@ -116,12 +114,7 @@ def _model_create(model, fields):
         session.commit()
         ret = dict((c, getattr(r, c))
                    for c in r.__table__.columns.keys())
-        backends.notify(model.rstrip('s'), 'create', None, ret)
         return ret
-    except backends.BackendException as e:
-        session.rollback()
-        msg = 'backend failure: %s' % str(e)
-        raise exceptions.CreateError(msg)
     except sqlalchemy.exc.StatementError as e:
         session.rollback()
         # msg = e.message
@@ -142,24 +135,15 @@ def _model_delete_by_id(model, pk_id):
     """
     r = _get_model_object(model).query.filter_by(id=pk_id).first()
     # We need generate an object hash to pass to the backend notification
-    old_obj = None
-    if r is not None:
-        old_obj = dict((c, getattr(r, c))
-                       for c in r.__table__.columns.keys())
 
     try:
         session.delete(r)
-        backends.notify(model.rstrip('s'), 'delete', old_obj, None)
         session.commit()
         return True
-    except backends.BackendException as e:
-        session.rollback()
-        msg = 'backend failure: %s' % str(e)
-        raise exc.CreateError(msg)
     except sqlalchemy.orm.exc.UnmappedInstanceError as e:
         session.rollback()
         msg = "%s id does not exist" % (model.title())
-        raise exc.IdNotFound(message=msg)
+        raise exceptions.IdNotFound(message=msg)
     except sqlalchemy.exc.InvalidRequestError as e:
         session.rollback()
         msg = e.msg
@@ -230,25 +214,14 @@ def _model_update_by_id(model, pk_id, fields):
         for d in r._non_updatable_fields:
             field_list.remove(d)
 
-    # We need generate an object hash to pass to the backend notification
-    old_obj = None
-    if r is not None:
-        old_obj = dict((c, getattr(r, c))
-                       for c in r.__table__.columns.keys())
-
     for field in field_list:
         if field in fields:
             r.__setattr__(field, fields[field])
     try:
         ret = dict((c, getattr(r, c))
                    for c in r.__table__.columns.keys())
-        backends.notify(model.rstrip('s'), 'update', old_obj, ret)
         session.commit()
         return ret
-    except backends.BackendException as e:
-        session.rollback()
-        msg = 'backend failure: %s' % str(e)
-        raise e
     except sqlalchemy.exc.InvalidRequestError as e:
         print "invalid req"
         session.rollback()
@@ -304,7 +277,7 @@ def adventures_get_by_node_id(node_id):
         models.Adventures.backend_state == 'null')
     adventure_list = models.Adventures.query.join(
         models.Nodes,
-        and_(stmt1, stmt2, Nodes.id == node_id)).all()
+        sqlalchemy.sql.and_(stmt1, stmt2, models.Nodes.id == node_id)).all()
 
     result = [dict((c, getattr(r, c))
                    for c in r.__table__.columns.keys())

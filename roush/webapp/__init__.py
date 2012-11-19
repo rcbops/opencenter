@@ -11,7 +11,7 @@ import traceback
 from ConfigParser import ConfigParser
 from flask import Flask, jsonify, request
 
-from roush import backends
+# from roush import backends
 from roush.db import api
 from roush.db import models
 from roush.webapp.adventures import bp as adventures
@@ -128,11 +128,11 @@ class Thing(Flask):
             handler = logging.FileHandler(defaults['main']['logfile'])
             LOG.addHandler(handler)
 
-        # load the backends
-        backends.load(defaults['main']['backend'], defaults)
+        # # load the backends
+        # backends.load(defaults['main']['backend'], defaults)
 
         # set the notification dispatcher
-        self.dispatch = backends.notify
+        # self.dispatch = backends.notify
         self._logger = LOG
 
         self.config.update(defaults['main'])
