@@ -35,8 +35,7 @@ def load():
         full_path = os.path.join(os.path.dirname(__file__), file_name)
         if os.path.isdir(full_path):
             init_path = os.path.join(full_path, '__init__.py')
-            if os.path.exists(full_path):
-                print 'trying to load %s' % full_path
+            if os.path.exists(init_path):
                 import_str = 'roush.backends.%s' % file_name
                 class_str = '%sBackend' % ''.join(map(lambda x: x.capitalize(),
                                                       file_name.split('-')))
@@ -45,5 +44,5 @@ def load():
                     backend_list[file_name] = getattr(sys.modules[import_str],
                                                       class_str)()
                 except Exception as e:
-                    print('Cannot load %s from %s: %s' % (
+                    LOG.error('Cannot load %s from %s: %s' % (
                             class_str, import_str, str(e)))
