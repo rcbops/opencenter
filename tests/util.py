@@ -69,6 +69,7 @@ class RoushTestCase(unittest2.TestCase):
                                 content_type='application/json',
                                 data=json.dumps(kwargs))
 
+        self.logger.debug('Create: got %s' % json.loads(resp.data)[model])
         self.assertEquals(resp.status_code, 201)
         return json.loads(resp.data)[model]
 

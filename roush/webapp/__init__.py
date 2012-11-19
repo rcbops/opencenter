@@ -18,8 +18,8 @@ from roush.webapp.adventures import bp as adventures
 from roush.webapp.ast import FilterBuilder, FilterTokenizer
 from roush.webapp.facts import bp as facts
 from roush.webapp.filters import bp as filters
-from roush.webapp.index import index
-from roush.webapp.nodes import nodes
+from roush.webapp.index import bp as index
+from roush.webapp.nodes import bp as nodes
 from roush.webapp.primitives import bp as primitives
 from roush.webapp.tasks import bp as tasks
 

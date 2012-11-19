@@ -25,13 +25,42 @@ def http_response(result=200, msg='did the needful', **kwargs):
     return jsonified_response
 
 
+def http_notfound(result=404, msg=None, **kwargs):
+    if msg is None:
+        msg = 'Not Found: %s' % flask.request.url
+
+    return http_response(result, msg, **kwargs)
+
+
+def http_notimplemented(result=501, msg=None, **kwargs):
+    if msg is None:
+        msg = 'Not Implemented'
+    return http_response(result, msg, **kwargs)
+
+
+def http_badrequest(result=400, msg=None, **kwargs):
+    if msg is None:
+        msg = 'Bad Request'
+    return http_response(result, msg, **kwargs)
+
+
+def http_conflict(result=409, msg=None, **kwargs):
+    if msg is None:
+        msg = 'Conflict'
+    return http_response(result, msg, **kwargs)
+
+
 def list(object_type):
     s_obj = singularize(object_type)
 
     if flask.request.method == 'POST':
         data = flask.request.json
 
-        model_object = api._model_create(object_type, data)
+        try:
+            model_object = api._model_create(object_type, data)
+        except KeyError as e:
+            # missing required field
+            return http_badrequest(msg=str(e))
 
         href = flask.request.base_url + str(model_object['id'])
 

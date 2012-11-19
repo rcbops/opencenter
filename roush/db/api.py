@@ -2,7 +2,6 @@
 # tab stops are 8.  ^^ this is wrong
 
 import logging
-from time import time
 from functools import partial
 
 import sqlalchemy
@@ -16,6 +15,16 @@ from roush.db import models
 from roush.webapp.ast import FilterBuilder, FilterTokenizer
 
 LOG = logging.getLogger(__name__)
+
+
+def _get_models():
+    result = []
+
+    for d in dir(models):
+        if type(models.Nodes) == type(getattr(models, d)) and d != 'Base':
+            result.append(d.lower())
+
+    return result
 
 
 def _get_model_object(model):
@@ -71,7 +80,7 @@ def _model_get_schema(model):
         for syn in obj._synthesized_fields:
             fields[syn] = {'type': 'TEXT',
                            'unique': False,
-                           'nullable': False,
+                           'required': False,
                            'updatable': False,
                            'primary_key': False}
 
@@ -87,6 +96,17 @@ def _model_create(model, fields):
     model_object = _get_model_object(model)
     field_list = [c for c in model_object.__table__.columns.keys()]
     field_list.remove('id')
+    schema = _model_get_schema(model)['schema']
+
+    required_fields = [x for x in schema if schema[x]['required'] is True]
+    if 'id' in required_fields:
+        required_fields.remove('id')
+
+    LOG.debug('Required fields for object %s: %s' % (model, required_fields))
+
+    for field in required_fields:
+        if not field in fields:
+            raise KeyError('missing required field %s' % field)
 
     r = model_object(**dict((field, fields[field])
                             for field in field_list if field in fields))

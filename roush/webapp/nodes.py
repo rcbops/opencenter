@@ -1,48 +1,30 @@
 #!/usr/bin/env python
 
 import flask
+import generic
 
 from roush.db import api
-from roush.db import exceptions
 
 from roush.webapp import ast
 from roush.webapp import utility
 from roush.webapp import errors
 from roush.webapp import auth
-from functools import partial
 
-nodes = flask.Blueprint('nodes', __name__)
-
-#all node activities require authentication
+object_type = 'nodes'
+bp = flask.Blueprint(object_type,  __name__)
 
 
-@nodes.route('/', methods=['GET', 'POST'])
-def list_nodes():
-    if flask.request.method == 'POST':
-        data = flask.request.json
-
-        if not 'name' in data:
-            return errors.http_bad_request('missing necessary fields')
-
-        try:
-            node = api.node_create(data)
-            href = flask.request.base_url + str(node['id'])
-            msg = {'status': 201,
-                   'message': 'Node Created',
-                   'node': node,
-                   'ref': href}
-            resp = flask.jsonify(msg)
-            resp.status_code = 201
-            resp.headers['Location'] = href
-        except exceptions.CreateError as e:
-            return errors.http_bad_request(e.message)
-    else:
-        nodes = api.nodes_get_all()
-        resp = flask.jsonify({'nodes': nodes})
-    return resp
+@bp.route('/', methods=['GET', 'POST'])
+def list():
+    return generic.list(object_type)
 
 
-@nodes.route('/<node_id>/tasks_blocking', methods=['GET'])
+@bp.route('/<object_id>', methods=['GET', 'PUT', 'DELETE'])
+def by_id(object_id):
+    return generic.object_by_id(object_type, object_id)
+
+
+@bp.route('/<node_id>/tasks_blocking', methods=['GET'])
 def tasks_blocking_by_node_id(node_id):
     task = api.task_get_first_by_filter({'node_id': node_id,
                                          'state': 'pending'})
@@ -61,21 +43,21 @@ def tasks_blocking_by_node_id(node_id):
     return result
 
 
-@nodes.route('/<node_id>/tasks', methods=['GET', 'PUT'])
+@bp.route('/<node_id>/tasks', methods=['GET'])
 def tasks_by_node_id(node_id):
     # Display only tasks with state=pending
     task = api.task_get_first_by_filter({'node_id': node_id,
                                          'state': 'pending'})
     if not task:
-        return errors.http_not_found()
+        return generic.http_notfound()
     else:
-        resp = flask.jsonify({'task': task})
+        resp = generic.http_response(task=task)
         task['state'] = 'delivered'
         api._model_update_by_id('tasks', task['id'], task)
         return resp
 
 
-@nodes.route('/<node_id>/adventures', methods=['GET'])
+@bp.route('/<node_id>/adventures', methods=['GET'])
 def adventures_by_node_id(node_id):
     node = api.node_get_by_id(node_id)
     if not node:
@@ -99,36 +81,8 @@ def adventures_by_node_id(node_id):
     return resp
 
 
-@nodes.route('/<node_id>/<key>', methods=['GET', 'PUT'])
-def attributes_by_node_id(node_id, key):
-    node = api.node_get_by_id(node_id)
-    if not node:
-        return errors.http_not_found()
-    else:
-        if flask.request.method == 'PUT':
-            if key in ['id', 'name']:
-                msg = "Attribute %s is not modifiable" % key
-                return errors.http_bad_request(msg)
-            else:
-                if key not in flask.request.json:
-                    msg = "Empty body"
-                    return http_bad_request(msg)
-                else:
-                    data = {key: flask.request.json[key]}
-                    updated_node = api.node_update_by_id(node_id, data)
-                    msg = {'status': 200,
-                           'node': updated_node,
-                           'message': 'Updated Attribute: %s' % key}
-                    resp = flask.jsonify(msg)
-                    resp.status_code = 200
-        else:
-            resp = flask.jsonify({key: node[key]})
-        return resp
-
-
-@nodes.route('/<node_id>/tree', methods=['GET'])
+@bp.route('/<node_id>/tree', methods=['GET'])
 def tree_by_id(node_id):
-    recurse = 'recurse' in flask.request.args
     seen_nodes = []
 
     def fill_children(node_hash):
@@ -153,36 +107,8 @@ def tree_by_id(node_id):
     seen_nodes.append(node_id)
 
     if not node:
-        return errors.http_not_found()
+        return generic.http_notfound()
     else:
         fill_children(node)
-        resp = flask.jsonify({'tree': node})
+        resp = generic.http_response(tree=node)
         return resp
-
-
-@nodes.route('/<node_id>', methods=['GET', 'PUT', 'DELETE'])
-def node_by_id(node_id):
-    if flask.request.method == 'PUT':
-        data = flask.request.json
-        node = api.node_update_by_id(node_id, data)
-        resp = flask.jsonify({'node': node})
-        return resp
-    elif flask.request.method == 'DELETE':
-        try:
-            node = api.node_get_by_id(node_id)
-            if api.node_delete_by_id(node_id):
-                msg = {'status': 200, 'message': 'Node deleted'}
-                resp = flask.jsonify(msg)
-                resp.status_code = 200
-                return resp
-        except exceptions.NodeNotFound:
-            return errors.http_not_found()
-    else:
-        # node = api.node_get_by_filter({'id': node_id})
-        node = api.node_get_by_id(node_id)
-
-        if not node:
-            return errors.http_not_found()
-        else:
-            resp = flask.jsonify({'node': node})
-            return resp
