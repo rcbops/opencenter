@@ -18,8 +18,5 @@ class PrimitiveTests(RoushTestCase):
     def tearDown(self):
         pass
 
-    def test_create_generator(self):
-        pass
-
 
 PrimitiveTests = inject(PrimitiveTests)
