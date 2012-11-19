@@ -22,7 +22,7 @@ class RoushTestCase(unittest2.TestCase):
         pass
 
     def _clean_all(self):
-        for what in ['task', 'node', 'fact', 'filter']:
+        for what in ['task', 'node', 'fact', 'filter', 'primitive']:
             all_results = self._model_get_all(what)
             for what_id in [x['id'] for x in all_results]:
                 self._model_delete(what, what_id)
