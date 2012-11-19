@@ -2,6 +2,7 @@
 import unittest2
 
 from util import RoushTestCase
+from util import inject
 
 
 class FactsTests(RoushTestCase):
@@ -39,9 +40,6 @@ class FactsTests(RoushTestCase):
 
         all_facts = self._model_get_all('fact')
         all_nodes = self._model_get_all('node')
-
-        self.assertEquals(len(all_facts), 0)
-        self.assertEquals(len(all_nodes), 0)
 
     def test_001_add_fact(self):
         self._model_create('fact', node_id=self.n1['id'],
@@ -134,3 +132,6 @@ class FactsTests(RoushTestCase):
                                   value='test_value')
         self.app.logger.debug('fact: %s' % fact)
         self._model_get_by_id('fact', fact['id'])
+
+
+FactsTests = inject(FactsTests)
