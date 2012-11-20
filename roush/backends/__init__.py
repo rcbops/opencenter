@@ -44,5 +44,6 @@ def load():
                     backend_list[file_name] = getattr(sys.modules[import_str],
                                                       class_str)()
                 except Exception as e:
-                    LOG.error('Cannot load %s from %s: %s' % (
-                            class_str, import_str, str(e)))
+                    LOG.error('Cannot load %s from %s: %s' % (class_str,
+                                                              import_str,
+                                                              str(e)))
