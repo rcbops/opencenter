@@ -1,12 +1,15 @@
 #!/usr/bin/env python
+import copy
 import logging
 
 import sqlalchemy
 
 from roush.db.database import session
 from roush.db import exceptions
+from roush.db import inmemory
 
 from roush.webapp.ast import FilterBuilder, FilterTokenizer
+
 
 LOG = logging.getLogger(__name__)
 
@@ -16,33 +19,81 @@ class DbAbstraction(object):
         pass
 
     def get_columns(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def get_all(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def get_schema(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def create(self, data):
-        raise NotImplemented
+        raise NotImplementedError
 
     def delete(self, id):
-        raise NotImplemented
+        raise NotImplementedError
 
     def get(self, id):
-        raise NotImplemented
+        raise NotImplementedError
 
     def filter(self, filters):
         """get data by sql alchemy filters"""
-        raise NotImplemented
+        raise NotImplementedError
 
     def query(self, query):
         """get data with filter language query"""
-        raise NotImplemented
+        query = '%s: %s' % (self.name, query)
+
+        builder = FilterBuilder(FilterTokenizer(), query)
+        result = builder.filter()
+        return result
 
     def update(self, id, data):
-        raise NotImplemented
+        raise NotImplementedError
+
+    def _sanitize_for_update(self, data):
+        # should we sanitize, or raise?
+        retval = copy.deepcopy(data)
+
+        schema = self.get_schema()['schema']
+
+        ro_fields = [x for x in schema if schema[x]['updatable'] is False]
+
+        for field in ro_fields:
+            if field in retval:
+                retval.pop(field)
+
+        for field in data:
+            if not field in schema.keys():
+                retval.pop(field)
+
+        return retval
+
+    def _sanitize_for_create(self, data):
+        retval = copy.deepcopy(data)
+
+        schema = self.get_schema()['schema']
+
+        required_fields = [x for x in schema if schema[x]['required'] is True]
+        ro_fields = [x for x in schema if schema[x]['read_only'] is True]
+
+        # this should be generalized to pks, I think?
+        if 'id' in required_fields:
+            required_fields.remove('id')
+
+        for field in required_fields:
+            if not field in retval:
+                raise KeyError('missing required field %s' % field)
+
+        for field in ro_fields:
+            if field in retval:
+                retval.pop(field)
+
+        for field in data:
+            if not field in schema.keys():
+                retval.pop(field)
+
+        return retval
 
 
 class SqlAlchemyAbstraction(DbAbstraction):
@@ -110,35 +161,15 @@ class SqlAlchemyAbstraction(DbAbstraction):
         :param model: name of the table model
         :param fields: dict of columns:values to create
         """
-        field_list = self.get_columns()
-        field_list.remove('id')
-        schema = self.get_schema()['schema']
 
-        required_fields = [x for x in schema if schema[x]['required'] is True]
-        ro_fields = [x for x in schema if schema[x]['read_only'] is True]
-
-        if 'id' in required_fields:
-            required_fields.remove('id')
-
-        LOG.debug('Required fields for object %s: %s' % (self.name,
-                                                         required_fields))
-
-        for field in required_fields:
-            if not field in data:
-                raise KeyError('missing required field %s' % field)
-
-        for field in ro_fields:
-            if field in data:
-                data.pop(field)
-
-        r = self.model(**dict((field, data[field])
-                              for field in field_list if field in data))
+        new_data = self._sanitize_for_create(data)
+        r = self.model(**new_data)
 
         session.add(r)
         try:
             session.commit()
             ret = dict((c, getattr(r, c))
-                       for c in r.__table__.columns.keys())
+                       for c in self.get_columns())
             return ret
         except sqlalchemy.exc.StatementError as e:
             session.rollback()
@@ -189,30 +220,13 @@ class SqlAlchemyAbstraction(DbAbstraction):
                            for c in self.get_columns()) for res in r]
         return result
 
-    def query(self, query):
-        """get data with filter language query"""
-        query = '%s: %s' % (self.name, query)
-
-        builder = FilterBuilder(FilterTokenizer(), query)
-        result = builder.filter()
-        return result
-
     def update(self, id, data):
-        field_list = [c for c in self.model.__table__.columns.keys()]
-
+        new_data = self._sanitize_for_update(data)
         r = self.model.query.filter_by(id=id).first()
 
-        schema = self.get_schema()['schema']
+        for field in new_data:
+            r.__setattr__(field, data[field])
 
-        ro_fields = [x for x in schema if schema[x]['updatable'] is False]
-
-        for field in ro_fields:
-            if field in field_list:
-                field_list.remove(field)
-
-        for field in field_list:
-            if field in data:
-                r.__setattr__(field, data[field])
         try:
             ret = dict((c, getattr(r, c))
                        for c in r.__table__.columns.keys())
@@ -229,4 +243,83 @@ class SqlAlchemyAbstraction(DbAbstraction):
 
 
 class InMemoryAbstraction(DbAbstraction):
-    pass
+    # with the in-memory abstraction, we pass a dict that is
+    # implemented in keys.  We'll still use the model table to
+    # describe metadata, though.
+    def __init__(self, model, name, dictionary):
+        self.dictionary = dictionary
+        self.model = model
+        self.name = name
+
+        super(InMemoryAbstraction, self).__init__()
+
+    def get_columns(self):
+        cols = []
+
+        for attr in dir(self.model):
+            if isinstance(getattr(self.model, attr), inmemory.Column):
+                cols.append(attr)
+
+        if hasattr(self.model, '_synthesized_fields'):
+            cols += self.model._synthesized_fields
+
+        return cols
+
+    def get_all(self):
+        return self.dictionary.values()
+
+    def get_schema(self):
+        fields = {}
+
+        for attr in dir(self.model):
+            col = getattr(self.model, attr)
+
+            if isinstance(getattr(self.model, attr), inmemory.Column):
+                fields[attr] = col.schema
+
+
+        if hasattr(self.model, '_synthesized_fields'):
+            for syn in self.model._synthesized_fields:
+                fields[syn] = {'type': 'TEXT',
+                               'unique': False,
+                               'required': False,
+                               'updatable': False,
+                               'read_only': True,
+                               'primary_key': False}
+
+        # this should not be
+        return {'schema': fields}
+
+    def create(self, data):
+        new_data = self._sanitize_for_create(data)
+
+        # try:
+        new_thing = self.model(**new_data)
+
+        # except TypeError:
+        #     raise exceptions.CreateError('bad type.')
+
+        retval = dict((c, getattr(new_thing, c))
+                      for c in self.get_columns())
+
+        retval['id'] = self._get_new_id()
+        self.dictionary[retval['id']] = retval
+        return retval
+
+    def delete(self, id):
+        self.dictionary.pop(id)
+
+    def get(self, id):
+        if id in self.dictionary:
+            return self.dictionary[id]
+        return None
+
+    def update(self, id, data):
+        new_data = self._sanitize_for_update(data)
+        self.dictionary[id].update(new_data)
+        return self.dictionary[id]
+
+    def _get_new_id(self):
+        if len(self.dictionary) == 0:
+            return 1
+        return max(self.dictionary.keys()) + 1

@@ -8,10 +8,11 @@ from sqlalchemy.exc import InvalidRequestError
 
 from database import Base
 
+import inmemory
+
 
 # Special Fields
 class JsonBlob(types.TypeDecorator):
-
     impl = types.Text
 
     def _is_valid_obj(self, value):
@@ -219,3 +220,23 @@ class Filters(Base):
             return "(%s) and (%s)" % (self.expr, self.parent.full_expr)
         else:
             return self.expr
+
+
+class Somethings(inmemory.InMemoryBase):
+    id = inmemory.Column("INTEGER", primary_key=True)
+    name = inmemory.Column("VARCHAR(32)", required=True)
+    descr = inmemory.Column("JSON_ENTRY")
+    count = inmemory.Column("INTEGER", updatable=False)
+
+    _synthesized_fields = ['inccount']
+
+    def __init__(self, name, descr=None, count=None):
+        self.name = name
+        self.descr = descr
+        self.count = count
+
+    @property
+    def inccount(self):
+        if self.count:
+            return self.count + 1
+        return 0

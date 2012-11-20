@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+class Column(object):
+    def __init__(self, column_type, *args, **kwargs):
+        self.schema = {'primary_key': False,
+                       'unique': False,
+                       'updatable': True,
+                       'required': False,
+                       'read_only': False}
+        self.schema.update(kwargs)
+        self.schema['type'] = column_type
+
+class InMemoryBase(object):
+    def __new__(cls, *args, **kwargs):
+        obj = super(InMemoryBase, cls).__new__(cls, *args, **kwargs)
+
+        if not '__cols__' in obj.__dict__:
+            obj.__dict__['__cols__'] = {}
+
+        for k, v in obj.__class__.__dict__.iteritems():
+            print 'found %s' % k
+            if isinstance(v, Column):
+                print 'moving %s' % k
+                obj.__dict__['__cols__'][k] = v
+
+        return obj
+
+    def __coerce(self, what, towhat):
+        if what != None:
+            return towhat(what)
+
+        return what
+
+    def __setattr__(self, name, value):
+        if name in self.__dict__['__cols__']:
+            wanted_type = str
+
+            type_name = self.__dict__['__cols__'][name].schema['type']
+
+            if type_name == 'INTEGER' or type_name == 'NUMBER':
+                wanted_type = int
+
+            new_value = self.__coerce(value, wanted_type)
+
+            self.__dict__[name] = new_value
+        else:
+            self.__dict__[name] = value

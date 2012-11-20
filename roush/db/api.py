@@ -8,17 +8,27 @@ import sqlalchemy
 
 from roush.db import models
 from roush.db import abstraction
+from roush.db import inmemory
 
 LOG = logging.getLogger(__name__)
 
 model_list = {}
+in_memory_dict = {}
+
 
 for d in dir(models):
+    model_name = d.lower()
+    model = getattr(models, d)
+
     if type(models.Nodes) == type(getattr(models, d)) and d != 'Base':
-        model_name = d.lower()
-        model = getattr(models, d)
         model_list[model_name] = abstraction.SqlAlchemyAbstraction(
             model, model_name)
+    elif isinstance(getattr(models,d), type) and \
+            issubclass(model, inmemory.InMemoryBase):
+        in_memory_dict[model_name] = {}
+
+        model_list[model_name] = abstraction.InMemoryAbstraction(
+            model, d, in_memory_dict[model_name])
 
 
 def _get_models():
@@ -26,6 +36,8 @@ def _get_models():
 
 
 def _call_model(function, model, *args, **kwargs):
+    model = model.lower()
+
     if not model in model_list:
         raise KeyError('unknown model %s' % model)
 
@@ -56,27 +68,26 @@ def _model_get_first_by_filter(model, filters):
 
 # set up the default boilerplate functions, then
 # allow overrides after that
-for d in dir(models):
-    if type(models.Nodes) == type(getattr(models, d)) and d != 'Base':
-        model = d.lower()
-        sing = model[:-1]
+for d in _get_models():
+    model = d.lower()
+    sing = model[:-1]
 
-        globals()['%s_get_all' % model] = partial(
-            _model_get_all, model)
-        globals()['%s_delete_by_id' % sing] = partial(
-            _model_delete_by_id, model)
-        globals()['%s_get_columns' % sing] = partial(
-            _model_get_columns, model)
-        globals()['%s_get_first_by_filter' % sing] = partial(
-            _model_get_first_by_filter, model)
-        globals()['%s_get_by_id' % sing] = partial(
-            _model_get_by_id, model)
-        globals()['%s_create' % sing] = partial(
-            _model_create, model)
-        globals()['%s_update_by_id' % sing] = partial(
-            _model_update_by_id, model)
-        globals()['%s_query' % model] = partial(
-            _model_query, model)
+    globals()['%s_get_all' % model] = partial(
+        _model_get_all, model)
+    globals()['%s_delete_by_id' % sing] = partial(
+        _model_delete_by_id, model)
+    globals()['%s_get_columns' % sing] = partial(
+        _model_get_columns, model)
+    globals()['%s_get_first_by_filter' % sing] = partial(
+        _model_get_first_by_filter, model)
+    globals()['%s_get_by_id' % sing] = partial(
+        _model_get_by_id, model)
+    globals()['%s_create' % sing] = partial(
+        _model_create, model)
+    globals()['%s_update_by_id' % sing] = partial(
+        _model_update_by_id, model)
+    globals()['%s_query' % model] = partial(
+        _model_query, model)
 
 
 def adventures_get_by_node_id(node_id):

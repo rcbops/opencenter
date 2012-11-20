@@ -22,6 +22,7 @@ from roush.webapp.index import bp as index
 from roush.webapp.nodes import bp as nodes
 from roush.webapp.primitives import bp as primitives
 from roush.webapp.tasks import bp as tasks
+from roush.webapp.somethings import bp as somethings
 
 
 # Stolen: http://code.activestate.com/recipes/\
@@ -148,6 +149,7 @@ class Thing(Flask):
         self.register_blueprint(filters, url_prefix='/filters')
         self.register_blueprint(facts, url_prefix='/facts')
         self.register_blueprint(primitives, url_prefix='/primitives')
+        self.register_blueprint(somethings, url_prefix='/somethings')
         self.testing = debug
 
         if debug:
