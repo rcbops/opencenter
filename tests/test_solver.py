@@ -8,6 +8,8 @@ from roush.webapp import ast
 
 class ExpressionTestCase(RoushTestCase):
     def setUp(self):
+        self._clean_all()
+
         self.nodes = {}
         self.interfaces = {}
 
@@ -15,6 +17,12 @@ class ExpressionTestCase(RoushTestCase):
         self.interfaces['chef'] = self._model_create('filter', name='chef',
                                                      filter_type='interface',
                                                      expr='facts.x = true')
+
+        # we'll blow away the "stock" primitives, too..
+        all_primitives = self._model_get_all('primitive')
+        for what_id in [x['id'] for x in all_primitives]:
+            self.logger.debug('deleting primitive %d' % what_id)
+            self._model_delete('primitive', what_id)
 
     def tearDown(self):
         self._clean_all()

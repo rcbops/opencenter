@@ -8,10 +8,11 @@ from sqlalchemy.exc import InvalidRequestError
 
 from database import Base
 
+import inmemory
+
 
 # Special Fields
 class JsonBlob(types.TypeDecorator):
-
     impl = types.Text
 
     def _is_valid_obj(self, value):
@@ -91,21 +92,23 @@ def task_state_mungery(target, value, oldvalue, initiator):
         target.completed = int(time.time())
 
 
-class Primitives(Base):
-    __tablename__ = 'primitives'
+# This shifts over to in-memory on the backends
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64), unique=True, nullable=False)
-    args = Column(JsonBlob, default={})
-    constraints = Column(JsonBlob, default=[])
-    consequences = Column(JsonBlob, default=[])
+# class Primitives(Base):
+#     __tablename__ = 'primitives'
 
-    def __init__(self, name, args=None, constraints=None,
-                 consequences=None):
-        self.name = name
-        self.args = args
-        self.constraints = constraints
-        self.consequences = consequences
+#     id = Column(Integer, primary_key=True)
+#     name = Column(String(64), unique=True, nullable=False)
+#     args = Column(JsonBlob, default={})
+#     constraints = Column(JsonBlob, default=[])
+#     consequences = Column(JsonBlob, default=[])
+
+#     def __init__(self, name, args=None, constraints=None,
+#                  consequences=None):
+#         self.name = name
+#         self.args = args
+#         self.constraints = constraints
+#         self.consequences = consequences
 
 
 class Facts(Base):
@@ -219,3 +222,19 @@ class Filters(Base):
             return "(%s) and (%s)" % (self.expr, self.parent.full_expr)
         else:
             return self.expr
+
+
+class Primitives(inmemory.InMemoryBase):
+    id = inmemory.Column(inmemory.Integer, primary_key=True, nullable=False,
+                         required=True)
+    name = inmemory.Column(inmemory.String(32), required=True)
+    args = inmemory.Column(inmemory.JsonBlob, default={})
+    constraints = inmemory.Column(inmemory.JsonBlob, default=[])
+    consequences = inmemory.Column(inmemory.JsonBlob, default=[])
+
+    def __init__(self, name, args=None, constraints=None,
+                 consequences=None):
+        self.name = name
+        self.args = args
+        self.constraints = constraints
+        self.consequences = consequences

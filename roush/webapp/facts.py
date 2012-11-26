@@ -37,7 +37,11 @@ def create():
         model_object = api._model_update_by_id(
             object_type, old_fact['id'], data)
     else:
-        model_object = api._model_create(object_type, data)
+        try:
+            model_object = api._model_create(object_type, data)
+        except KeyError as e:
+            # missing required field
+            return generic.http_badrequest(msg=str(e))
 
     href = flask.request.base_url + str(model_object['id'])
     return generic.http_response(201, '%s Created' %

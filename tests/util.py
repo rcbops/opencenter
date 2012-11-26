@@ -11,7 +11,7 @@ from roush.db.database import init_db
 
 class RoushTestCase(unittest2.TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls, *args, **kwargs):
         cls.app = webapp.Thing('roush', configfile='test.conf', debug=True)
         init_db(cls.app.config['database_uri'])
         cls.client = cls.app.test_client()
@@ -21,8 +21,11 @@ class RoushTestCase(unittest2.TestCase):
     def tearDownClass(cls):
         pass
 
+    def __init__(self, *args, **kwargs):
+        super(RoushTestCase, self).__init__(*args, **kwargs)
+
     def _clean_all(self):
-        for what in ['task', 'node', 'fact', 'filter', 'primitive']:
+        for what in ['task', 'node', 'fact', 'filter']:
             all_results = self._model_get_all(what)
             for what_id in [x['id'] for x in all_results]:
                 self._model_delete(what, what_id)
@@ -36,13 +39,13 @@ class RoushTestCase(unittest2.TestCase):
             choices = [lambda: self._random_str(10),
                        lambda: self._valid_rand('INTEGER'),
                        lambda: [self._random_str(10) for x in range(10)]]
-            return choices()
+            return choices[random.randrange(0, len(choices))]()
         elif var_type == 'JSON':
             choices = [lambda: [self._random_str(10) for x in range(10)],
                        lambda: dict([(self._random_str(5),
                                       self._valid_rand('INTEGER'))
                                      for x in range(10)])]
-            return choices()
+            return choices[random.randrange(0, len(choices))]()
         elif var_type.startswith('VARCHAR'):
             str_len = int(var_type.split('(')[1][:-1])
             return self._random_str(str_len)
@@ -62,13 +65,15 @@ class RoushTestCase(unittest2.TestCase):
     def _client_request(self, method, uri, **kwargs):
         fn = getattr(self.client, method)
         self.assertIsNotNone(fn)
-        return fn(uri, content_type='application/json', **kwargs)
+        return fn(uri, content_type='application/json',
+                  data=json.dumps(kwargs))
 
     def _model_create(self, model, **kwargs):
         resp = self.client.post('/%s/' % self._pluralize(model),
                                 content_type='application/json',
                                 data=json.dumps(kwargs))
 
+        self.logger.debug('Create: got %s' % json.loads(resp.data)[model])
         self.assertEquals(resp.status_code, 201)
         return json.loads(resp.data)[model]
 
@@ -119,39 +124,79 @@ class RoushTestCase(unittest2.TestCase):
         out = json.loads(resp.data)
         return out['schema']
 
-    def test_get_schema(self):
-        if not hasattr(self, 'base_object'):
-            self.skipTest('no base_object')
 
-        self._model_get_schema(self.base_object)
+def _test_fail(self):
+    self.assertTrue(False)
 
-    def test_create(self):
-        if not hasattr(self, 'base_object'):
-            self.skipTest('no base_object')
 
-        bo = self.base_object
-        bop = self._pluralize(bo)
+def _test_get_schema(self):
+    self._model_get_schema(self.base_object)
 
-        schema = self._model_get_schema(self.base_object)
 
-        req_fields = [x for x in schema if (schema[x]['required'] is True) and
-                      (schema[x]['primary_key'] is False)]
-        ro_fields = [x for x in schema if schema[x]['updatable'] is False]
+def _test_missing_create_field(self, missing_field, expected_code):
+    bo = self.base_object
+    bop = self._pluralize(bo)
 
-        ids = []
+    schema = self._model_get_schema(bo)
+    all_fields = [x for x in schema]
+    all_fields.remove('id')
 
-        # make sure we can't create without a non-updatable field
-        for field in req_fields:
-            full_field_list = req_fields
-            full_field_list.remove(field)
+    data = dict(zip(all_fields,
+                    [self._valid_rand(schema[x]['type'])
+                     for x in all_fields]))
 
-            data = dict(zip(full_field_list,
-                            [self._valid_rand(schema[x]['type'])
-                             for x in full_field_list]))
+    data.pop(missing_field)
 
-            self.app.logger.debug('Creating new %s with %s' % (bo, data))
+    self.logger.debug('creating with data %s (missing %s)' %
+                      (data, missing_field))
+    resp = self._client_request('post', '/%s/' % bop, **data)
 
-            res = self._client_request('post', '/%s/' % bop, data=data)
-            self.app.logger.debug('result: %s: %s' %
-                                  (res.status_code, res.data))
-            self.assertEquals(res.status_code, 400)
+    self.logger.debug('got status_code of %d, %s' % (resp.status_code,
+                                                     resp.data))
+    self.assertEquals(resp.status_code, expected_code)
+    if expected_code == 400:
+        self.assertTrue('missing required' in json.loads(resp.data)['message'])
+
+
+def inject(cls):
+    model = getattr(cls, 'base_object', None)
+
+    if model is None:
+        raise SyntaxError("missing base object")
+
+    test = lambda self: _test_get_schema(self)
+    test.__name__ = 'test_get_primitive_schema'
+    setattr(cls, test.__name__, test)
+
+    app = webapp.Thing('roush', configfile='test.conf', debug=True)
+    init_db(app.config['database_uri'])
+    client = app.test_client()
+    logger = app.logger
+
+    resp = client.get('%ss/schema' % model)
+    out = json.loads(resp.data)
+    schema = out['schema']
+
+    all_fields = [x for x in schema]
+    all_fields.remove('id')
+    req_fields = [x for x in schema if (schema[x]['required'] is True) and
+                  (schema[x]['primary_key'] is False)]
+
+    for field in req_fields:
+        test = lambda self, field=field: _test_missing_create_field(
+            self, field, 400)
+        test.__name__ = str('test_create_%s_without_%s_returns_%d' %
+                            (model, field, 400))
+
+        setattr(cls, test.__name__, test)
+
+    for field in all_fields:
+        if field not in req_fields:
+            test = lambda self, field=field: _test_missing_create_field(
+                self, field, 201)
+            test.__name__ = str('test_create_%s_without_%s_returns_%d' %
+                                (model, field, 201))
+
+            setattr(cls, test.__name__, test)
+
+    return cls

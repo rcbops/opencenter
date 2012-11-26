@@ -108,7 +108,8 @@ class AbstractTokenizer(object):
     def __init__(self):
         self.tokens = []
         self.remainer = ''
-        self.logger = logging.getLogger('filter.tokenizer')
+        classname = self.__class__.__name__.lower()
+        self.logger = logging.getLogger('%s.%s' % (__name__, classname))
 
     def parse(self, input_expression):
         self.tokens, self.remainder = self.scanner.scan(input_expression)
@@ -224,7 +225,8 @@ class AstBuilder(object):
                  ns={}):
         self.tokenizer = tokenizer
         self.input_expression = input_expression
-        self.logger = logging.getLogger(__name__)
+        classname = self.__class__.__name__.lower()
+        self.logger = logging.getLogger('%s.%s' % (__name__, classname))
         self.logger.debug('New builder on expression: %s' %
                           self.input_expression)
         self.functions = functions
@@ -442,7 +444,8 @@ class Node:
         self.rhs = rhs
         self.op = op
         self.negate = negate
-        self.logger = logging.getLogger('filter.node')
+        classname = self.__class__.__name__.lower()
+        self.logger = logging.getLogger('%s.%s' % (__name__, classname))
 
     def value_to_s(self):
         if self.op == 'STRING':
@@ -579,8 +582,8 @@ class Node:
         self.logger.debug('resolving identifier "%s" on:\n%s with ns %s' %
                           (identifier, node, symbol_table))
 
-        if not identifier:
-            return None
+        if node is None or identifier is None:
+            raise TypeError('invalid node or identifier in eval_identifier')
 
         if identifier in symbol_table:
             return symbol_table[identifier]
@@ -770,11 +773,16 @@ class Node:
 class Solver:
     def __init__(self, node, cluster, constraints, parent=None, prim=None,
                  ns={}):
+
+        if node is None:
+            raise ValueError('cannot solve without a concrete node')
+
         self.constraints = constraints
         self.node = node
         self.consequences = []
         self.children = []
-        self.logger = logging.getLogger('%s.solver' % __name__)
+        classname = self.__class__.__name__.lower()
+        self.logger = logging.getLogger('%s.%s' % (__name__, classname))
         self.solutions = {}
         self.parent = parent
         self.cluster = cluster
@@ -899,12 +907,14 @@ class Solver:
         applied_primitives = []
 
         for primitive in primitives:
-            self.logger.debug('evaluating primitive %s' % primitive['name'])
+            self.logger.debug('evaluating primitive for constraints: %s' %
+                              primitive)
             can_add = True
+
             if primitive['constraints'] != []:
                 constraint_filter = ' AND '.join(map(lambda x: '(%s)' % x,
-                                                     primitive.constraints))
-                builder = FilterBuilder(FilterTokenizer, constraint_filter,
+                                                     primitive['constraints']))
+                builder = FilterBuilder(FilterTokenizer(), constraint_filter,
                                         'nodes')
                 root_node = builder.build()
 

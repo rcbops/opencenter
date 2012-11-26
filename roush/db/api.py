@@ -2,163 +2,69 @@
 # tab stops are 8.  ^^ this is wrong
 
 import logging
-from time import time
 from functools import partial
 
 import sqlalchemy
 
 from roush import backends
-
-from roush.db.database import session
-from roush.db import exceptions
 from roush.db import models
-
-from roush.webapp.ast import FilterBuilder, FilterTokenizer
+from roush.db import abstraction
+from roush.db import inmemory
 
 LOG = logging.getLogger(__name__)
 
-
-def _get_model_object(model):
-    return getattr(models, model.capitalize())
-
-
-def _model_get_all(model):
-    field_list = _model_get_columns(model)
-
-    return [dict((c, getattr(r, c))
-                 for c in field_list)
-            for r in _get_model_object(model).query.all()]
+model_list = {}
+in_memory_dict = {}
 
 
-def _model_get_columns(model):
-    mo = _get_model_object(model)
+backends.load()
 
-    field_list = [c for c in mo.__table__.columns.keys()]
+for d in dir(models):
+    model_name = d.lower()
+    model = getattr(models, d)
 
-    if hasattr(mo, '_synthesized_fields'):
-        field_list += mo._synthesized_fields
+    if type(models.Nodes) == type(getattr(models, d)) and d != 'Base':
+        model_list[model_name] = abstraction.SqlAlchemyAbstraction(
+            model, model_name)
+    elif isinstance(getattr(models, d), type) and \
+            issubclass(model, inmemory.InMemoryBase) and \
+            d != 'Primitives':
+        in_memory_dict[model_name] = {}
 
-    return field_list
-
-
-def _model_get_schema(model):
-    obj = _get_model_object(model)
-    cols = obj.__table__.columns
-
-    fields = {}
-    for k in cols.keys():
-        fields[k] = {}
-        fields[k]['type'] = str(cols[k].type)
-        if repr(cols[k].type) == 'JsonBlob()':
-            fields[k]['type'] = 'JSON'
-
-        if repr(cols[k].type) == 'JsonEntry()':
-            fields[k]['type'] = 'JSON_ENTRY'
-
-        fields[k]['primary_key'] = cols[k].primary_key
-        fields[k]['unique'] = cols[k].unique or cols[k].primary_key
-        fields[k]['updatable'] = True
-        fields[k]['required'] = not cols[k].nullable
-
-        if hasattr(obj, '_non_updatable_fields'):
-            if k in obj._non_updatable_fields:
-                fields[k]['updatable'] = False
-
-        if len(cols[k].foreign_keys) > 0:
-            fields[k]['fk'] = list(cols[k].foreign_keys)[0].target_fullname
-
-    if hasattr(obj, '_synthesized_fields'):
-        for syn in obj._synthesized_fields:
-            fields[syn] = {'type': 'TEXT',
-                           'unique': False,
-                           'nullable': False,
-                           'updatable': False,
-                           'primary_key': False}
-
-    return {'schema': fields}
+        model_list[model_name] = abstraction.InMemoryAbstraction(
+            model, d, in_memory_dict[model_name])
+    elif d == 'Primitives':
+        # these run off the backend.backend_primitives dict.
+        model_list[model_name] = abstraction.InMemoryAbstraction(
+            model, d, backends.backend_primitives)
 
 
-def _model_create(model, fields):
-    """Query helper for creating a row
-
-    :param model: name of the table model
-    :param fields: dict of columns:values to create
-    """
-    model_object = _get_model_object(model)
-    field_list = [c for c in model_object.__table__.columns.keys()]
-    field_list.remove('id')
-
-    r = model_object(**dict((field, fields[field])
-                            for field in field_list if field in fields))
-
-    session.add(r)
-    try:
-        session.commit()
-        ret = dict((c, getattr(r, c))
-                   for c in r.__table__.columns.keys())
-        backends.notify(model.rstrip('s'), 'create', None, ret)
-        return ret
-    except backends.BackendException as e:
-        session.rollback()
-        msg = 'backend failure: %s' % str(e)
-        raise exceptions.CreateError(msg)
-    except sqlalchemy.exc.StatementError as e:
-        session.rollback()
-        # msg = e.message
-        msg = "JSON object must be either type(dict) or type(list) " \
-              "not %s" % (e.message)
-        raise exceptions.CreateError(msg)
-    except sqlalchemy.exc.IntegrityError as e:
-        session.rollback()
-        msg = "Unable to create %s, duplicate entry" % (model.title())
-        raise exceptions.CreateError(message=msg)
+def _get_models():
+    return model_list.keys()
 
 
-def _model_delete_by_id(model, pk_id):
-    """Query helper for deleting a node
+def _call_model(function, model, *args, **kwargs):
+    model = model.lower()
 
-    :param model: name of the table model
-    :param pk_id: id to delete
-    """
-    r = _get_model_object(model).query.filter_by(id=pk_id).first()
-    # We need generate an object hash to pass to the backend notification
-    old_obj = None
-    if r is not None:
-        old_obj = dict((c, getattr(r, c))
-                       for c in r.__table__.columns.keys())
+    if not model in model_list:
+        raise KeyError('unknown model %s' % model)
 
-    try:
-        session.delete(r)
-        backends.notify(model.rstrip('s'), 'delete', old_obj, None)
-        session.commit()
-        return True
-    except backends.BackendException as e:
-        session.rollback()
-        msg = 'backend failure: %s' % str(e)
-        raise exc.CreateError(msg)
-    except sqlalchemy.orm.exc.UnmappedInstanceError as e:
-        session.rollback()
-        msg = "%s id does not exist" % (model.title())
-        raise exc.IdNotFound(message=msg)
-    except sqlalchemy.exc.InvalidRequestError as e:
-        session.rollback()
-        msg = e.msg
-        raise RuntimeError(msg)
+    if not hasattr(model_list[model], function):
+        raise ValueError('unknown model function %s' % function)
+
+    return getattr(model_list[model], function)(*args, **kwargs)
 
 
-def _model_get_by_id(model, pk_id):
-    """Query helper for getting a node
-
-    :param model: name of the table model
-    :param pk_id: id to delete
-    """
-
-    result = _model_get_by_filter(model, {'id': pk_id})
-
-    if len(result) == 0:
-        return None
-
-    return result[0]
+for name, method in {'_model_get_all': 'get_all',
+                     '_model_get_columns': 'get_columns',
+                     '_model_get_schema': 'get_schema',
+                     '_model_create': 'create',
+                     '_model_delete_by_id': 'delete',
+                     '_model_get_by_id': 'get',
+                     '_model_get_by_filter': 'filter',
+                     '_model_query': 'query',
+                     '_model_update_by_id': 'update'}.items():
+    globals()[name] = partial(_call_model, method)
 
 
 def _model_get_first_by_filter(model, filters):
@@ -168,100 +74,28 @@ def _model_get_first_by_filter(model, filters):
     return None
 
 
-def _model_get_by_filter(model, filters):
-    """Query helper that returns a node dict.
-
-    :param filters: dictionary of filters; that are combined with AND
-                    to filter the result set.
-    """
-    filter_options = sqlalchemy.sql.and_(
-        * [_get_model_object(model).__table__.columns[k] == v
-           for k, v in filters.iteritems()])
-    r = _get_model_object(model).query.filter(filter_options)
-    if not r:
-        result = None
-    else:
-        result = [dict((c, getattr(res, c))
-                       for c in _model_get_columns(model)) for res in r]
-    return result
-
-
-def _model_query(model, query):
-    query = '%s: %s' % (model, query)
-
-    builder = FilterBuilder(FilterTokenizer(), query)
-    result = builder.filter()
-
-    return result
-
-
-def _model_update_by_id(model, pk_id, fields):
-    """Query helper for updating a row
-
-    :param model: name of the table model
-    :param pk_id: id to update
-    :param pk_id: dict of columns:values to update
-    """
-    field_list = [c for c in _get_model_object(model).__table__.columns.keys()]
-
-    r = _get_model_object(model).query.filter_by(id=pk_id).first()
-
-    if hasattr(r, '_non_updatable_fields'):
-        for d in r._non_updatable_fields:
-            field_list.remove(d)
-
-    # We need generate an object hash to pass to the backend notification
-    old_obj = None
-    if r is not None:
-        old_obj = dict((c, getattr(r, c))
-                       for c in r.__table__.columns.keys())
-
-    for field in field_list:
-        if field in fields:
-            r.__setattr__(field, fields[field])
-    try:
-        ret = dict((c, getattr(r, c))
-                   for c in r.__table__.columns.keys())
-        backends.notify(model.rstrip('s'), 'update', old_obj, ret)
-        session.commit()
-        return ret
-    except backends.BackendException as e:
-        session.rollback()
-        msg = 'backend failure: %s' % str(e)
-        raise e
-    except sqlalchemy.exc.InvalidRequestError as e:
-        print "invalid req"
-        session.rollback()
-        msg = e.msg
-        raise RuntimeError(msg)
-    except:
-        session.rollback()
-        raise
-
-
 # set up the default boilerplate functions, then
 # allow overrides after that
-for d in dir(models):
-    if type(models.Nodes) == type(getattr(models, d)) and d != 'Base':
-        model = d.lower()
-        sing = model[:-1]
+for d in _get_models():
+    model = d.lower()
+    sing = model[:-1]
 
-        globals()['%s_get_all' % model] = partial(
-            _model_get_all, model)
-        globals()['%s_delete_by_id' % sing] = partial(
-            _model_delete_by_id, model)
-        globals()['%s_get_columns' % sing] = partial(
-            _model_get_columns, model)
-        globals()['%s_get_first_by_filter' % sing] = partial(
-            _model_get_first_by_filter, model)
-        globals()['%s_get_by_id' % sing] = partial(
-            _model_get_by_id, model)
-        globals()['%s_create' % sing] = partial(
-            _model_create, model)
-        globals()['%s_update_by_id' % sing] = partial(
-            _model_update_by_id, model)
-        globals()['%s_query' % model] = partial(
-            _model_query, model)
+    globals()['%s_get_all' % model] = partial(
+        _model_get_all, model)
+    globals()['%s_delete_by_id' % sing] = partial(
+        _model_delete_by_id, model)
+    globals()['%s_get_columns' % sing] = partial(
+        _model_get_columns, model)
+    globals()['%s_get_first_by_filter' % sing] = partial(
+        _model_get_first_by_filter, model)
+    globals()['%s_get_by_id' % sing] = partial(
+        _model_get_by_id, model)
+    globals()['%s_create' % sing] = partial(
+        _model_create, model)
+    globals()['%s_update_by_id' % sing] = partial(
+        _model_update_by_id, model)
+    globals()['%s_query' % model] = partial(
+        _model_query, model)
 
 
 def adventures_get_by_node_id(node_id):
@@ -284,7 +118,7 @@ def adventures_get_by_node_id(node_id):
         models.Adventures.backend_state == 'null')
     adventure_list = models.Adventures.query.join(
         models.Nodes,
-        and_(stmt1, stmt2, Nodes.id == node_id)).all()
+        sqlalchemy.sql.and_(stmt1, stmt2, models.Nodes.id == node_id)).all()
 
     result = [dict((c, getattr(r, c))
                    for c in r.__table__.columns.keys())

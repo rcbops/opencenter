@@ -53,8 +53,9 @@ class NodeCreateTests(unittest2.TestCase):
         resp = self.app.post('/nodes/',
                              content_type=self.content_type,
                              data=json.dumps(data))
-        self.assertEquals(resp.status_code, 201)
         out = json.loads(resp.data)
+        self.foo.logger.debug(out)
+        self.assertEquals(resp.status_code, 201)
         self.assertEquals(out['status'], 201)
         self.assertEquals(out['message'], 'Node Created')
         self.assertEquals(out['node']['name'], self.name)
@@ -76,98 +77,6 @@ class NodeCreateTests(unittest2.TestCase):
             path,
             content_type=self.content_type)
         self.assertEquals(resp.status_code, code)
-
-
-class NodeUpdateTests(unittest2.TestCase):
-    @classmethod
-    def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
-        init_db(self.foo.config['database_uri'])
-        self.app = self.foo.test_client()
-
-    @classmethod
-    def tearDownClass(self):
-        pass
-
-    def setUp(self):
-        self.name = _randomStr(10)
-        self.desc = _randomStr(30)
-        self.attribs = {"package_component": "essex-final",
-                        "monitoring": {"metric_provider": "null"}}
-        self.backend = "unprovisioned"
-        self.backend_state = "unknown"
-        self.content_type = 'application/json'
-        self.shep = 30
-        self.create_data = {'name': self.name,
-                            'backend': self.backend,
-                            'backend_state': self.backend_state}
-        tmp = self.app.post('/nodes/',
-                            content_type=self.content_type,
-                            data=json.dumps(self.create_data))
-        self.json = json.loads(tmp.data)
-        self.node_id = self.json['node']['id']
-        # if self.foo.config['backend'] != 'null':
-        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
-
-    def tearDown(self):
-        self.app.delete('/nodes/%s' % str(self.node_id),
-                        content_type=self.content_type)
-
-    def test_update_node_attribute_id_returns_400(self):
-        tmp_id = 99
-        payload = {'id': tmp_id}
-        resp = self.app.put('/nodes/%s/id' % self.node_id,
-                            content_type=self.content_type,
-                            data=json.dumps(payload))
-        self.assertEquals(resp.status_code, 400)
-        out = json.loads(resp.data)
-        self.assertEquals(out['status'], 400)
-        self.assertTrue('id is not modifiable' in out['message'])
-
-    def test_update_node_attribute_name_returns_400(self):
-        tmp_name = _randomStr(30)
-        payload = {'name': tmp_name}
-        resp = self.app.put('/nodes/%s/name' % self.node_id,
-                            content_type=self.content_type,
-                            data=json.dumps(payload))
-        self.assertEquals(resp.status_code, 400)
-        out = json.loads(resp.data)
-        self.assertEquals(out['status'], 400)
-        self.assertTrue('name is not modifiable' in out['message'])
-
-    def test_update_node_attribute_backend(self):
-        tmp_backend = _randomStr(10)
-        payload = {'backend': tmp_backend}
-        resp = self.app.put('/nodes/%s/backend' % self.node_id,
-                            content_type=self.content_type,
-                            data=json.dumps(payload))
-        self.assertEquals(resp.status_code, 200)
-        out = json.loads(resp.data)
-        self.assertEquals(out['node']['id'], self.node_id)
-        self.assertEquals(out['node']['name'], self.name)
-        self.assertEquals(out['node']['backend_state'], self.backend_state)
-        self.assertEquals(out['node']['backend'], tmp_backend)
-        self.assertNotEquals(out['node']['backend'], self.backend)
-
-    def test_update_node_attribute_backend_state(self):
-        tmp_backend_state = _randomStr(10)
-        payload = {'backend_state': tmp_backend_state}
-        resp = self.app.put('/nodes/%s/backend_state' % self.node_id,
-                            content_type=self.content_type,
-                            data=json.dumps(payload))
-        self.assertEquals(resp.status_code, 200)
-        out = json.loads(resp.data)
-        self.assertEquals(out['node']['id'], self.node_id)
-        self.assertEquals(out['node']['name'], self.name)
-        self.assertEquals(out['node']['backend'], self.backend)
-        self.assertEquals(out['node']['backend_state'], tmp_backend_state)
-        self.assertNotEquals(out['node']['backend_state'], self.backend_state)
-
-    def test_update_node_with_no_data(self):
-        resp = self.app.put('/nodes/%s' % self.node_id,
-                            data=None,
-                            content_type=self.content_type)
-        self.assertEquals(resp.status_code, 400)
 
 
 class NodeInvalidHTTPMethodTests(unittest2.TestCase):

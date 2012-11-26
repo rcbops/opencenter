@@ -1,0 +1,16 @@
+{
+    "set_fact": {
+        "args": {
+            "key": {
+                "type": "string",
+                "required": true
+            },
+            "value": {
+                "type": "string",
+                "required": true
+            }
+        },
+        "constraints": [],
+        "consequences": [ "facts.{key} := \"{value}\"" ]
+    }
+}

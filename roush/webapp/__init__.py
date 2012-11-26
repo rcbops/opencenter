@@ -11,15 +11,15 @@ import traceback
 from ConfigParser import ConfigParser
 from flask import Flask, jsonify, request
 
-from roush import backends
+# from roush import backends
 from roush.db import api
 from roush.db import models
 from roush.webapp.adventures import bp as adventures
 from roush.webapp.ast import FilterBuilder, FilterTokenizer
 from roush.webapp.facts import bp as facts
 from roush.webapp.filters import bp as filters
-from roush.webapp.index import index
-from roush.webapp.nodes import nodes
+from roush.webapp.index import bp as index
+from roush.webapp.nodes import bp as nodes
 from roush.webapp.primitives import bp as primitives
 from roush.webapp.tasks import bp as tasks
 
@@ -128,11 +128,11 @@ class Thing(Flask):
             handler = logging.FileHandler(defaults['main']['logfile'])
             LOG.addHandler(handler)
 
-        # load the backends
-        backends.load(defaults['main']['backend'], defaults)
+        # # load the backends
+        # backends.load(defaults['main']['backend'], defaults)
 
         # set the notification dispatcher
-        self.dispatch = backends.notify
+        # self.dispatch = backends.notify
         self._logger = LOG
 
         self.config.update(defaults['main'])
