@@ -9,7 +9,8 @@ import sys
 LOG = logging.getLogger(__name__)
 
 
-backend_list = {}
+backend_objects = {}
+backend_primitives = {}
 
 
 class Backend(object):
@@ -31,6 +32,9 @@ class Backend(object):
 
 
 def load():
+    if len(backend_objects) > 0:
+        return
+
     for file_name in os.listdir(os.path.dirname(__file__)):
         full_path = os.path.join(os.path.dirname(__file__), file_name)
         if os.path.isdir(full_path):
@@ -39,11 +43,25 @@ def load():
                 import_str = 'roush.backends.%s' % file_name
                 class_str = '%sBackend' % ''.join(map(lambda x: x.capitalize(),
                                                       file_name.split('-')))
-                try:
-                    __import__(import_str)
-                    backend_list[file_name] = getattr(sys.modules[import_str],
-                                                      class_str)()
-                except Exception as e:
-                    LOG.error('Cannot load %s from %s: %s' % (class_str,
-                                                              import_str,
-                                                              str(e)))
+                # try:
+                __import__(import_str)
+
+                obj = getattr(sys.modules[import_str],
+                                         class_str)()
+
+                backend_objects[file_name] = obj
+                for primitive, primdata in obj.primitives.items():
+                    mangled_name = "%s.%s" % (file_name, primitive)
+                    synthetic_id = hash(mangled_name) & 0xFFFFFFFF
+
+                    backend_primitives[synthetic_id] = {}
+                    backend_primitives[synthetic_id]['name'] = mangled_name
+                    backend_primitives[synthetic_id]['id'] = synthetic_id
+                    for key in primdata:
+                        backend_primitives[synthetic_id][key] = \
+                            primdata[key]
+
+                # except Exception as e:
+                #     LOG.error('Cannot load %s from %s: %s' % (class_str,
+                #                                               import_str,
+                #                                               str(e)))

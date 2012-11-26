@@ -6,6 +6,7 @@ from functools import partial
 
 import sqlalchemy
 
+from roush import backends
 from roush.db import models
 from roush.db import abstraction
 from roush.db import inmemory
@@ -16,6 +17,8 @@ model_list = {}
 in_memory_dict = {}
 
 
+backends.load()
+
 for d in dir(models):
     model_name = d.lower()
     model = getattr(models, d)
@@ -24,11 +27,16 @@ for d in dir(models):
         model_list[model_name] = abstraction.SqlAlchemyAbstraction(
             model, model_name)
     elif isinstance(getattr(models,d), type) and \
-            issubclass(model, inmemory.InMemoryBase):
+            issubclass(model, inmemory.InMemoryBase) and \
+            d != 'Primitives':
         in_memory_dict[model_name] = {}
 
         model_list[model_name] = abstraction.InMemoryAbstraction(
             model, d, in_memory_dict[model_name])
+    elif d == 'Primitives':
+        # these run off the backend.backend_primitives dict.
+        model_list[model_name] = abstraction.InMemoryAbstraction(
+            model, d, backends.backend_primitives)
 
 
 def _get_models():

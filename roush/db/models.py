@@ -92,21 +92,23 @@ def task_state_mungery(target, value, oldvalue, initiator):
         target.completed = int(time.time())
 
 
-class Primitives(Base):
-    __tablename__ = 'primitives'
+# This shifts over to in-memory on the backends
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String(64), unique=True, nullable=False)
-    args = Column(JsonBlob, default={})
-    constraints = Column(JsonBlob, default=[])
-    consequences = Column(JsonBlob, default=[])
+# class Primitives(Base):
+#     __tablename__ = 'primitives'
 
-    def __init__(self, name, args=None, constraints=None,
-                 consequences=None):
-        self.name = name
-        self.args = args
-        self.constraints = constraints
-        self.consequences = consequences
+#     id = Column(Integer, primary_key=True)
+#     name = Column(String(64), unique=True, nullable=False)
+#     args = Column(JsonBlob, default={})
+#     constraints = Column(JsonBlob, default=[])
+#     consequences = Column(JsonBlob, default=[])
+
+#     def __init__(self, name, args=None, constraints=None,
+#                  consequences=None):
+#         self.name = name
+#         self.args = args
+#         self.constraints = constraints
+#         self.consequences = consequences
 
 
 class Facts(Base):
@@ -222,21 +224,17 @@ class Filters(Base):
             return self.expr
 
 
-class Somethings(inmemory.InMemoryBase):
-    id = inmemory.Column("INTEGER", primary_key=True)
-    name = inmemory.Column("VARCHAR(32)", required=True)
-    descr = inmemory.Column("JSON_ENTRY")
-    count = inmemory.Column("INTEGER", updatable=False)
+class Primitives(inmemory.InMemoryBase):
+    id = inmemory.Column(inmemory.Integer, primary_key=True, nullable=False,
+                         required=True)
+    name = inmemory.Column(inmemory.String(32), required=True)
+    args = inmemory.Column(inmemory.JsonBlob, default={})
+    constraints = inmemory.Column(inmemory.JsonBlob, default=[])
+    consequences = inmemory.Column(inmemory.JsonBlob, default=[])
 
-    _synthesized_fields = ['inccount']
-
-    def __init__(self, name, descr=None, count=None):
+    def __init__(self, name, args=None, constraints=None,
+                 consequences=None):
         self.name = name
-        self.descr = descr
-        self.count = count
-
-    @property
-    def inccount(self):
-        if self.count:
-            return self.count + 1
-        return 0
+        self.args = args
+        self.constraints = constraints
+        self.consequences = consequences

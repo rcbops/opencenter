@@ -16,7 +16,8 @@ LOG = logging.getLogger(__name__)
 
 class DbAbstraction(object):
     def __init__(self):
-        pass
+        classname = self.__class__.__name__.lower()
+        self.logger = logging.getLogger('%s.%s' % (__name__, classname))
 
     def get_columns(self):
         raise NotImplementedError
@@ -307,14 +308,26 @@ class InMemoryAbstraction(DbAbstraction):
         return retval
 
     def delete(self, id):
+        id = int(id)
+
+        if not id in self.dictionary:
+            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+
         self.dictionary.pop(id)
+        return True
 
     def get(self, id):
+        # This sort of naively assumes that the id
+        # is an integer.  That's probably mostly right though.
+        id = int(id)
+
         if id in self.dictionary:
             return self.dictionary[id]
         return None
 
     def update(self, id, data):
+        id = int(id)
+
         new_data = self._sanitize_for_update(data)
         self.dictionary[id].update(new_data)
         return self.dictionary[id]
