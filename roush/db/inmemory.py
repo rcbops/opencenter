@@ -2,8 +2,9 @@
 
 from functools import partial
 
+
 class DataType(object):
-    Integer, String, JsonEntry, JsonBlob = range(0,4)
+    Integer, String, JsonEntry, JsonBlob = range(0, 4)
 
     def __init__(self, data_type, data_size=0):
         self.data_type = data_type
@@ -37,6 +38,7 @@ class Column(object):
         self.schema.update(kwargs)
         self.schema['type'] = column_type.sqlalchemy_format()
 
+
 class InMemoryBase(object):
     def __new__(cls, *args, **kwargs):
         obj = super(InMemoryBase, cls).__new__(cls, *args, **kwargs)
@@ -53,7 +55,7 @@ class InMemoryBase(object):
         return obj
 
     def _coerce(self, what, towhat):
-        if what != None:
+        if what is not None:
             return towhat(what)
 
         return what

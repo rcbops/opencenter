@@ -25,7 +25,7 @@ class RoushTestCase(unittest2.TestCase):
         super(RoushTestCase, self).__init__(*args, **kwargs)
 
     def _clean_all(self):
-        for what in ['task', 'node', 'fact', 'filter' ]:
+        for what in ['task', 'node', 'fact', 'filter']:
             all_results = self._model_get_all(what)
             for what_id in [x['id'] for x in all_results]:
                 self._model_delete(what, what_id)

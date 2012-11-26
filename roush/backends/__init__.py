@@ -47,7 +47,7 @@ def load():
                 __import__(import_str)
 
                 obj = getattr(sys.modules[import_str],
-                                         class_str)()
+                              class_str)()
 
                 backend_objects[file_name] = obj
                 for primitive, primdata in obj.primitives.items():

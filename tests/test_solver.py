@@ -24,7 +24,6 @@ class ExpressionTestCase(RoushTestCase):
             self.logger.debug('deleting primitive %d' % what_id)
             self._model_delete('primitive', what_id)
 
-
     def tearDown(self):
         self._clean_all()
 

@@ -26,7 +26,7 @@ for d in dir(models):
     if type(models.Nodes) == type(getattr(models, d)) and d != 'Base':
         model_list[model_name] = abstraction.SqlAlchemyAbstraction(
             model, model_name)
-    elif isinstance(getattr(models,d), type) and \
+    elif isinstance(getattr(models, d), type) and \
             issubclass(model, inmemory.InMemoryBase) and \
             d != 'Primitives':
         in_memory_dict[model_name] = {}

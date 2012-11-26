@@ -278,7 +278,6 @@ class InMemoryAbstraction(DbAbstraction):
             if isinstance(getattr(self.model, attr), inmemory.Column):
                 fields[attr] = col.schema
 
-
         if hasattr(self.model, '_synthesized_fields'):
             for syn in self.model._synthesized_fields:
                 fields[syn] = {'type': 'TEXT',
