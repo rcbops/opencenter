@@ -2,7 +2,11 @@
 
 from util import RoushTestCase
 
+from roush.db.api import api_from_models
 from roush.webapp import ast
+
+
+api = api_from_models()
 
 
 class ExpressionTestCase(RoushTestCase):
@@ -19,7 +23,8 @@ class ExpressionTestCase(RoushTestCase):
         self._clean_all()
 
     def _run_expression(self, node, expression, ns={}):
-        builder = ast.FilterBuilder(ast.FilterTokenizer(), expression)
+        builder = ast.FilterBuilder(ast.FilterTokenizer(), expression,
+                                    api=api)
         root_node = builder.build()
         return root_node.eval_node(node, symbol_table=ns)
 
@@ -29,7 +34,8 @@ class ExpressionTestCase(RoushTestCase):
         return root_node.invert()
 
     def _eval_expression(self, expression, node, ns={}):
-        builder = ast.FilterBuilder(ast.FilterTokenizer(), expression)
+        builder = ast.FilterBuilder(ast.FilterTokenizer(), expression,
+                                    api=api)
         return builder.eval_node(node, symbol_table=ns)
 
     def test_bad_interface(self):

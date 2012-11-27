@@ -2,7 +2,7 @@
 
 import flask
 from roush.webapp import generic
-from roush.db import api
+from roush.db.api import api_from_models
 
 
 bp = flask.Blueprint('index', __name__)
@@ -10,6 +10,7 @@ bp = flask.Blueprint('index', __name__)
 
 @bp.route('/', methods=['GET'])
 def list_index():
+    api = api_from_models()
     models = api._get_models()
     url = flask.request.url
 

@@ -15,9 +15,11 @@ LOG = logging.getLogger(__name__)
 
 
 class DbAbstraction(object):
-    def __init__(self):
+    def __init__(self, api, name):
         classname = self.__class__.__name__.lower()
         self.logger = logging.getLogger('%s.%s' % (__name__, classname))
+        self.api = api
+        self.name = name
 
     def get_columns(self):
         raise NotImplementedError
@@ -45,12 +47,18 @@ class DbAbstraction(object):
         """get data with filter language query"""
         query = '%s: %s' % (self.name, query)
 
-        builder = FilterBuilder(FilterTokenizer(), query)
+        builder = FilterBuilder(FilterTokenizer(), query, api=self.api)
         result = builder.filter()
         return result
 
     def update(self, id, data):
         raise NotImplementedError
+
+    def first_by_filter(self, filters):
+        result = self.filter(filters)
+        if len(result):
+            return result[0]
+        return None
 
     def _sanitize_for_update(self, data):
         # should we sanitize, or raise?
@@ -98,11 +106,9 @@ class DbAbstraction(object):
 
 
 class SqlAlchemyAbstraction(DbAbstraction):
-    def __init__(self, model, name):
+    def __init__(self, api, model, name):
         self.model = model
-        self.name = name
-
-        super(SqlAlchemyAbstraction, self).__init__()
+        super(SqlAlchemyAbstraction, self).__init__(api, name)
 
     def get_columns(self):
         field_list = [c for c in self.model.__table__.columns.keys()]
@@ -234,7 +240,6 @@ class SqlAlchemyAbstraction(DbAbstraction):
             session.commit()
             return ret
         except sqlalchemy.exc.InvalidRequestError as e:
-            print "invalid req"
             session.rollback()
             msg = e.msg
             raise RuntimeError(msg)
@@ -243,16 +248,79 @@ class SqlAlchemyAbstraction(DbAbstraction):
             raise
 
 
+class APIAbstraction(DbAbstraction):
+    # same interface, but we'll pull the data from the
+    # actual api.
+    def __init__(self, api, name, endpoint):
+        self.endpoint = endpoint
+        self.schema = None
+        self.objects = endpoint[name]
+        super(APIAbstraction, self).__init__(api, name)
+
+    def get_columns(self):
+        if self.schema is None:
+            self.schema = self.get_schema
+
+        return self.schema.keys()
+
+    def get_all(self):
+        self.objects._refresh(True)
+        for obj in self.objects:
+            yield obj.to_hash()
+
+    def get_schema(self):
+        obj._maybe_refresh_schema()
+        return obj.schema
+
+    def create(self, data):
+        new_data = self._sanitize_for_create(data)
+        new_node = obj.new(**new_data)
+        new_node.save()
+
+    def delete(self, id):
+        id = int(id)
+
+        try:
+            obj = self.objects[id]
+            obj.delete()
+        except KeyError, ValueError:
+            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+
+    def get(self, id):
+        # This sort of naively assumes that the id
+        # is an integer.  That's probably mostly right though.
+        id = int(id)
+
+        try:
+            return self.objects[id].to_hash()
+        except KeyError:
+            return None
+
+    def update(self, id, data):
+        id = int(id)
+
+        new_data = self._sanitize_for_update(data)
+
+        try:
+            obj = self.objects[id]
+        except KeyError:
+            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+
+        obj = self.objects.new(id=id, **new_data)
+        obj.save()
+
+        return obj
+
+
 class InMemoryAbstraction(DbAbstraction):
     # with the in-memory abstraction, we pass a dict that is
     # implemented in keys.  We'll still use the model table to
     # describe metadata, though.
-    def __init__(self, model, name, dictionary):
+    def __init__(self, api, model, name, dictionary):
         self.dictionary = dictionary
         self.model = model
-        self.name = name
 
-        super(InMemoryAbstraction, self).__init__()
+        super(InMemoryAbstraction, self).__init__(api, name)
 
     def get_columns(self):
         cols = []

@@ -4,8 +4,10 @@ import flask
 import generic
 import utility
 
-from roush.db import api
+from roush.db.api import api_from_models
 
+
+api = api_from_models()
 object_type = 'adventures'
 bp = flask.Blueprint(object_type, __name__)
 
