@@ -3,13 +3,14 @@
 import flask
 import generic
 
-from roush.db import api
+from roush.db.api import api_from_models
 
 from roush.webapp import ast
 from roush.webapp import utility
 from roush.webapp import errors
 from roush.webapp import auth
 
+api = api_from_models()
 object_type = 'nodes'
 bp = flask.Blueprint(object_type,  __name__)
 

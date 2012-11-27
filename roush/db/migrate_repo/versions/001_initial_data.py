@@ -10,10 +10,11 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, object_mapper
 
 from roush.db.models import Adventures, Nodes, Tasks
-from roush.db import api as api
+from roush.db.api import api_from_models
 
 
 # Base = declarative_base()
+api = api_from_models()
 meta = MetaData()
 
 

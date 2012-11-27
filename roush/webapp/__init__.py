@@ -12,8 +12,8 @@ from ConfigParser import ConfigParser
 from flask import Flask, jsonify, request
 
 # from roush import backends
-from roush.db import api
 from roush.db import models
+from roush.db.api import api_from_models
 from roush.webapp.adventures import bp as adventures
 from roush.webapp.ast import FilterBuilder, FilterTokenizer
 from roush.webapp.facts import bp as facts
@@ -22,6 +22,9 @@ from roush.webapp.index import bp as index
 from roush.webapp.nodes import bp as nodes
 from roush.webapp.primitives import bp as primitives
 from roush.webapp.tasks import bp as tasks
+
+
+api = api_from_models()
 
 
 # Stolen: http://code.activestate.com/recipes/\
@@ -173,7 +176,8 @@ class Thing(Flask):
 
                 builder = FilterBuilder(
                     FilterTokenizer(),
-                    '%s: %s' % (what, request.json['filter']))
+                    '%s: %s' % (what, request.json['filter']),
+                    api=api)
 
                 # try:
                 result = builder.filter()

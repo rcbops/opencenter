@@ -2,8 +2,11 @@
 
 import flask
 
-from roush.db import api
 from roush.db import exceptions
+from roush.db.api import api_from_models
+
+
+api = api_from_models()
 
 
 def singularize(what):

@@ -47,9 +47,7 @@ class InMemoryBase(object):
             obj.__dict__['__cols__'] = {}
 
         for k, v in obj.__class__.__dict__.iteritems():
-            print 'found %s' % k
             if isinstance(v, Column):
-                print 'moving %s' % k
                 obj.__dict__['__cols__'][k] = v
 
         return obj

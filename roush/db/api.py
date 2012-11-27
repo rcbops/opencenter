@@ -4,123 +4,137 @@
 import logging
 from functools import partial
 
-import sqlalchemy
 
-from roush import backends
-from roush.db import models
-from roush.db import abstraction
-from roush.db import inmemory
-
-LOG = logging.getLogger(__name__)
-
-model_list = {}
-in_memory_dict = {}
+_cached_apis = {}
 
 
-backends.load()
+class RoushApi(object):
+    def __init__(self):
+        self.model_list = {}
+        classname = self.__class__.__name__.lower()
+        self.logger = logging.getLogger('%s.%s' % (__name__, classname))
 
-for d in dir(models):
-    model_name = d.lower()
-    model = getattr(models, d)
+    def _get_models():
+        return self.model_list.keys()
 
-    if type(models.Nodes) == type(getattr(models, d)) and d != 'Base':
-        model_list[model_name] = abstraction.SqlAlchemyAbstraction(
-            model, model_name)
-    elif isinstance(getattr(models, d), type) and \
-            issubclass(model, inmemory.InMemoryBase) and \
-            d != 'Primitives':
-        in_memory_dict[model_name] = {}
+    def _call_model(self, function, model, *args, **kwargs):
+        model = model.lower()
 
-        model_list[model_name] = abstraction.InMemoryAbstraction(
-            model, d, in_memory_dict[model_name])
-    elif d == 'Primitives':
-        # these run off the backend.backend_primitives dict.
-        model_list[model_name] = abstraction.InMemoryAbstraction(
-            model, d, backends.backend_primitives)
+        if not model in self.model_list:
+            raise KeyError('unknown model %s' % model)
 
+        if not hasattr(self.model_list[model], function):
+            raise ValueError('unknown model function %s' % function)
 
-def _get_models():
-    return model_list.keys()
+        return getattr(self.model_list[model], function)(*args, **kwargs)
 
+    def _model_get_all(self, model):
+        return self._call_model('get_all', model)
 
-def _call_model(function, model, *args, **kwargs):
-    model = model.lower()
+    def _model_get_by_id(self, model, id):
+        return self._call_model('get', model, id)
 
-    if not model in model_list:
-        raise KeyError('unknown model %s' % model)
+    def _model_get_columns(self, model):
+        return self._call_model('get_columns', model)
 
-    if not hasattr(model_list[model], function):
-        raise ValueError('unknown model function %s' % function)
+    def _model_get_schema(self, model):
+        return self._call_model('get_schema', model)
 
-    return getattr(model_list[model], function)(*args, **kwargs)
+    def _model_create(self, model, data):
+        return self._call_model('create', model, data)
 
+    def _model_delete_by_id(self, model, id):
+        return self._call_model('delete', model, id)
 
-for name, method in {'_model_get_all': 'get_all',
-                     '_model_get_columns': 'get_columns',
-                     '_model_get_schema': 'get_schema',
-                     '_model_create': 'create',
-                     '_model_delete_by_id': 'delete',
-                     '_model_get_by_id': 'get',
-                     '_model_get_by_filter': 'filter',
-                     '_model_query': 'query',
-                     '_model_update_by_id': 'update'}.items():
-    globals()[name] = partial(_call_model, method)
+    def _model_get_by_filter(self, model, filters):
+        return self._call_model('filter', model, filters)
 
+    def _model_get_first_by_filter(self, model, filters):
+        return self._call_model('first_by_filter', model, filters)
 
-def _model_get_first_by_filter(model, filters):
-    result = _model_get_by_filter(model, filters)
-    if len(result):
-        return result[0]
-    return None
+    def _model_query(self, model, query):
+        return self._call_model('query', model, query)
 
+    def _model_update_by_id(self, model, id, data):
+        return self._call_model('update', model, id, data)
 
-# set up the default boilerplate functions, then
-# allow overrides after that
-for d in _get_models():
-    model = d.lower()
-    sing = model[:-1]
+    def add_model(self, name, abstracted_backend):
+        model = name.lower()
+        sing = model[:-1]
 
-    globals()['%s_get_all' % model] = partial(
-        _model_get_all, model)
-    globals()['%s_delete_by_id' % sing] = partial(
-        _model_delete_by_id, model)
-    globals()['%s_get_columns' % sing] = partial(
-        _model_get_columns, model)
-    globals()['%s_get_first_by_filter' % sing] = partial(
-        _model_get_first_by_filter, model)
-    globals()['%s_get_by_id' % sing] = partial(
-        _model_get_by_id, model)
-    globals()['%s_create' % sing] = partial(
-        _model_create, model)
-    globals()['%s_update_by_id' % sing] = partial(
-        _model_update_by_id, model)
-    globals()['%s_query' % model] = partial(
-        _model_query, model)
+        self.model_list[model] = abstracted_backend
+
+        setattr(self, '%s_get_all' % model,
+                partial(self._model_get_all, model))
+        setattr(self, '%s_delete_by_id' % sing,
+                partial(self._model_delete_by_id, model))
+        setattr(self, '%s_get_columns' % sing,
+                partial(self._model_get_columns, model))
+        setattr(self, '%s_get_first_by_filter' % sing,
+                partial(self._model_get_first_by_filter, model))
+        setattr(self, '%s_get_by_id' % sing,
+                partial(self._model_get_by_id, model))
+        setattr(self, '%s_create' % sing,
+                partial(self._model_create, model))
+        setattr(self, '%s_update_by_id' % sing,
+                partial(self._model_update_by_id, model))
+        setattr(self, '%s_query' % model,
+                partial(self._model_query, model))
 
 
-def adventures_get_by_node_id(node_id):
-    """Query helper that returns a dict of all the adventures
-       for a given node_id
+def api_from_endpoint(endpoint):
+    if 'endpoint-based' in _cached_apis:
+        return _cached_apis['endpoint-based']
 
-    :param node_id: blah blah
-    """
-    # this is the SQL query we are trying to achieve
-    # select adventures.* from adventures join nodes on
-    #    (nodes.backend = adventures.backend or adventures.backend = null)
-    #    AND (nodes.backend_state = adventures.backend_state
-    #         OR adventures.backend_state is null);
+    from roushclient import client
+    from abstraction import APIAbstraction
 
-    stmt1 = sqlalchemy.sql.or_(
-        models.Adventures.backend == models.Nodes.backend,
-        models.Adventures.backend == 'null')
-    stmt2 = sqlalchemy.sql.or_(
-        models.Adventures.backend_state == models.Nodes.backend_state,
-        models.Adventures.backend_state == 'null')
-    adventure_list = models.Adventures.query.join(
-        models.Nodes,
-        sqlalchemy.sql.and_(stmt1, stmt2, models.Nodes.id == node_id)).all()
+    new_api = RoushApi()
+    ep = client.RoushEndpoint(endpoint)
 
-    result = [dict((c, getattr(r, c))
-                   for c in r.__table__.columns.keys())
-              for r in adventure_list]
-    return result
+    # the index page should be wired up right, and we should
+    # have an api call to get all the object types
+    for object_type in ['nodes', 'primitives', 'filters',
+                        'adventures', 'facts']:
+        api_abstraction = APIAbstraction(new_api, object_type, ep)
+        new_api.add_model(object_type, api_abstraction)
+
+    _cached_apis['endpoint-based'] = new_api
+    return new_api
+
+
+def api_from_models():
+    if 'model-based' in _cached_apis:
+        return _cached_apis['model-based']
+
+    from roush import backends
+    from roush.db import models
+    from roush.db import abstraction
+    from roush.db import inmemory
+
+    backends.load()
+
+    new_api = RoushApi()
+
+    for d in dir(models):
+        abst = None
+        model_name = d.lower()
+        model = getattr(models, d)
+
+        if type(models.Nodes) == type(getattr(models, d)) and d != 'Base':
+            abst = abstraction.SqlAlchemyAbstraction(new_api, model,
+                                                     model_name)
+        elif isinstance(getattr(models, d), type) and \
+                issubclass(model, inmemory.InMemoryBase) and \
+                d != 'Primitives':
+            abst = abstraction.InMemoryAbstraction(new_api, model, d, {})
+        elif d == 'Primitives':
+            # these run off the backend.backend_primitives dict.
+            abst = abstraction.InMemoryAbstraction(new_api, model, d,
+                                                   backends.backend_primitives)
+
+        if abst is not None:
+            new_api.add_model(d, abst)
+
+    _cached_apis['model-based'] = new_api
+    return new_api

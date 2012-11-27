@@ -3,8 +3,10 @@
 import generic
 import flask
 
-from roush.db import api
+from roush.db.api import api_from_models
 
+
+api = api_from_models()
 object_type = 'facts'
 singular_object_type = generic.singularize(object_type)
 
@@ -26,7 +28,6 @@ def create():
     data = flask.request.json
 
     model_object = None
-    resp = None
 
     if 'node_id' in data and 'key' in data:
         old_fact = api._model_get_first_by_filter(object_type,

@@ -6,7 +6,7 @@ import re
 
 
 # some common utility functions
-def util_nth(n, ary):
+def util_nth(context, n, ary):
     if not isinstance(ary, list):
         return None
 
@@ -19,33 +19,33 @@ def util_nth(n, ary):
     return ary[n]
 
 
-def util_str(what):
+def util_str(context, what):
     if not what:
         return None
 
     return str(what)
 
 
-def util_int(what):
+def util_int(context, what):
     if not what:
         return None
 
     return int(what)
 
 
-def util_max(ary):
+def util_max(context, ary):
     if not isinstance(ary, list):
         return False
     return max(ary)
 
 
-def util_count(ary):
+def util_count(context, ary):
     if not isinstance(ary, list):
         return None
     return len(ary)
 
 
-def util_union(listish1, listish2):
+def util_union(context, listish1, listish2):
     # I'm not entirely sure how this should work.. this is
     # likely not a very useful implementation
     newlist = None
@@ -64,29 +64,39 @@ def util_union(listish1, listish2):
     return newlist
 
 
-def util_filter(node_type, input_filter):
+def util_filter(context, node_type, input_filter):
+    if not 'api' in context or context['api'] is None:
+        raise ValueError('no api in util_filter context')
+
     builder = FilterBuilder(FilterTokenizer(), "%s: %s" % (node_type,
-                                                           input_filter))
+                                                           input_filter),
+                            api=context['api'])
 
     result = builder.filter()
     return result
 
 
-def util_ifcount(iface_name):
-    import roush.db.api as api
+def util_ifcount(context, iface_name):
+    if not 'api' in context or context['api'] is None:
+        raise ValueError('no api in util_ifcount context')
 
     interface_query = 'filter_type="interface" and name="%s"' % iface_name
     filter_list = FilterBuilder(FilterTokenizer(), '%s: %s' %
-                                ('filters', interface_query)).filter()
+                                ('filters', interface_query),
+                                api=context['api']).filter()
 
     if len(filter_list) != 1:
         raise SyntaxError('bad interface type %s' % iface_name)
 
-    ifaces = api._model_query('nodes', filter_list[0]['full_expr'])
+    ifaces_query = filter_list[0]['full_expr']
+
+    ifaces = FilterBuilder(FilterTokenizer(), '%s: %s' %
+                           ('nodes', ifaces_query),
+                           api=context['api']).filter()
     return len(ifaces)
 
 
-def util_printf(fmt, *args):
+def util_printf(context, fmt, *args):
     try:
         return fmt % args
     except Exception:
@@ -222,7 +232,7 @@ class FilterTokenizer(AbstractTokenizer):
 
 class AstBuilder(object):
     def __init__(self, tokenizer, input_expression=None, functions={},
-                 ns={}):
+                 ns={}, api=None):
         self.tokenizer = tokenizer
         self.input_expression = input_expression
         classname = self.__class__.__name__.lower()
@@ -231,6 +241,8 @@ class AstBuilder(object):
                           self.input_expression)
         self.functions = functions
         self.ns = ns
+
+        self.api = api
 
     def set_input(self, input_expression):
         self.logger.debug('resetting input expression to %s' %
@@ -269,18 +281,19 @@ class AstBuilder(object):
 class FilterBuilder(AstBuilder):
     def __init__(self, tokenizer, input_expression=None,
                  input_type=None, functions=default_functions,
-                 ns={}):
+                 ns={}, api=None):
         super(FilterBuilder, self).__init__(tokenizer, input_expression,
                                             functions=functions,
-                                            ns=ns)
+                                            ns=ns,
+                                            api=api)
         self.input_type = input_type
 
     def parse(self):
         return self.parse_phrase()
 
     def filter(self, input_type=None):
-        # avoid some circular includes
-        import roush.db.api as api
+        if self.api is None:
+            raise ValueError('no api data source set')
 
         # get a list of all the self.input_types, and eval each in turn
         root_node = self.build()
@@ -293,7 +306,7 @@ class FilterBuilder(AstBuilder):
         if input_type is None:
             raise SyntaxError('unknown filter type')
 
-        nodes = api._model_get_all(input_type)
+        nodes = self.api._model_get_all(input_type)
 
         result = []
 
@@ -337,7 +350,7 @@ class FilterBuilder(AstBuilder):
 
             op = val
             rhs = self.parse_evaluable_item()
-            return Node(lhs, op, rhs, negate)
+            return Node(lhs, op, rhs, negate, api=self.api)
         else:
             return lhs
 
@@ -346,21 +359,21 @@ class FilterBuilder(AstBuilder):
         token, val = self.tokenizer.scan()
 
         if token == 'NUMBER':
-            return Node(int(val), 'NUMBER', None)
+            return Node(int(val), 'NUMBER', None, api=self.api)
 
         if token == 'STRING':
-            return Node(str(val), 'STRING', None)
+            return Node(str(val), 'STRING', None, api=self.api)
 
         if token == 'BOOL':
-            return Node(val, 'BOOL', None)
+            return Node(val, 'BOOL', None, api=self.api)
 
         if token == 'NONE':
-            return Node(None, 'NONE', None)
+            return Node(None, 'NONE', None, api=self.api)
 
         if token == 'IDENTIFIER':
             next_token, next_val = self.tokenizer.peek()
             if next_token != 'OPENPAREN':
-                return Node(str(val), 'IDENTIFIER', None)
+                return Node(str(val), 'IDENTIFIER', None, api=self.api)
             else:
                 self.tokenizer.scan()  # eat the paren
 
@@ -375,7 +388,8 @@ class FilterBuilder(AstBuilder):
 
                     if token == 'CLOSEPAREN':
                         # done parsing evaluable item
-                        return Node(function_name, 'FUNCTION', args)
+                        return Node(function_name, 'FUNCTION', args,
+                                    api=self.api)
 
                     if token != 'COMMA':
                         raise SyntaxError('expecting comma or close paren')
@@ -404,7 +418,7 @@ class FilterBuilder(AstBuilder):
         if token == 'OR':
             self.tokenizer.scan()  # eat the token
             rhs = self.parse_andexpr()
-            return Node(node, 'OR', rhs)
+            return Node(node, 'OR', rhs, api=self.api)
         else:
             return node
 
@@ -416,7 +430,7 @@ class FilterBuilder(AstBuilder):
         if token == 'AND':
             self.tokenizer.scan()  # eat the token
             rhs = self.parse_andexpr()
-            return Node(node, 'AND', rhs)
+            return Node(node, 'AND', rhs, api=self.api)
         else:
             return node
 
@@ -439,13 +453,14 @@ class FilterBuilder(AstBuilder):
 
 
 class Node:
-    def __init__(self, lhs, op, rhs, negate=False):
+    def __init__(self, lhs, op, rhs, negate=False, api=None):
         self.lhs = lhs
         self.rhs = rhs
         self.op = op
         self.negate = negate
         classname = self.__class__.__name__.lower()
         self.logger = logging.getLogger('%s.%s' % (__name__, classname))
+        self.api = api
 
     def value_to_s(self):
         if self.op == 'STRING':
@@ -577,8 +592,6 @@ class Node:
                                    symbol_table)
 
     def eval_identifier(self, node, identifier, symbol_table={}):
-        import roush.db.api as api
-
         self.logger.debug('resolving identifier "%s" on:\n%s with ns %s' %
                           (identifier, node, symbol_table))
 
@@ -623,7 +636,8 @@ class Node:
                                       (attr, str(the_id)))
                     try:
                         # grab the linked object...
-                        new_node = api._model_get_by_id("%ss" % attr, the_id)
+                        new_node = self.api._model_get_by_id("%ss" %
+                                                             attr, the_id)
                         self.logger.debug("Indirected object: %s" % new_node)
                     except Exception as e:
                         self.logger.debug('cannot lookup the object type: %s' %
@@ -661,6 +675,9 @@ class Node:
         result = False
 
         retval = None
+
+        if self.api is None:
+            raise ValueError('evaluating a node without a corresponding api.')
 
         self.logger.debug('evaluating %s with symbol_table %s' %
                           (str(self), symbol_table))
@@ -701,7 +718,7 @@ class Node:
                                                  functions, symbol_table),
                            self.rhs)
 
-                retval = functions[self.lhs](*args)
+                retval = functions[self.lhs]({'api': self.api}, *args)
 
             self.logger.debug('evaluated %s to %s' % (str(self), retval))
             return retval
@@ -1027,6 +1044,7 @@ class Solver:
                     self.logger.debug('applying consequence %s' % consequence)
                     f_builder.set_input(consequence)
                     cons_ast = f_builder.build()
+                    # FIXME
                     cons_ast.eval_node(new_node, symbol_table=solution['ns'])
 
             self.logger.debug('node after consequence: %s' % new_node)
