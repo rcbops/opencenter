@@ -4,6 +4,8 @@
 import logging
 from functools import partial
 
+import abstraction
+
 
 _cached_apis = {}
 
@@ -14,7 +16,17 @@ class RoushApi(object):
         classname = self.__class__.__name__.lower()
         self.logger = logging.getLogger('%s.%s' % (__name__, classname))
 
-    def _get_models():
+    def transactions(self):
+        result = {}
+        for model, backend in self.model_list.items():
+            if getattr(backend, 'transactions', None) is not None:
+                trans = backend.transactions()
+                if trans is not None:
+                    result[model] = trans
+
+        return result
+
+    def _get_models(self):
         return self.model_list.keys()
 
     def _call_model(self, function, model, *args, **kwargs):
@@ -83,11 +95,11 @@ class RoushApi(object):
 
 
 def api_from_endpoint(endpoint):
-    if 'endpoint-based' in _cached_apis:
+    if 'endpoint-based-%s' % endpoint in _cached_apis:
         return _cached_apis['endpoint-based']
 
     from roushclient import client
-    from abstraction import APIAbstraction
+    from roush.db import models
 
     new_api = RoushApi()
     ep = client.RoushEndpoint(endpoint)
@@ -96,10 +108,12 @@ def api_from_endpoint(endpoint):
     # have an api call to get all the object types
     for object_type in ['nodes', 'primitives', 'filters',
                         'adventures', 'facts']:
-        api_abstraction = APIAbstraction(new_api, object_type, ep)
+        model = getattr(models, object_type.title())
+        api_abstraction = abstraction.APIAbstraction(new_api, model,
+                                                     object_type, ep)
         new_api.add_model(object_type, api_abstraction)
 
-    _cached_apis['endpoint-based'] = new_api
+    _cached_apis['endpoint-based-%s' % endpoint] = new_api
     return new_api
 
 
@@ -109,7 +123,6 @@ def api_from_models():
 
     from roush import backends
     from roush.db import models
-    from roush.db import abstraction
     from roush.db import inmemory
 
     backends.load()
@@ -137,4 +150,16 @@ def api_from_models():
             new_api.add_model(d, abst)
 
     _cached_apis['model-based'] = new_api
+    return new_api
+
+def ephemeral_api_from_api(backed_api):
+    # run through the existing backends and create a new
+    # ephemeral data source backed by those backends
+    new_api = RoushApi()
+
+    for name, backend in backed_api.model_list.items():
+        abst = abstraction.EphemeralAbstraction(new_api, backend.model,
+                                                name, backend)
+        new_api.add_model(name, abst)
+
     return new_api

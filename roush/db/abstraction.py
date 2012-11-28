@@ -15,11 +15,12 @@ LOG = logging.getLogger(__name__)
 
 
 class DbAbstraction(object):
-    def __init__(self, api, name):
+    def __init__(self, api, model, name):
         classname = self.__class__.__name__.lower()
         self.logger = logging.getLogger('%s.%s' % (__name__, classname))
         self.api = api
         self.name = name
+        self.model = model
 
     def get_columns(self):
         raise NotImplementedError
@@ -60,11 +61,34 @@ class DbAbstraction(object):
             return result[0]
         return None
 
+    def _coerce_data(self, data):
+        schema = self.get_schema()
+
+        for field, value in data.items():
+            wanted_type = None
+            type_name = None
+
+            if field in schema:
+                type_name = schema[field]['type']
+            else:
+                raise ValueError('non-schema data in update/create call')
+
+            if type_name == 'INTEGER' or type_name == 'NUMBER':
+                wanted_type = int
+
+            if 'VARCHAR' in type_name:
+                wanted_type = str
+
+            if wanted_type is not None:
+                data[field] = wanted_type(value)
+
     def _sanitize_for_update(self, data):
         # should we sanitize, or raise?
         retval = copy.deepcopy(data)
 
-        schema = self.get_schema()['schema']
+        # self._coerce_data(retval)
+
+        schema = self.get_schema()
 
         ro_fields = [x for x in schema if schema[x]['updatable'] is False]
 
@@ -81,7 +105,9 @@ class DbAbstraction(object):
     def _sanitize_for_create(self, data):
         retval = copy.deepcopy(data)
 
-        schema = self.get_schema()['schema']
+        # self._coerce_data(retval)
+
+        schema = self.get_schema()
 
         required_fields = [x for x in schema if schema[x]['required'] is True]
         ro_fields = [x for x in schema if schema[x]['read_only'] is True]
@@ -107,8 +133,7 @@ class DbAbstraction(object):
 
 class SqlAlchemyAbstraction(DbAbstraction):
     def __init__(self, api, model, name):
-        self.model = model
-        super(SqlAlchemyAbstraction, self).__init__(api, name)
+        super(SqlAlchemyAbstraction, self).__init__(api, model, name)
 
     def get_columns(self):
         field_list = [c for c in self.model.__table__.columns.keys()]
@@ -120,9 +145,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
     def get_all(self):
         field_list = self.get_columns()
 
-        return [dict((c, getattr(r, c))
-                     for c in field_list)
-                for r in self.model.query.all()]
+        return [x.jsonify(self.api) for x in self.model.query.all()]
 
     def get_schema(self):
         obj = self.model
@@ -160,7 +183,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
                                'read_only': True,
                                'primary_key': False}
 
-        return {'schema': fields}
+        return fields
 
     def create(self, data):
         """Query helper for creating a row
@@ -175,9 +198,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
         session.add(r)
         try:
             session.commit()
-            ret = dict((c, getattr(r, c))
-                       for c in self.get_columns())
-            return ret
+            return r.jsonify(self.api)
         except sqlalchemy.exc.StatementError as e:
             session.rollback()
             # msg = e.message
@@ -223,8 +244,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
         if not r:
             result = None
         else:
-            result = [dict((c, getattr(res, c))
-                           for c in self.get_columns()) for res in r]
+            result = [x.jsonify(self.api) for x in r]
         return result
 
     def update(self, id, data):
@@ -235,8 +255,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
             r.__setattr__(field, data[field])
 
         try:
-            ret = dict((c, getattr(r, c))
-                       for c in r.__table__.columns.keys())
+            ret = r.jsonify(self.api)
             session.commit()
             return ret
         except sqlalchemy.exc.InvalidRequestError as e:
@@ -251,11 +270,11 @@ class SqlAlchemyAbstraction(DbAbstraction):
 class APIAbstraction(DbAbstraction):
     # same interface, but we'll pull the data from the
     # actual api.
-    def __init__(self, api, name, endpoint):
+    def __init__(self, api, model, name, endpoint):
         self.endpoint = endpoint
         self.schema = None
         self.objects = endpoint[name]
-        super(APIAbstraction, self).__init__(api, name)
+        super(APIAbstraction, self).__init__(api, model, name)
 
     def get_columns(self):
         if self.schema is None:
@@ -269,12 +288,12 @@ class APIAbstraction(DbAbstraction):
             yield obj.to_hash()
 
     def get_schema(self):
-        obj._maybe_refresh_schema()
-        return obj.schema
+        self.objects._maybe_refresh_schema()
+        return self.objects.schema.field_schema
 
     def create(self, data):
         new_data = self._sanitize_for_create(data)
-        new_node = obj.new(**new_data)
+        new_node = self.objects.new(**new_data)
         new_node.save()
 
     def delete(self, id):
@@ -283,7 +302,9 @@ class APIAbstraction(DbAbstraction):
         try:
             obj = self.objects[id]
             obj.delete()
-        except KeyError, ValueError:
+        except KeyError:
+            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+        except ValueError:
             raise exceptions.IdNotFound(message='id %d does not exist' % id)
 
     def get(self, id):
@@ -292,9 +313,12 @@ class APIAbstraction(DbAbstraction):
         id = int(id)
 
         try:
-            return self.objects[id].to_hash()
+            json_object = self.objects[id].to_hash()
         except KeyError:
             return None
+
+        r = self.model(**json_object)
+        return r.jsonify(self.api)
 
     def update(self, id, data):
         id = int(id)
@@ -309,7 +333,7 @@ class APIAbstraction(DbAbstraction):
         obj = self.objects.new(id=id, **new_data)
         obj.save()
 
-        return obj
+        return obj.to_hash()
 
 
 class InMemoryAbstraction(DbAbstraction):
@@ -320,7 +344,7 @@ class InMemoryAbstraction(DbAbstraction):
         self.dictionary = dictionary
         self.model = model
 
-        super(InMemoryAbstraction, self).__init__(api, name)
+        super(InMemoryAbstraction, self).__init__(api, model, name)
 
     def get_columns(self):
         cols = []
@@ -355,22 +379,19 @@ class InMemoryAbstraction(DbAbstraction):
                                'read_only': True,
                                'primary_key': False}
 
-        # this should not be
-        return {'schema': fields}
+        return fields
 
     def create(self, data):
         new_data = self._sanitize_for_create(data)
 
-        # try:
-        new_thing = self.model(**new_data)
+        try:
+            new_thing = self.model(**new_data)
+        except TypeError:
+            raise exceptions.CreateError('bad data type')
 
-        # except TypeError:
-        #     raise exceptions.CreateError('bad type.')
-
-        retval = dict((c, getattr(new_thing, c))
-                      for c in self.get_columns())
-
+        retval = new_thing.jsonify(self.api)
         retval['id'] = self._get_new_id()
+
         self.dictionary[retval['id']] = retval
         return retval
 
@@ -403,3 +424,120 @@ class InMemoryAbstraction(DbAbstraction):
         if len(self.dictionary) == 0:
             return 1
         return max(self.dictionary.keys()) + 1
+
+
+class EphemeralAbstraction(DbAbstraction):
+    def __init__(self, api, model, name, base_abstraction):
+        self.del_obj = []
+        self.new_obj = {}
+        self.upd_obj = {}
+        self.current_max = 100000000
+
+        self.base = base_abstraction
+
+        super(EphemeralAbstraction, self).__init__(api, model, name)
+
+    def transactions(self):
+        result = {}
+        if len(self.del_obj) > 0:
+            result['deleted'] = self.del_obj
+        if len(self.new_obj) > 0:
+            result['new'] = self.new_obj
+        if len(self.upd_obj) > 0:
+            result['updated'] = self.upd_obj
+        if result == {}:
+            return None
+        return result
+
+    def _update_object(self, underlying):
+        if underlying['id'] in self.del_obj:
+            return None
+
+        if not underlying['id'] in self.upd_obj:
+            return underlying
+
+        updated_object = copy.deepcopy(underlying)
+        updated_object.update(self.upd_obj[underlying['id']])
+        return updated_object
+
+    def get_columns(self):
+        return self.base.get_columns()
+
+    def get_all(self):
+        for obj in self.base.get_all():
+            new_obj = self._update_object(obj)
+            if new_obj:
+                yield new_obj
+
+        for id, obj in self.new_obj.items():
+            new_obj = self._update_object(obj)
+            if new_obj:
+                yield new_obj
+
+    def get_schema(self):
+        return self.base.get_schema()
+
+    def create(self, data):
+        new_data = self._sanitize_for_create(data)
+        new_data['id'] = self._get_new_id()
+
+        self.new_obj[new_data['id']] = new_data
+        return new_data
+
+    def delete(self, id):
+        id = int(id)
+
+        if id in self.del_obj:
+            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+
+        obj = self.base.get(id)
+        if obj is None:
+            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+
+        self.del_obj.append(id)
+        return True
+
+    def get(self, id):
+        id = int(id)
+
+        if id in self.del_obj:
+            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+
+        obj = self.base.get(id)
+        if obj is None:
+            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+
+        new_obj = self._update_object(obj)
+        r = self.model(**new_obj)
+        self.logger.debug('model: %s' % r)
+
+        r.id = id
+
+        print('model json: %s' % r.jsonify())
+        print('model jason in conext: %s' % r.jsonify(self.api))
+        return r.jsonify(self.api)
+
+    def update(self, id, data):
+        id = int(id)
+        new_data = self._sanitize_for_update(data)
+
+        if id in self.del_obj:
+            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+
+        obj = self.base.get(id)
+        existing_obj = self._update_object(obj)
+
+        if not id in self.upd_obj:
+            self.upd_obj[id] = {}
+
+        for field in new_data:
+            if existing_obj[field] != new_data[field]:
+                self.upd_obj[id][field] = new_data[field]
+
+        new_obj = self._update_object(existing_obj)
+        return new_obj
+
+    def _get_new_id(self):
+        # FIXME: race
+        self.current_max += 1
+        return self.current_max
