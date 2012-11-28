@@ -106,12 +106,12 @@ def api_from_endpoint(endpoint):
 
     # the index page should be wired up right, and we should
     # have an api call to get all the object types
-    for object_type in ['nodes', 'primitives', 'filters',
-                        'adventures', 'facts']:
-        model = getattr(models, object_type.title())
+    for model_name in ['nodes', 'filters',
+                       'adventures', 'facts']:
+        model = getattr(models, model_name.title())
         api_abstraction = abstraction.APIAbstraction(new_api, model,
-                                                     object_type, ep)
-        new_api.add_model(object_type, api_abstraction)
+                                                     model_name, ep)
+        new_api.add_model(model_name, api_abstraction)
 
     _cached_apis['endpoint-based-%s' % endpoint] = new_api
     return new_api
@@ -151,6 +151,7 @@ def api_from_models():
 
     _cached_apis['model-based'] = new_api
     return new_api
+
 
 def ephemeral_api_from_api(backed_api):
     # run through the existing backends and create a new

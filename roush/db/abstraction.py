@@ -48,6 +48,7 @@ class DbAbstraction(object):
         """get data with filter language query"""
         query = '%s: %s' % (self.name, query)
 
+        self.logger.debug('Running query "%s" against %s' % (query, self.api))
         builder = FilterBuilder(FilterTokenizer(), query, api=self.api)
         result = builder.filter()
         return result
@@ -116,6 +117,9 @@ class DbAbstraction(object):
         if 'id' in required_fields:
             required_fields.remove('id')
 
+        if 'id' in retval:
+            retval.pop('id')
+
         for field in required_fields:
             if not field in retval:
                 raise KeyError('missing required field %s' % field)
@@ -145,7 +149,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
     def get_all(self):
         field_list = self.get_columns()
 
-        return [x.jsonify(self.api) for x in self.model.query.all()]
+        return [x.jsonify(api=self.api) for x in self.model.query.all()]
 
     def get_schema(self):
         obj = self.model
@@ -198,7 +202,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
         session.add(r)
         try:
             session.commit()
-            return r.jsonify(self.api)
+            return r.jsonify(api=self.api)
         except sqlalchemy.exc.StatementError as e:
             session.rollback()
             # msg = e.message
@@ -244,7 +248,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
         if not r:
             result = None
         else:
-            result = [x.jsonify(self.api) for x in r]
+            result = [x.jsonify(api=self.api) for x in r]
         return result
 
     def update(self, id, data):
@@ -255,7 +259,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
             r.__setattr__(field, data[field])
 
         try:
-            ret = r.jsonify(self.api)
+            ret = r.jsonify(api=self.api)
             session.commit()
             return ret
         except sqlalchemy.exc.InvalidRequestError as e:
@@ -278,7 +282,7 @@ class APIAbstraction(DbAbstraction):
 
     def get_columns(self):
         if self.schema is None:
-            self.schema = self.get_schema
+            self.schema = self.get_schema()
 
         return self.schema.keys()
 
@@ -317,8 +321,7 @@ class APIAbstraction(DbAbstraction):
         except KeyError:
             return None
 
-        r = self.model(**json_object)
-        return r.jsonify(self.api)
+        return json_object
 
     def update(self, id, data):
         id = int(id)
@@ -330,7 +333,7 @@ class APIAbstraction(DbAbstraction):
         except KeyError:
             raise exceptions.IdNotFound(message='id %d does not exist' % id)
 
-        obj = self.objects.new(id=id, **new_data)
+        obj = self.objects.new(id=id, **(self._sanitize_for_update(new_data)))
         obj.save()
 
         return obj.to_hash()
@@ -389,7 +392,7 @@ class InMemoryAbstraction(DbAbstraction):
         except TypeError:
             raise exceptions.CreateError('bad data type')
 
-        retval = new_thing.jsonify(self.api)
+        retval = new_thing.jsonify(api=self.api)
         retval['id'] = self._get_new_id()
 
         self.dictionary[retval['id']] = retval
@@ -508,14 +511,12 @@ class EphemeralAbstraction(DbAbstraction):
             raise exceptions.IdNotFound(message='id %d does not exist' % id)
 
         new_obj = self._update_object(obj)
-        r = self.model(**new_obj)
-        self.logger.debug('model: %s' % r)
+        r = self.model(**(self._sanitize_for_create(new_obj)))
 
         r.id = id
 
-        print('model json: %s' % r.jsonify())
-        print('model jason in conext: %s' % r.jsonify(self.api))
-        return r.jsonify(self.api)
+        result = r.jsonify(api=self.api)
+        return result
 
     def update(self, id, data):
         id = int(id)

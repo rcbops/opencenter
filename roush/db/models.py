@@ -46,6 +46,7 @@ class JsonEntry(types.TypeDecorator):
             value = ''
         return json.loads(value)
 
+
 class JsonRenderer(object):
     def __new__(cls, *args, **kwargs):
         obj = super(JsonRenderer, cls).__new__(cls, *args, **kwargs)
@@ -59,8 +60,10 @@ class JsonRenderer(object):
         classname = self.__class__.__name__.lower()
         field_list = api._model_get_columns(classname)
 
-        newself = copy.copy(self)
-        newself.api = api
+        newself = self
+        if api != self.api:
+            newself = copy.copy(self)
+            newself.api = api
 
         return dict([[c, getattr(newself, c)] for c in field_list])
 
@@ -187,12 +190,14 @@ class Nodes(JsonRenderer, Base):
 
             return facts
 
-        if self.api is not None:
+        if self.api is None:
             fact_list = Facts.query.filter_by(node_id=self.id)
             for fact in fact_list:
                 facts[fact.key] = fact.value
         else:
-            facts = self.api._model_query('facts', 'node_id=%d' % self.id)
+            facts = dict([[x['key'], x['value']] for x in
+                          self.api._model_query('facts',
+                                                'node_id=%d' % self.id)])
 
         # return merge_upward(self, facts)
         return facts
