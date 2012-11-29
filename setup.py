@@ -13,17 +13,14 @@ setup(name='roush',
       url='',
       license='Apache',
       packages=find_packages(exclude=['tests', 'tests.*']),
-      classifiers=[
-        'Development Status :: 4 - Beta',
-        'Environment :: Console',
-        'Intended Audience :: Developers',
-        'Intented Audience :: Information Technology',
-        'License :: OSI Approved :: Apache Software License',
-        'Operating System :: OS Independant',
-        'Programming Language :: Python',
-        ],
+      classifiers=['Development Status :: 4 - Beta',
+                   'Environment :: Console',
+                   'Intended Audience :: Developers',
+                   'Intented Audience :: Information Technology',
+                   'License :: OSI Approved :: Apache Software License',
+                   'Operating System :: OS Independant',
+                   'Programming Language :: Python',
+                   ],
       install_requires=requirements,
-      entry_points={
-        'console_scripts': ['roush = roush:main']
-        }
+      entry_points={'console_scripts': ['roush = roush:main']}
       )
