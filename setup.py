@@ -2,17 +2,18 @@
 
 from setuptools import setup, find_packages
 
-requirements = ['flask', 'sqlalchemy', 'sqlalchemy-migrate', 'gevent']
+requirements = ['flask', 'sqlalchemy', 'sqlalchemy-migrate', 'gevent',
+                'python-daemon', 'pychef']
+excludes = ['test_runner.py', 'tests', 'tests.*']
 
 
 setup(name='roush',
       version='1.0.0',
-      description='Roush API server',
-      author='Justin Shepherd',
-      author_email='jshephar@rackspace.com',
-      url='',
+      description='Roush Orchestration server',
+      author='rcbops',
+      author_email='rcb-deploy@lists.rackspace.com',
+      url='https://github.com/rcbops/roush',
       license='Apache',
-      packages=find_packages(exclude=['tests', 'tests.*']),
       classifiers=['Development Status :: 4 - Beta',
                    'Environment :: Console',
                    'Intended Audience :: Developers',
@@ -21,6 +22,7 @@ setup(name='roush',
                    'Operating System :: OS Independant',
                    'Programming Language :: Python',
                    ],
+      packages=find_packages(exclude=excludes),
       install_requires=requirements,
       entry_points={'console_scripts': ['roush = roush:main']}
       )
