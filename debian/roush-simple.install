@@ -1,2 +1,3 @@
 debian/roush.conf etc/roush
+usr/bin/roush
 manage.py usr/share/roush
