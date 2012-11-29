@@ -1,1 +1,1 @@
-recursive-include roush *.py *.json *.criteria
+recursive-include roush *.py *.json *.criteria *.cfg
