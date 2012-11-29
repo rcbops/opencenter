@@ -1,7 +1,1 @@
-roush.py usr/share/roush
-manage.py usr/share/roush
-backends/* usr/share/roush/backends
-db/* usr/share/roush/db
-roles/* usr/share/roush/roles
-debian/roush.conf usr/share/roush
-webapp/* /usr/share/roush/webapp
+debian/roush.conf etc/roush

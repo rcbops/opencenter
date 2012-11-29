@@ -17,8 +17,8 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="restish web server for roush"
 NAME=roush
-DAEMON=/usr/share/roush/$NAME.py
-DAEMON_ARGS="-c /usr/share/roush/roush.conf -d"
+DAEMON=/usr/bin/$NAME
+DAEMON_ARGS="-c /etc/roush/roush.conf -d"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 

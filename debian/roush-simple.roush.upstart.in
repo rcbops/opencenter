@@ -11,8 +11,8 @@ respawn limit 10 5
 umask 022
 
 script
-    DAEMON_ARGS="-c /usr/share/roush/roush.conf"
+    DAEMON_ARGS="-c /etc/roush/roush.conf"
     [ -e /etc/default/roush ] && . /etc/default/roush
 
-    /usr/share/roush/roush.py ${DAEMON_ARGS}
+    /usr/bin/roush ${DAEMON_ARGS}
 end script

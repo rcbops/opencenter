@@ -8,7 +8,7 @@
 
 # ifeq (,$(filter nocheck, $(DEB_BUILD_OPTIONS)))
 # override_dh_auto_test:
-# 	python $* setup.py test -vv
+#	python $* setup.py test -vv
 # else
 # override_dh_auto_test:
 # endif
@@ -20,14 +20,14 @@ override_dh_auto_build:
 	# dh_auto_build
 
 override_dh_auto_install:
-	# python setup.py install --prefix=/usr --install-layout=deb --root=.
-	# ls -lR debian
-	# dh_auto_install
+	python setup.py install --prefix=/usr --install-layout=deb --root=.
+	ls -lR debian
+	dh_auto_install
 
 # ifeq(,$(filter nodocs, $(DEB_BUILD_OPTIONS)))
 # override_dh_installdocs:
-# 	python setup.py build_sphinx
-# 	dh_installdocs build/sphinx/html
+#	python setup.py build_sphinx
+#	dh_installdocs build/sphinx/html
 # endif
 
 override_dh_auto_clean:
@@ -38,8 +38,8 @@ override_dh_auto_clean:
 # override_dh_auto_build:
 
 # override_dh_auto_install:
-# 	python setup.py install --root=debian/roush-agent --prefix=/usr
-# 	ls -lR debian
+#	python setup.py install --root=debian/roush-agent --prefix=/usr
+#	ls -lR debian
 
 override_dh_installinit:
 	# installinit prefers .upstart to .init
