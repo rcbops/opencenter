@@ -167,7 +167,7 @@ class Thing(Flask):
         # auto-register the schema url
         def schema_details(what):
             def f():
-                return jsonify(api._model_get_schema(what))
+                return jsonify({"schema": api._model_get_schema(what)})
             return f
 
         def filter_object(what):

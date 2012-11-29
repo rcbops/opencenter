@@ -1,3 +1,4 @@
+import copy
 import json
 import time
 
@@ -7,7 +8,7 @@ import sqlalchemy.types as types
 from sqlalchemy.exc import InvalidRequestError
 
 from database import Base
-
+import api as db_api
 import inmemory
 
 
@@ -35,7 +36,6 @@ class JsonBlob(types.TypeDecorator):
 
 
 class JsonEntry(types.TypeDecorator):
-
     impl = types.Text
 
     def process_bind_param(self, value, dialect):
@@ -47,7 +47,28 @@ class JsonEntry(types.TypeDecorator):
         return json.loads(value)
 
 
-class Tasks(Base):
+class JsonRenderer(object):
+    def __new__(cls, *args, **kwargs):
+        obj = super(JsonRenderer, cls).__new__(cls, *args, **kwargs)
+        obj.__dict__['api'] = None
+        return obj
+
+    def jsonify(self, api=None):
+        if api is None:
+            api = db_api.api_from_models()
+
+        classname = self.__class__.__name__.lower()
+        field_list = api._model_get_columns(classname)
+
+        newself = self
+        if api != self.api:
+            newself = copy.copy(self)
+            newself.api = api
+
+        return dict([[c, getattr(newself, c)] for c in field_list])
+
+
+class Tasks(JsonRenderer, Base):
     __tablename__ = 'tasks'
 
     id = Column(Integer, primary_key=True)
@@ -111,7 +132,7 @@ def task_state_mungery(target, value, oldvalue, initiator):
 #         self.consequences = consequences
 
 
-class Facts(Base):
+class Facts(JsonRenderer, Base):
     __tablename__ = 'facts'
     id = Column(Integer, primary_key=True)
     node_id = Column(Integer, ForeignKey('nodes.id'), nullable=False)
@@ -126,7 +147,7 @@ class Facts(Base):
         self.value = value
 
 
-class Nodes(Base):
+class Nodes(JsonRenderer, Base):
     __tablename__ = 'nodes'
     id = Column(Integer, primary_key=True)
     name = Column(String(64), unique=True, nullable=False)
@@ -169,15 +190,20 @@ class Nodes(Base):
 
             return facts
 
-        fact_list = Facts.query.filter_by(node_id=self.id)
-        for fact in fact_list:
-            facts[fact.key] = fact.value
+        if self.api is None:
+            fact_list = Facts.query.filter_by(node_id=self.id)
+            for fact in fact_list:
+                facts[fact.key] = fact.value
+        else:
+            facts = dict([[x['key'], x['value']] for x in
+                          self.api._model_query('facts',
+                                                'node_id=%d' % self.id)])
 
         # return merge_upward(self, facts)
         return facts
 
 
-class Adventures(Base):
+class Adventures(JsonRenderer, Base):
     __tablename__ = 'adventures'
     id = Column(Integer, primary_key=True)
     name = Column(String(30))
@@ -186,7 +212,7 @@ class Adventures(Base):
 
     _non_updatable_fields = ['id']
 
-    def __init__(self, name, dsl, criteria='1 = 1'):
+    def __init__(self, name, dsl, criteria='true'):
         self.name = name
         self.dsl = dsl
         self.criteria = criteria
@@ -195,7 +221,7 @@ class Adventures(Base):
         return '<Adventures %r>' % (self.name)
 
 
-class Filters(Base):
+class Filters(JsonRenderer, Base):
     __tablename__ = 'filters'
     id = Column(Integer, primary_key=True)
     parent_id = Column(Integer, ForeignKey('filters.id'), default=None)
@@ -219,12 +245,17 @@ class Filters(Base):
     @property
     def full_expr(self):
         if self.parent_id:
-            return "(%s) and (%s)" % (self.expr, self.parent.full_expr)
+            if self.api is None:
+                return '(%s) and (%s)' % (self.expr, self.parent.full_expr)
+            else:
+                parent = self.api._model_get_by_id('filters',
+                                                   self.parent_id)
+                return '(%s) and (%s)' % (self.expr, parent.full_expr)
         else:
             return self.expr
 
 
-class Primitives(inmemory.InMemoryBase):
+class Primitives(JsonRenderer, inmemory.InMemoryBase):
     id = inmemory.Column(inmemory.Integer, primary_key=True, nullable=False,
                          required=True)
     name = inmemory.Column(inmemory.String(32), required=True)
