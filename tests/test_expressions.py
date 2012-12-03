@@ -2,11 +2,11 @@
 
 from util import RoushTestCase
 
-from roush.db.api import api_from_models
+import roush.db.api as db_api
 from roush.webapp import ast
 
 
-api = api_from_models()
+api = db_api.api_from_models()
 
 
 class ExpressionTestCase(RoushTestCase):
@@ -33,10 +33,14 @@ class ExpressionTestCase(RoushTestCase):
         root_node = builder.build()
         return root_node.invert()
 
-    def _eval_expression(self, expression, node, ns={}):
+    def _eval_expression(self, expression, node_id, ns={}):
+        ephemeral_api = db_api.ephemeral_api_from_api(api)
         builder = ast.FilterBuilder(ast.FilterTokenizer(), expression,
-                                    api=api)
-        return builder.eval_node(node, symbol_table=ns)
+                                    api=ephemeral_api)
+        node = ephemeral_api._model_get_by_id('nodes', node_id)
+        builder.eval_node(node, symbol_table=ns)
+        new_node = ephemeral_api._model_get_by_id('nodes', node_id)
+        return new_node
 
     def test_bad_interface(self):
         expression = "ifcount('blahblah') > 0"
@@ -75,23 +79,47 @@ class ExpressionTestCase(RoushTestCase):
         self.assertTrue(len(result) == 1)
 
     def test_eval_assign(self):
-        expression = "foo := 3"
-        test_node = {}
-        self._eval_expression(expression, test_node)
-        self.assertTrue(test_node['foo'] == 3)
-        self.assertTrue(len(test_node) == 1)
+        node_id = self.nodes['node-1']['id']
+        expression = "parent_id := 3"
+
+        node = self._eval_expression(expression, node_id)
+        self.assertTrue(node['parent_id'] == 3)
 
     def test_eval_union(self):
-        expression = "foo := union(foo, 3)"
-        test_node = {}
-        self._eval_expression(expression, test_node)
-        self.assertTrue(test_node['foo'] == [3])
-        self.assertTrue(len(test_node) == 1)
+        node_id = self.nodes['node-1']['id']
+        expression = "facts.woof := union(facts.woof, 3)"
+
+        node = self._eval_expression(expression, node_id)
+        self.assertTrue(node['facts']['woof'] == [3])
 
     def test_eval_namespaces(self):
-        expression = "foo := value"
-        test_node = {}
+        node_id = self.nodes['node-1']['id']
+        expression = "parent_id := value"
         ns = {"value": 3}
-        self._eval_expression(expression, test_node, ns)
-        self.assertTrue(test_node['foo'] == 3)
-        self.assertTrue(len(test_node) == 1)
+
+        node = self._eval_expression(expression, node_id, ns)
+        self.assertTrue(node['parent_id'] == 3)
+
+    # test the inverter and regularizer functions
+    def test_regularize_expression(self):
+        expression = 'foo=value'
+        regular = ast.regularize_expression(expression)
+        self.logger.debug('Got regularized expression "%s" for "%s"' %
+                          (regular, expression))
+        self.assertTrue('foo = value' == regular)
+
+    def test_inverted_expression(self):
+        expression = 'foo=value'
+        inverted = ast.invert_expression(expression)
+        self.logger.debug('Got inverted expression "%s" for "%s"' %
+                          (inverted, expression))
+        self.assertTrue(len(inverted) == 1)
+        self.assertTrue('foo := value' == inverted[0])
+
+    def test_concrete_expression(self):
+        expression = "foo = value"
+        ns = {"value": 3}
+        concrete = ast.concrete_expression(expression, ns)
+        self.logger.debug('Got concrete expression "%s" for "%s"' %
+                          (concrete, expression))
+        self.assertTrue('foo = 3', concrete)

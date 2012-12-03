@@ -30,6 +30,21 @@ class Backend(object):
             with open(fact_path, 'r') as f:
                 self.facts = json.loads(f.read())
 
+    def additional_constraints(self, action, ns):
+        return []
+
+
+def additional_constraints(primitive_id, ns):
+    if not primitive_id in backend_primitives:
+        raise ValueError('bad primitive id %s' % primitive_id)
+
+    primitive = backend_primitives[primitive_id]
+    fullname = primitive['name']
+
+    backend, primitive = fullname.split('.')
+    backend_obj = backend_objects[backend]
+    return backend_obj.additional_constraints(primitive, ns)
+
 
 def load():
     if len(backend_objects) > 0:

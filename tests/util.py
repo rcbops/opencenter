@@ -26,9 +26,12 @@ class RoushTestCase(unittest2.TestCase):
 
     def _clean_all(self):
         for what in ['task', 'node', 'fact', 'filter']:
-            all_results = self._model_get_all(what)
-            for what_id in [x['id'] for x in all_results]:
-                self._model_delete(what, what_id)
+            self._clean_table(what)
+
+    def _clean_table(self, what):
+        all_results = self._model_get_all(what)
+        for what_id in [x['id'] for x in all_results]:
+            self._model_delete(what, what_id)
 
     def _valid_rand(self, var_type):
         if var_type == 'INTEGER':
