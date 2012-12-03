@@ -1,4 +1,14 @@
 {
+    "add_backend": {
+        "args": {
+            "backend": {
+                "type": "string",
+                "required": true
+            }
+        },
+        "constraints": [],
+        "consequences": [ "facts.backends := union(facts.backends, '{backend}')" ]
+    },
     "set_fact": {
         "args": {
             "key": {
@@ -12,5 +22,15 @@
         },
         "constraints": [],
         "consequences": [ "facts.{key} := \"{value}\"" ]
+    },
+    "set_parent": {
+        "args": {
+            "parent": {
+                "type": "integer",
+                "required": true
+            }
+        },
+        "constraints": [],
+        "consequences": [ "parent_id := parent" ]
     }
 }

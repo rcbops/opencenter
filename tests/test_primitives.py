@@ -16,7 +16,7 @@ class PrimitiveTests(RoushTestCase):
         self._clean_all()
 
     def tearDown(self):
-        pass
+        self._clean_table('primitive')
 
 
 PrimitiveTests = inject(PrimitiveTests)
