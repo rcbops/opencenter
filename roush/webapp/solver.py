@@ -21,7 +21,6 @@ class Solver:
         self.children = []
         classname = self.__class__.__name__.lower()
         self.logger = logging.getLogger('%s.%s' % (__name__, classname))
-        self.solutions = {}
         self.parent = parent
         self.prim = prim
         self.ns = ns
@@ -43,9 +42,34 @@ class Solver:
         self.logger.debug('Node after applying consequences: %s' %
                           ephemeral_node)
 
+    @classmethod
+    def from_plan(cls, api, node_id, constraints, plan):
+        root_node = None
+        current_node = None
+
+        for plan_item in plan:
+            pass
+
+    def pretty_print(self, level=0):
+        plan = self.plan()
+        self.logger.debug(plan)
+
+        if plan['primitive']:
+            print '%s * %s' % (' ' * level * 2, plan['primitive']['name'])
+            for arg in plan['args']:
+                print '%s    - %s => %s' % (' ' * level * 2,
+                                            arg, plan['args'][arg])
+        else:
+            print 'Solver Plan:'
+
+        for child in self.children:
+            child.pretty_print(level + 1)
+
     def can_coerce(self, constraint_node, consequence_node):
         # see if the consequence expression can be forced
         # into the constraint form.
+
+        # this really needs to be generalized
 
         self.logger.debug('Trying to coerce %s' % consequence_node.to_s())
         self.logger.debug('... to %s' % constraint_node.to_s())
@@ -151,166 +175,162 @@ class Solver:
 
         return True, ns_lhs
 
-    def solve_one(self):
-        # first, build up asts of all my unsolved constraints
+    def _is_forwarding_solution(self, primitive, constraints, ns=None):
+        """
+        see if a primitive with a particular namespace binding
+        can actually satisfy a constraint (mostly for plan
+        testing)
+        """
+
+        potential = self._potential_solutions(primitive, constraints)
+        for solution in potential:
+            if ns == solution['ns']:
+                return True
+
+        return False
+
+    def _potential_solutions(self, primitive, constraints):
+        """see if a primitive can satisfy any solver constraint
+
+        primitive -- primitive db object (dict) to test
+        constraints -- list of constraint structures
+                       (as from _build_constraints) that must be
+                       satisfied
+        """
+
+        f_builder = ast.FilterBuilder(ast.FilterTokenizer())
+        valid_solutions = []
+
+        for constraint in constraints:
+            # walk through the constraints and see if the
+            # primitive can solve this constraint with
+            # any namespace binding.
+            constraint_ast = constraint['consequence_ast']
+
+            for consequence in primitive['consequences']:
+                f_builder.set_input(consequence)
+                consequence_ast = f_builder.build()
+
+                satisfies, req_ns = self.can_solve(constraint_ast,
+                                                   consequence_ast)
+                if satisfies:
+                    solution = {'primitive': primitive,
+                                'ns': req_ns,
+                                'solves': constraint['constraint'],
+                                'consequence': constraint['consequence']}
+                    valid_solutions.append(solution)
+
+        return valid_solutions
+
+    def _can_meet_constraints(self, primitive):
+        """see if the node in question meets the primitive constraints"""
+        can_add = True
+
+        if primitive['constraints'] != []:
+            constraint_filter = ' AND '.join(map(lambda x: '(%s)' % x,
+                                                 primitive['constraints']))
+            builder = ast.FilterBuilder(ast.FilterTokenizer(),
+                                        constraint_filter,
+                                        'nodes')
+            root_node = builder.build()
+            can_add = root_node.eval_node(self.node)
+
+        return can_add
+
+    def _build_constraints(self, constraints):
+        """
+        build asts of constraints and their inverted consequences.
+
+        in addition, this flattens the list of constraints, de-joining
+        any AND constraints.
+        """
+
+        retval = []
         f_builder = ast.FilterBuilder(ast.FilterTokenizer())
 
-        constraint_asts = []
-        for constraint in self.constraints:
-            self.logger.debug('ast-izing constraint %s' % constraint)
+        for constraint in constraints:
+            self.logger.debug('flattening constraint %s' % constraint)
             f_builder.set_input(constraint)
-            root_node = f_builder.build()
-            constraint_asts.append({'constraint': constraint,
-                                    'ast': root_node})
+            constraint_node = f_builder.build()
+            for consequence in constraint_node.invert():
+                # now, we'll re-invert the consequence to get
+                # the flattened constraint, and associate it
+                # with a consequence.
+                self.logger.debug('consequence: %s' % consequence)
+                f_builder.set_input(consequence)
+                consequence_ast = f_builder.build()
+                constraint_list = consequence_ast.invert()
+                if len(constraint_list) != 1:
+                    raise RuntimeError('too many constraints?')  # cannot be
+                constraint = constraint_list[0]
+                self.logger.debug('constraint: %s' % constraint)
+                f_builder.set_input(constraint)
+                constraint_ast = f_builder.build()
 
-        expression_asts = []
-        for constraint_struct in constraint_asts:
-            for expression in constraint_struct['ast'].invert():
-                self.logger.debug('ast-izing inv constraint %s' % expression)
-                f_builder.set_input(expression)
-                root_node = f_builder.build()
-                expression_asts.append({'constraint':
-                                        constraint_struct['constraint'],
-                                        'ast': root_node})
+                retval.append({'constraint': constraint,
+                               'constraint_ast': constraint_ast,
+                               'consequence': consequence,
+                               'consequence_ast': consequence_ast})
+
+        self.logger.debug('flattened constraints: %s' % retval)
+        return retval
+
+    def solve_one(self):
+        """
+        run a single pass of the solver, trying to find all the
+        available primitives that can solve any existing constraint.
+        """
+
+        # first, build up asts of all my unsolved constraints
+        constraint_list = self._build_constraints(self.constraints)
+
+        # fix/regularize our internal constraint list
+        self.constraints = [x['constraint'] for x in constraint_list]
 
         # walk through all the primitives, and see what primitives
         # have constraints that are met, and spin off a new solver
         # from that state.
         primitives = self.api._model_get_all('primitives')
 
-        unmet_primitives = []
-        applied_primitives = []
-
-        for primitive in primitives:
-            self.logger.debug('evaluating primitive for constraints: %s' %
-                              primitive)
-            can_add = True
-
-            if primitive['constraints'] != []:
-                constraint_filter = ' AND '.join(map(lambda x: '(%s)' % x,
-                                                     primitive['constraints']))
-                builder = ast.FilterBuilder(ast.FilterTokenizer(),
-                                            constraint_filter,
-                                            'nodes')
-                root_node = builder.build()
-
-                can_add = root_node.eval_node(self.node)
-            self.logger.debug('primitive "%s" meets constraints: %s' %
-                              (primitive['name'], can_add))
-            if can_add:
-                applied_primitives.append(primitive)
-            else:
-                unmet_primitives.append("%s: could not meet constraints" %
-                                        primitive['name'])
+        # get all the primitives capable of being run, given the
+        # primitive constraints
+        primitives = [x for x in primitives if self._can_meet_constraints(x)]
 
         # see if any of the appliable primitives have consequences that
         # could forward us to our goal.
-        bad_primitives = []
+        all_solutions = []
 
-        for primitive in applied_primitives:
-            self.logger.debug('checking forwardness of %s' % primitive['name'])
+        for primitive in primitives:
+            solutions = self._potential_solutions(primitive,
+                                                  constraint_list)
+            all_solutions += solutions
 
-            can_satisfy = False
-            ns = {}
-
-            for constraint_struct in expression_asts:
-                for consequence in primitive['consequences']:
-                    prim_name = primitive['name']
-                    prim_id = primitive['id']
-
-                    f_builder.set_input(consequence)
-                    consequence_ast = f_builder.build()
-
-                    constraint_ast = constraint_struct['ast']
-                    satisfaction, ns = self.can_solve(constraint_ast,
-                                                      consequence_ast)
-
-                    if satisfaction:
-                        can_satisfy = True
-                        self.solutions[prim_name] = {}
-                        self.solutions[prim_name]['id'] = prim_id
-                        self.solutions[prim_name]['prim'] = primitive
-                        if not 'solved' in self.solutions[prim_name]:
-                            self.solutions[prim_name]['solved'] = []
-
-                        self.solutions[prim_name]['solved'].append(
-                            constraint_struct['constraint'])
-
-                        if not 'ns' in self.solutions[prim_name]:
-                            self.solutions[prim_name]['ns'] = {}
-
-                        for k, v in ns.items():
-                            if k in self.solutions[prim_name]['ns']:
-                                self.logger.error('### DUP BINDING ###')
-                                raise RuntimeError('can this happen?')
-
-                            self.solutions[prim_name]['ns'][k] = v
-
-            if not can_satisfy:
-                bad_primitives.append(primitive)
-                unmet_primitives.append('%s: does not further goal' %
-                                        primitive['name'])
-            self.logger.debug('%s can forward: %s' % (primitive['name'],
-                                                      can_satisfy))
-
-        for primitive in bad_primitives:
-            applied_primitives.remove(primitive)
-
-        # now we have a list of primitives that can be applied, so
-        # nail down the arguments and apply the primitives
-        for name, solution in self.solutions.items():
-            self.logger.debug('Solving args for %s' % solution)
-
-            for arg, val in solution['prim']['args'].items():
-                self.logger.debug('solving %s' % arg)
-                solvable, result = self.solve_arg(
-                    arg, val, solution['ns'])
-
-                if solvable:
-                    solution['ns'][arg] = result
-                else:
-                    pass
-
-                self.logger.debug('Arg "%s" solvable: %s (%s)' % (
-                    arg, solvable, result))
-
-        self.logger.debug('unapplied_primitives: %s' %
-                          ', '.join(unmet_primitives))
-
-        self.logger.debug("Proposed paths forward:")
-        for name in self.solutions:
-            self.logger.debug(self.solutions[name])
-
-        for name, solution in self.solutions.items():
-            self.logger.debug('Met primitive "%s".  NS:' % name)
-
-            for k, v in solution['ns'].items():
-                self.logger.debug('  "%s" => "%s"' % (k, v))
+        # Now that we know all possible solutions, let's
+        # spin up sub-solvers so we can continue to work
+        # through them.
+        self.logger.debug("Found %d solutions:" % len(all_solutions))
+        for solution in all_solutions:
+            self.logger.debug("%s with %s, solving %s" %
+                              (solution['primitive']['name'],
+                               solution['ns'],
+                               solution['solves']))
 
             constraints = copy.deepcopy(self.constraints)
             applied_consequences = copy.deepcopy(self.applied_consequences)
 
-            self.logger.debug('New consequences: %s' % solution['solved'])
+            if not solution['solves'] in constraints:
+                raise RuntimeError('constrating disappeared?!?!')
 
-            for solved in solution['solved']:
-                if not solved in constraints:
-                    raise RuntimeError('constraint disappeared!')
+            # find the concrete consequence so we can roll forward
+            # the cluster api representation
+            consequence = solution['consequence']
+            concrete_consequence = ast.concrete_expression(consequence)
+            applied_consequences.append(concrete_consequence)
+            constraints.remove(solution['solves'])
 
-                consequence_list = ast.invert_expression(solved)
-                for consequence in consequence_list:
-                    self.logger.debug('adding applied consequence %s' %
-                                      consequence)
-
-                    applied_consequences.append(
-                        ast.concrete_expression(consequence))
-                constraints.remove(solved)
-
-            # get additional constraints
-            self.logger.debug('Getting additional constraints for %s' %
-                              solution['prim']['id'])
-
+            # get additional constraints from the primitive itself.
             new_constraints = roush.backends.additional_constraints(
-                solution['prim']['id'],
+                solution['primitive']['id'],
                 solution['ns'])
 
             self.logger.debug('New constraints from primitive: %s' %
@@ -318,7 +338,7 @@ class Solver:
 
             new_solver = Solver(self.base_api, self.node_id,
                                 constraints + new_constraints, self,
-                                solution['prim'], ns=solution['ns'],
+                                solution['primitive'], ns=solution['ns'],
                                 applied_consequences=applied_consequences)
 
             self.children.append(new_solver)
@@ -364,7 +384,7 @@ class Solver:
         else:
             return False, False, solution_track
 
-    def plan(self,):
+    def plan(self):
         result_plan = {}
         result_plan['primitive'] = self.prim
         result_plan['args'] = self.ns

@@ -583,12 +583,18 @@ class Node:
                                                                 'NONE']):
                 return ['%s = %s' % (self.lhs.value_to_s(),
                                      self.rhs.value_to_s())]
+
+            self.logger.debug('self.lhs.op: %s' % self.lhs.op)
+            self.logger.debug('self.rhs.op: %s' % self.rhs.op)
+            self.logger.debug('self.rhs.lhs: %s' % self.rhs.lhs)
+            self.logger.debug('self.lhs.lhs: %s' % self.lhs.lhs)
+            self.logger.debug('self.rhs.rhs[0]: %s' % self.rhs.rhs[0])
+
             if (self.lhs.op == 'IDENTIFIER' and (
                     self.rhs.op == 'FUNCTION' and (
-                        self.rhs.lhs == 'union')) and (
-                    self.lhs.lsh == self.rhs.rhs[0])):
-                return ['%s IN %s' % (self.rhs.rhs[0].value_to_s(),
-                                      self.rhs.rhs[1].value_to_s())]
+                        self.rhs.lhs == 'union'))):
+                return ['%s in %s' % (self.rhs.rhs[1].value_to_s(),
+                                      self.rhs.rhs[0].value_to_s())]
 
         raise SyntaxError('un-invertable operator: %s' % self.op)
 
