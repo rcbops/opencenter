@@ -116,6 +116,14 @@ class ExpressionTestCase(RoushTestCase):
         self.assertTrue(len(inverted) == 1)
         self.assertTrue('foo := value' == inverted[0])
 
+    def test_inverted_union(self):
+        expression = 'facts.test := union(facts.test, test)'
+        inverted = ast.invert_expression(expression)
+        self.logger.debug('Got inverted expression "%s" for "%s"' %
+                          (inverted, expression))
+        self.assertTrue(len(inverted) == 1)
+        self.assertTrue('test in facts.test' == inverted[0])
+
     def test_concrete_expression(self):
         expression = "foo = value"
         ns = {"value": 3}
