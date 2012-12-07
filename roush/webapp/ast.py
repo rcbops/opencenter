@@ -650,6 +650,8 @@ class Node:
         # right now we'll assume that if this is expressed as a consequence,
         # it's actually realizable in the underlying data structure.  If not,
         # well... bad things.
+        self.logger.debug('assigning id using api: %s' % self.api)
+
         if not identifier:
             return None
 
@@ -665,6 +667,9 @@ class Node:
             return
         else:
             (attr, rest) = canonical.split('.', 1)
+
+            self.logger.debug('attr: %s, object_type: %s' %
+                              (attr, object_type))
 
             if attr == 'facts' and object_type == 'nodes':
                 existing_fact = self.api._model_query(
