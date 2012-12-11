@@ -496,6 +496,30 @@ class Solver:
 
         return current
 
+    def adventure(self, state_number=0):
+        if self.prim:
+            if len(self.children) > 1:
+                raise ValueError('solution tree not pruned')
+
+            state = 's%d' % state_number
+            next_state = 's%d' % (state_number + 1)
+
+            adventure = {
+                's%d' % state_number: {
+                    'primitive': self.prim['name'],
+                    'parameters': self.ns
+                }
+            }
+
+            if len(self.children) == 1:
+                adventure[state]['on_success'] = next_state
+                adventure.update(self.children[0].adventure(state_number + 1))
+
+            return adventure
+        else:
+            return {'start_state': 's0',
+                    'states': self.children[0].adventure()}
+
     def dotty(self, fd):
         if self.parent is None:
             print >>fd, 'digraph G {\n'
