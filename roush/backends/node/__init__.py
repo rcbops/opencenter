@@ -24,8 +24,11 @@ class NodeBackend(backends.Backend):
             if not 'parent' in ns:
                 raise ValueError('no parent set')
             parent = api._model_get_by_id('nodes', ns['parent'])
-            return ['facts.%s = "%s"' % (key, parent.facts[key])
-                    for key in parent.facts.keys()]
+            if 'container' in parent.facts.backends:
+                return ['facts.%s = "%s"' % (key, parent.facts[key])
+                        for key in parent.facts.keys()]
+            else:
+                return ['1=2']
         return []
 
     def set_parent(self, api, node_id, parent):
