@@ -24,8 +24,9 @@ class NodeBackend(backends.Backend):
                 raise ValueError('no parent set')
             parent = api._model_get_by_id('nodes', ns['parent'])
             if 'container' in parent['facts']['backends']:
+                inherited_facts = parent['facts'].get('inherited', {})
                 return ['facts.%s="%s"' % (k, v)
-                        for k, v in parent['facts'].get('inherited', {}).items()]
+                        for k, v in inherited_facts.items()]
             else:
                 # cannot set_parent to something that isn't a container
                 return ['1=2']
