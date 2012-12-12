@@ -30,11 +30,11 @@ class Backend(object):
             with open(fact_path, 'r') as f:
                 self.facts = json.loads(f.read())
 
-    def additional_constraints(self, action, ns):
+    def additional_constraints(self, api, action, ns):
         return []
 
 
-def additional_constraints(primitive_id, ns):
+def additional_constraints(api, primitive_id, ns):
     if not primitive_id in backend_primitives:
         raise ValueError('bad primitive id %s' % primitive_id)
 
@@ -43,7 +43,7 @@ def additional_constraints(primitive_id, ns):
 
     backend, primitive = fullname.split('.')
     backend_obj = backend_objects[backend]
-    return backend_obj.additional_constraints(primitive, ns)
+    return backend_obj.additional_constraints(api, primitive, ns)
 
 
 def load():

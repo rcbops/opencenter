@@ -145,15 +145,18 @@ class Solver:
             return False, {}
 
         if constraint_node.op not in ['IDENTIFIER', 'STRING']:
-            self.logger.debug('Cannot coerce vars not IDENTIFIER or STRING')
+            self.logger.debug('Cannot coerce vars not IDENTIFIER or STRING: %s' % 
+                              constraint_node.op)
             return False, {}
 
         if consequence_node.op not in ['IDENTIFIER', 'STRING']:
-            self.logger.debug('Cannot coerce vars not IDENTIFIER or STRING')
+            self.logger.debug('Cannot coerce vars not IDENTIFIER or STRING: %s' % 
+                              consequence_node.op)
             return False, {}
 
         if consequence_node.op != constraint_node.op:
-            self.logger.debug('Cannot coerce dissimilar op types')
+            self.logger.debug('Cannot coerce dissimilar op types: %s != %s' % 
+                              (consequence_node.op, constraint_node.op))
             return False, {}
 
         if consequence_node.lhs == constraint_node.lhs:
@@ -355,6 +358,7 @@ class Solver:
 
             # get additional constraints from the primitive itself.
             new_constraints = roush.backends.additional_constraints(
+                self.api,
                 solution['primitive']['id'],
                 solution['ns'])
 
