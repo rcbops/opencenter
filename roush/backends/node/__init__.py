@@ -7,7 +7,7 @@ class NodeBackend(backends.Backend):
     def __init__(self):
         super(NodeBackend, self).__init__(__file__)
 
-    def additional_constraints(self, action, ns):
+    def additional_constraints(self, api, action, ns):
         if action == 'set_fact':
             if not 'key' in ns:
                 raise ValueError('no key in ns')
@@ -19,7 +19,17 @@ class NodeBackend(backends.Backend):
                     return ['"%s" in facts.backends' % name]
 
             return ['1=2']
-
+        if action == 'set_parent':
+            if not 'parent' in ns:
+                raise ValueError('no parent set')
+            parent = api._model_get_by_id('nodes', ns['parent'])
+            if 'container' in parent['facts']['backends']:
+                inherited_facts = parent['facts'].get('inherited', {})
+                return ['facts.%s="%s"' % (k, v)
+                        for k, v in inherited_facts.items()]
+            else:
+                # cannot set_parent to something that isn't a container
+                return ['1=2']
         return []
 
     def set_parent(self, api, node_id, parent):

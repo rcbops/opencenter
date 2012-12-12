@@ -26,11 +26,11 @@
     "set_parent": {
         "args": {
             "parent": {
-                "type": "integer",
+                "type": "string",
                 "required": true
             }
         },
         "constraints": [],
-        "consequences": [ "parent_id := parent" ]
+        "consequences": [ "parent_id := \"{parent}\"" ]
     }
 }
