@@ -23,7 +23,7 @@ class NodeBackend(backends.Backend):
             if not 'parent' in ns:
                 raise ValueError('no parent set')
             parent = api._model_get_by_id('nodes', ns['parent'])
-            if 'container' in parent['facts']['backends']:
+            if 'container' in parent['facts'].get('backends', {}):
                 inherited_facts = parent['facts'].get('inherited', {})
                 return ['facts.%s="%s"' % (k, v)
                         for k, v in inherited_facts.items()]
