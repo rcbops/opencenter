@@ -1,12 +1,1 @@
-{
-    "set_parent": {
-        "args": {
-            "parent": {
-                "type": "int",
-                "required": true
-            }
-        },
-        "constraints": [],
-        "consequences": [ "parent_id := parent" ]
-    }
-}
+{}
