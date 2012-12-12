@@ -25,27 +25,17 @@ def by_id(object_id):
 @bp.route('/<adventure_id>/execute', methods=['POST'])
 def execute_adventure(adventure_id):
     data = flask.request.json
-    data['adventure'] = adventure_id
 
-    nodes = utility.expand_nodelist(data['nodes'])
-    data['nodes'] = nodes
+    if not 'nodes' in data:
+        return generic.http_badrequest(msg='no nodes specified')
 
-    # find the node with the adventurator plugin
-    query = "'adventurator' in facts.roush_agent_output_modules"
+    try:
+        task = utility.run_adventure(adventure_id=adventure_id,
+                                     nodes=data['nodes'])
+    except ValueError as e:
+        return generic.http_badrequest(msg=str(e))
 
-    adventure_nodes = api.nodes_query(query)
+    href = flask.request.base_url + str(task['id'])
 
-    if len(adventure_nodes) > 0:
-        adventure_node = adventure_nodes.pop(0)['id']
-
-        task = api.task_create({'action': 'adventurate',
-                                'node_id': adventure_node,
-                                'payload': data})
-        utility.notify('task-for-%s' % adventure_node)
-
-        href = flask.request.base_url + str(task['id'])
-
-        return generic.http_response(201, 'Task Created', task=task,
-                                     ref=href)
-
-    return generic.http_response(404, 'cannot find orchestrator')
+    return generic.http_response(201, 'Task Created', task=task,
+                                 ref=href)
