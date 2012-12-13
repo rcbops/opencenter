@@ -6,9 +6,6 @@ import os
 import sys
 
 
-LOG = logging.getLogger(__name__)
-
-
 backend_objects = {}
 backend_primitives = {}
 
@@ -17,6 +14,9 @@ class Backend(object):
     def __init__(self, path):
         self.facts = []
         self.primitives = []
+        classname = self.__class__.__name__.lower()
+
+        self.logger = logging.getLogger('%s.%s' % (__name__, classname))
 
         my_path = os.path.dirname(path)
         json_path = os.path.join(my_path, 'primitives.json')
@@ -44,6 +44,20 @@ def additional_constraints(api, primitive_id, ns):
     backend, primitive = fullname.split('.')
     backend_obj = backend_objects[backend]
     return backend_obj.additional_constraints(api, primitive, ns)
+
+
+def primitive_by_name(primitive_name):
+    if not '.' in primitive_name:
+        return None
+
+    backend, primitive = primitive_name.split('.')
+    if not backend in backend_objects:
+        return None
+
+    backend_obj = backend_objects[backend]
+    fn = getattr(backend_obj, primitive, None)
+
+    return fn
 
 
 def load():
