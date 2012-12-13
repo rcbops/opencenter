@@ -52,3 +52,7 @@ class NodeBackend(backends.Backend):
                                         'value': value})
 
         return True
+
+    def add_backend(self, api, node_id, backend=None):
+        self.logger.debug('running add_backend')
+        return True
