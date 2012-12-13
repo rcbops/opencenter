@@ -28,7 +28,7 @@ class Backend(object):
 
         if os.path.exists(fact_path):
             with open(fact_path, 'r') as f:
-                self.facts = json.loads(f.read())
+                self.facts = normalize_facts(json.loads(f.read()))
 
     def additional_constraints(self, api, action, ns):
         return []
@@ -94,3 +94,29 @@ def load():
                 #     LOG.error('Cannot load %s from %s: %s' % (class_str,
                 #                                               import_str,
                 #                                               str(e)))
+
+
+def normalize_facts(facts):
+    result = {}
+    for fact in facts:
+        result.update(normalize_fact(fact))
+    return result
+
+
+def normalize_fact(proposed):
+    if isinstance(proposed, basestring):
+        fact = {proposed: {}}
+        name = proposed
+    elif not isinstance(proposed, dict) or len(proposed) > 1:
+        raise ValueError("Not a valid fact: %s" % proposed)
+    else:
+        #proposed is a dictionary
+        name = proposed.keys()[0]
+        fact = {name: {}}
+        fact.update(proposed)
+        if not isinstance(fact[name], dict):
+            raise ValueError("Not a valid fact %s" % proposed)
+    fact[name]["inheritance"] = fact[name].get("inheritance", "clobber")
+    fact[name]["type"] = fact[name].get("type", "untyped")
+    fact[name]["settable"] = fact[name].get("settable", True)
+    return fact

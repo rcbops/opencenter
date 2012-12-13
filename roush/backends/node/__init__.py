@@ -23,7 +23,7 @@ class NodeBackend(backends.Backend):
             if not 'parent' in ns:
                 raise ValueError('no parent set')
             parent = api._model_get_by_id('nodes', ns['parent'])
-            if 'container' in parent['facts']['backends']:
+            if 'container' in parent['facts'].get('backends', {}):
                 inherited_facts = parent['facts'].get('inherited', {})
                 return ['facts.%s="%s"' % (k, v)
                         for k, v in inherited_facts.items()]
@@ -32,12 +32,14 @@ class NodeBackend(backends.Backend):
                 return ['1=2']
         return []
 
-    def set_parent(self, api, node_id, parent):
+    def set_parent(self, api, node_id, **kwargs):
+        parent = kwargs['parent']
         api._model_update_by_id('nodes', node_id,
                                 {'parent_id': parent})
         return True
 
-    def set_fact(self, api, node_id, key, value):
+    def set_fact(self, api, node_id, **kwargs):
+        key, value = kwargs['key'], kwargs['value']
         # if the fact exists, update it, else create it.
         oldkeys = api._model_query('facts', 'node_id=%s and key=%s' %
                                    (node_id, key))
@@ -53,6 +55,7 @@ class NodeBackend(backends.Backend):
 
         return True
 
-    def add_backend(self, api, node_id, backend=None):
+    def add_backend(self, api, node_id, **kwargs):
+        backend = kwargs['backend']
         self.logger.debug('running add_backend')
         return True
