@@ -11,6 +11,9 @@ from sqlalchemy.exc import InvalidRequestError
 from database import Base
 import api as db_api
 import inmemory
+import roush.backends
+
+roush.backends.load()
 
 
 # Special Fields
@@ -199,17 +202,49 @@ class Nodes(JsonRenderer, Base):
     def facts(self):
         facts = {}
 
-        def merge_upward(node, facts):
+        def apply_inheritance(node, facts):
             fact_list = Facts.query.filter_by(node_id=node.id)
+            ns = locals()
+            functions = dict[(k, v) for k, v in ns.items()
+                             if k.find("fact_" == 0)
+                             and callable(v)]
             for fact in fact_list:
-                facts[fact.key] = fact.value
-
-            if node.parent:
-                facts = merge_upward(node.parent, facts)
-
+                fact_def = roush.backends.fact_by_name(fact.key)
+                if fact_def is None:
+                    raise ValueError('No fact found in any backend for "%s"' %
+                                     fact.key)
+                f = ns.get("fact_%s" % fact_def['inheritance'], fact_clobber)
+                facts[fact.key] = f(node, fact)
             return facts
 
-        return merge_upward(self, facts)
+        def fact_clobber(node, fact, value=None, node_list=None):
+            node_list = set() if node_list is None
+            value = fact.value
+            if node.parent and not node.parent in node_list:
+                node_list.add(node.parent)
+                value = fact_clobber(node.parent, fact, node_list=node_list)
+            return value
+
+        def fact_union(node, fact, value=None, node_list=None):
+            if not isinstance(fact.value, list):
+                raise ValueError('Union inheritance on non-list fact "%s"' %
+                                 fact.key)
+            node_list = set() if node_list is None
+            value = [] if not value
+            for item in fact.value:
+                if not item in value:
+                    value.append(fact.value)
+            if node.parent and not node.parent in node_list:
+                node_list.add(node.parent)
+                value = fact_clobber(node.parent, fact,
+                                     value=value,
+                                     node_list=node_list)
+            return value
+
+        def fact_none(node, fact):
+            return fact.value
+
+        return clobber(self, facts)
         # return dict([[x['key'], x['value']] for x in
         #              self.api._model_query('facts',
         #                                    'node_id=%d' % self.id)])
