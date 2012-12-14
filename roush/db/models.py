@@ -3,6 +3,7 @@ import json
 import time
 
 from sqlalchemy import Column, Integer, String, ForeignKey, Enum, event
+from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.orm import relationship
 import sqlalchemy.types as types
 from sqlalchemy.exc import InvalidRequestError
@@ -50,7 +51,7 @@ class JsonEntry(types.TypeDecorator):
 class JsonRenderer(object):
     def __new__(cls, *args, **kwargs):
         obj = super(JsonRenderer, cls).__new__(cls, *args, **kwargs)
-        obj.__dict__['api'] = None
+        obj.__dict__['api'] = db_api.api_from_models()
         return obj
 
     def jsonify(self, api=None):
@@ -138,6 +139,24 @@ class Facts(JsonRenderer, Base):
     node_id = Column(Integer, ForeignKey('nodes.id'), nullable=False)
     key = Column(String(64), nullable=False)
     value = Column(JsonEntry, default="")
+    __table_args__ = (UniqueConstraint('node_id', 'key', name='key_uc'),)
+
+    _non_updatable_fields = ['id', 'node_id', 'key']
+
+    def __init__(self, node_id, key, value=None):
+        self.node_id = node_id
+        self.key = key
+        self.value = value
+
+
+class Attrs(JsonRenderer, Base):
+    __tablename__ = 'attrs'
+
+    id = Column(Integer, primary_key=True)
+    node_id = Column(Integer, ForeignKey('nodes.id'), nullable=False)
+    key = Column(String(64), nullable=False)
+    value = Column(JsonEntry, default="")
+    __table_args__ = (UniqueConstraint('node_id', 'key', name='key_uc'),)
 
     _non_updatable_fields = ['id', 'node_id', 'key']
 
@@ -161,7 +180,7 @@ class Nodes(JsonRenderer, Base):
                                          name='fk_task_id'), default=None)
 
     _non_updatable_fields = ['id', 'name']
-    _synthesized_fields = ['facts']
+    _synthesized_fields = ['facts', 'attrs']
 
     def __init__(self, name, parent_id=None,
                  backend=None, backend_state=None,
@@ -190,17 +209,16 @@ class Nodes(JsonRenderer, Base):
 
             return facts
 
-        if self.api is None:
-            fact_list = Facts.query.filter_by(node_id=self.id)
-            for fact in fact_list:
-                facts[fact.key] = fact.value
-        else:
-            facts = dict([[x['key'], x['value']] for x in
-                          self.api._model_query('facts',
-                                                'node_id=%d' % self.id)])
+        return merge_upward(self, facts)
+        # return dict([[x['key'], x['value']] for x in
+        #              self.api._model_query('facts',
+        #                                    'node_id=%d' % self.id)])
 
-        # return merge_upward(self, facts)
-        return facts
+    @property
+    def attrs(self):
+        return dict([[x['key'], x['value']] for x in
+                     self.api._model_query('attrs',
+                                           'node_id=%d' % self.id)])
 
 
 class Adventures(JsonRenderer, Base):
