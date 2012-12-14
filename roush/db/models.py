@@ -246,11 +246,6 @@ class Nodes(JsonRenderer, Base):
         def fact_none(node, fact):
             return fact.value
 
-        return clobber(self, facts)
-        # return dict([[x['key'], x['value']] for x in
-        #              self.api._model_query('facts',
-        #                                    'node_id=%d' % self.id)])
-
     @property
     def attrs(self):
         return dict([[x['key'], x['value']] for x in
