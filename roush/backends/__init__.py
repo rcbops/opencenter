@@ -15,7 +15,7 @@ class Backend(object):
         self.facts = []
         self.primitives = []
         classname = self.__class__.__name__.lower()
-
+        backend = classname[:len(classname) - len("backend")]
         self.logger = logging.getLogger('%s.%s' % (__name__, classname))
 
         my_path = os.path.dirname(path)
@@ -28,7 +28,8 @@ class Backend(object):
 
         if os.path.exists(fact_path):
             with open(fact_path, 'r') as f:
-                self.facts = normalize_facts(json.loads(f.read()))
+                self.facts = normalize_facts(json.loads(f.read()),
+                                             backend)
 
     def additional_constraints(self, api, action, ns):
         return []
@@ -51,6 +52,7 @@ def fact_by_name(fact_name):
         if fact_name in backend_objects[backend].facts:
             return backend_objects[backend].facts[fact_name]
     return None
+
 
 def primitive_by_name(primitive_name):
     if not '.' in primitive_name:
@@ -102,14 +104,14 @@ def load():
                 #                                               str(e)))
 
 
-def normalize_facts(facts):
+def normalize_facts(facts, backend):
     result = {}
     for fact in facts:
-        result.update(normalize_fact(fact))
+        result.update(normalize_fact(fact, backend))
     return result
 
 
-def normalize_fact(proposed):
+def normalize_fact(proposed, backend):
     if isinstance(proposed, basestring):
         fact = {proposed: {}}
         name = proposed
@@ -125,4 +127,5 @@ def normalize_fact(proposed):
     fact[name]["inheritance"] = fact[name].get("inheritance", "clobber")
     fact[name]["type"] = fact[name].get("type", "untyped")
     fact[name]["settable"] = fact[name].get("settable", True)
+    fact[name]["backend"] = backend
     return fact
