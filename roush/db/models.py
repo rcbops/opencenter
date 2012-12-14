@@ -205,8 +205,8 @@ class Nodes(JsonRenderer, Base):
         def apply_inheritance(node, facts):
             fact_list = Facts.query.filter_by(node_id=node.id)
             ns = locals()
-            functions = dict[(k, v) for k, v in ns.items()
-                             if k.find("fact_" == 0) and callable(v)]
+            functions = dict([(k, v) for k, v in ns.items()
+                             if k.find("fact_" == 0) and callable(v)])
             for fact in fact_list:
                 fact_def = roush.backends.fact_by_name(fact.key)
                 if fact_def is None:
@@ -216,8 +216,9 @@ class Nodes(JsonRenderer, Base):
                 facts[fact.key] = f(node, fact)
             return facts
 
-        def fact_clobber(node, fact, value=None, node_list=None):
-            node_list = set() if node_list is None
+        def fact_clobber(node, fact, node_list=None):
+            if node_list is None:
+                node_list = set()
             value = fact.value
             if node.parent and not node.parent in node_list:
                 node_list.add(node.parent)
@@ -228,8 +229,10 @@ class Nodes(JsonRenderer, Base):
             if not isinstance(fact.value, list):
                 raise ValueError('Union inheritance on non-list fact "%s"' %
                                  fact.key)
-            node_list = set() if node_list is None
-            value = [] if not value
+            if node_list is None:
+                node_list = set()
+            if not value:
+                value = []
             for item in fact.value:
                 if not item in value:
                     value.append(fact.value)
