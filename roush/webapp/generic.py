@@ -130,3 +130,25 @@ def object_by_id(object_type, object_id):
             return http_response(200, 'success', **{s_obj: model_object})
     else:
         return http_notfound(msg='Unknown method %s' % flask.request.method)
+
+
+def http_solver_request(node_id, constraints, api=api, result=None):
+    task = utility.solve_and_run(node_id, constraints, api=api)
+    if task is None:
+        is_solvable, requires_input, solution_plan, _ = utility.solve_for_node(
+            node_id, constraints, api)
+
+        if not is_solvable:
+            return http_response(403, msg='cannot be solved',
+                                 friendly='sorry about that')
+
+        if requires_input:
+            return http_response(409, msg='need additional input',
+                                 plan=solution_plan)
+
+        # here we need to return the object (node/fact),
+        # but should consequence be applied?!?
+        if result is None:
+            result = {'node': api._model_get_by_id('nodes', node_id)}
+
+        return http_response(202, 'executing change', **result)
