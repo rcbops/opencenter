@@ -205,7 +205,7 @@ class Nodes(JsonRenderer, Base):
             fact_list = Facts.query.filter_by(node_id=node.id)
             ns = locals()
             functions = dict([(k, v) for k, v in ns.items()
-                             if k.find("fact_" == 0) and callable(v)])
+                             if k.find("fact_") == 0 and callable(v)])
             for fact in fact_list:
                 fact_def = roush.backends.fact_by_name(fact.key)
                 if fact_def is None:
