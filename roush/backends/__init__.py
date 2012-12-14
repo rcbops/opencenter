@@ -6,9 +6,6 @@ import os
 import sys
 
 
-LOG = logging.getLogger(__name__)
-
-
 backend_objects = {}
 backend_primitives = {}
 
@@ -17,6 +14,9 @@ class Backend(object):
     def __init__(self, path):
         self.facts = []
         self.primitives = []
+        classname = self.__class__.__name__.lower()
+
+        self.logger = logging.getLogger('%s.%s' % (__name__, classname))
 
         my_path = os.path.dirname(path)
         json_path = os.path.join(my_path, 'primitives.json')
@@ -28,7 +28,7 @@ class Backend(object):
 
         if os.path.exists(fact_path):
             with open(fact_path, 'r') as f:
-                self.facts = json.loads(f.read())
+                self.facts = normalize_facts(json.loads(f.read()))
 
     def additional_constraints(self, api, action, ns):
         return []
@@ -44,6 +44,20 @@ def additional_constraints(api, primitive_id, ns):
     backend, primitive = fullname.split('.')
     backend_obj = backend_objects[backend]
     return backend_obj.additional_constraints(api, primitive, ns)
+
+
+def primitive_by_name(primitive_name):
+    if not '.' in primitive_name:
+        return None
+
+    backend, primitive = primitive_name.split('.')
+    if not backend in backend_objects:
+        return None
+
+    backend_obj = backend_objects[backend]
+    fn = getattr(backend_obj, primitive, None)
+
+    return fn
 
 
 def load():
@@ -80,3 +94,29 @@ def load():
                 #     LOG.error('Cannot load %s from %s: %s' % (class_str,
                 #                                               import_str,
                 #                                               str(e)))
+
+
+def normalize_facts(facts):
+    result = {}
+    for fact in facts:
+        result.update(normalize_fact(fact))
+    return result
+
+
+def normalize_fact(proposed):
+    if isinstance(proposed, basestring):
+        fact = {proposed: {}}
+        name = proposed
+    elif not isinstance(proposed, dict) or len(proposed) > 1:
+        raise ValueError("Not a valid fact: %s" % proposed)
+    else:
+        #proposed is a dictionary
+        name = proposed.keys()[0]
+        fact = {name: {}}
+        fact.update(proposed)
+        if not isinstance(fact[name], dict):
+            raise ValueError("Not a valid fact %s" % proposed)
+    fact[name]["inheritance"] = fact[name].get("inheritance", "clobber")
+    fact[name]["type"] = fact[name].get("type", "untyped")
+    fact[name]["settable"] = fact[name].get("settable", True)
+    return fact
