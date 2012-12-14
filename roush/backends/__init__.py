@@ -46,6 +46,12 @@ def additional_constraints(api, primitive_id, ns):
     return backend_obj.additional_constraints(api, primitive, ns)
 
 
+def fact_by_name(fact_name):
+    for backend in backend_objects:
+        if fact_name in backend_objects[backend].facts:
+            return backend_objects[backend].facts[fact_name]
+    return None
+
 def primitive_by_name(primitive_name):
     if not '.' in primitive_name:
         return None
