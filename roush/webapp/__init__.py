@@ -17,6 +17,7 @@ from roush.db.api import api_from_models
 from roush.webapp.adventures import bp as adventures
 from roush.webapp.ast import FilterBuilder, FilterTokenizer
 from roush.webapp.facts import bp as facts
+from roush.webapp.attrs import bp as attrs
 from roush.webapp.filters import bp as filters
 from roush.webapp.index import bp as index
 from roush.webapp.nodes import bp as nodes
@@ -150,6 +151,7 @@ class Thing(Flask):
         self.register_blueprint(adventures, url_prefix='/adventures')
         self.register_blueprint(filters, url_prefix='/filters')
         self.register_blueprint(facts, url_prefix='/facts')
+        self.register_blueprint(attrs, url_prefix='/attrs')
         self.register_blueprint(primitives, url_prefix='/primitives')
         self.testing = debug
 
