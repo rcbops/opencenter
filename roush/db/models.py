@@ -245,7 +245,7 @@ class Nodes(JsonRenderer, Base):
         def fact_none(node, fact):
             return fact.value
 
-        apply_inheritance(self.node, facts)
+        apply_inheritance(self, facts)
         return facts
 
     @property
