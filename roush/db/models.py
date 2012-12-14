@@ -201,7 +201,6 @@ class Nodes(JsonRenderer, Base):
     @property
     def facts(self):
         facts = {}
-
         def apply_inheritance(node, facts):
             fact_list = Facts.query.filter_by(node_id=node.id)
             ns = locals()
@@ -245,6 +244,9 @@ class Nodes(JsonRenderer, Base):
 
         def fact_none(node, fact):
             return fact.value
+
+        apply_inheritance(self.node, facts)
+        return facts
 
     @property
     def attrs(self):
