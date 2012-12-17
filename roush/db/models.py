@@ -238,7 +238,6 @@ class Nodes(JsonRenderer, Base):
             # ns = locals()
             # print "ns: %s" % ns
 
-
             for fact in fact_list:
                 fact_def = roush.backends.fact_by_name(fact['key'])
                 if fact_def is None:
@@ -252,7 +251,9 @@ class Nodes(JsonRenderer, Base):
                 if fact['key'] in facts:
                     parent_value = facts[fact['key']]
 
-                print "fact: %s, parent_value: %s by %s" % (fact, parent_value, f)
+                print "fact: %s, parent_value: %s by %s" % (fact,
+                                                            parent_value,
+                                                            f)
 
                 facts[fact['key']] = f(fact, parent_value)
 
