@@ -1,4 +1,4 @@
-Source: roush
+Source: python-roush
 Section: net
 Priority: optional
 Maintainer: Ron Pedde <ron@pedde.com>
@@ -18,7 +18,7 @@ XS-Python-Version: >= 2.6
 Homepage: https://github.com/galstrom21/roush
 XCBS-RCB-Component: rcb-utils
 
-Package: roush
+Package: python-roush
 Architecture: all
 Section: python
 Depends: ${python:Depends}, ${misc:Depends},

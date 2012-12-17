@@ -10,7 +10,7 @@ requirements = ['flask', 'sqlalchemy', 'sqlalchemy-migrate', 'gevent',
 excludes = ['test_runner.py', 'tests', 'tests.*']
 
 
-setup(name='roush',
+setup(name='python-roush',
       version='1.0.0',
       description='Roush Orchestration server',
       author='rcbops',
