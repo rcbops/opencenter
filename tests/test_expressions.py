@@ -18,6 +18,7 @@ class ExpressionTestCase(RoushTestCase):
         self.interfaces['chef'] = self._model_create('filter', name='chef',
                                                      filter_type='interface',
                                                      expr='facts.x = true')
+        self.nodes['container'] = self._model_create('node', name='container')
 
     def tearDown(self):
         self._clean_all()
@@ -80,10 +81,10 @@ class ExpressionTestCase(RoushTestCase):
 
     def test_eval_assign(self):
         node_id = self.nodes['node-1']['id']
-        expression = "parent_id := 3"
+        expression = "parent_id := %d" % int(self.nodes['container']['id'])
 
         node = self._eval_expression(expression, node_id)
-        self.assertTrue(node['parent_id'] == 3)
+        self.assertTrue(node['parent_id'] == self.nodes['container']['id'])
 
         # FIXME: this fails due to inheritance.
     # def test_eval_union(self):
@@ -96,10 +97,10 @@ class ExpressionTestCase(RoushTestCase):
     def test_eval_namespaces(self):
         node_id = self.nodes['node-1']['id']
         expression = "parent_id := value"
-        ns = {"value": 3}
+        ns = {"value": self.nodes['container']['id']}
 
         node = self._eval_expression(expression, node_id, ns)
-        self.assertTrue(node['parent_id'] == 3)
+        self.assertTrue(node['parent_id'] == self.nodes['container']['id'])
 
     # test the inverter and regularizer functions
     def test_regularize_expression(self):

@@ -2,9 +2,13 @@
 import unittest2
 from util import RoushTestCase
 
+import roush.backends
+
 
 class AstTests(RoushTestCase):
     def setUp(self):
+        roush.backends.load_specific_backend('tests.test', 'TestBackend')
+
         self.nodes = {}
 
         for d in range(1, 9):

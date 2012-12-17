@@ -1,1 +1,1 @@
-["ostype"]
+["ostype", {"inherited_fact": {"inheritance": "union"}}]

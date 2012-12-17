@@ -11,6 +11,9 @@ from sqlalchemy.exc import InvalidRequestError
 from database import Base
 import api as db_api
 import inmemory
+import roush.backends
+
+roush.backends.load()
 
 
 # Special Fields
@@ -193,26 +196,71 @@ class Nodes(JsonRenderer, Base):
         self.task_id = task_id
 
     def __repr__(self):
-        return '<Nodes %r>' % (self.hostname)
+        return '<Nodes %r>' % (self.name)
 
     @property
     def facts(self):
         facts = {}
 
-        def merge_upward(node, facts):
-            fact_list = Facts.query.filter_by(node_id=node.id)
-            for fact in fact_list:
-                facts[fact.key] = fact.value
+        def fact_union(fact, parent_value):
+            if not isinstance(fact['value'], list):
+                raise ValueError('Union inheritance on non-list fact "%s"' %
+                                 fact['key'])
 
-            if node.parent:
-                facts = merge_upward(node.parent, facts)
+            value = parent_value if parent_value else []
+
+            for item in fact['value']:
+                if not item in value:
+                    value.append(item)
+
+            return value
+
+        def fact_clobber(fact, parent_value):
+            if parent_value:
+                return parent_value
+            return fact['value']
+
+        def fact_none(fact, parent_value):
+            return fact['value']
+
+        def apply_inheritance(node, facts):
+            # to prevent infinite recursion, we will get the
+            # parent facts first, then apply our specific node facts
+            if node.parent_id:
+                parent = self.api.node_get_by_id(node.parent_id)
+                for key, value in parent['facts'].items():
+                    facts[key] = value
+
+            fact_list = self.api.facts_query('node_id=%d' % int(node.id))
+            locals_no_workee = {'clobber': fact_clobber,
+                                'union': fact_union,
+                                'none': fact_none}
+            # ns = locals()
+            # print "ns: %s" % ns
+
+            for fact in fact_list:
+                fact_def = roush.backends.fact_by_name(fact['key'])
+                if fact_def is None:
+                    raise ValueError('No fact found in any backend for "%s"' %
+                                     fact['key'])
+                # f = ns.get('fact_%s' % fact_def['inheritance'], fact_clobber)
+                # f = ns.get('fact_%s' % fact_def['inheritance'])
+                f = locals_no_workee.get(fact_def['inheritance'], fact_clobber)
+
+                parent_value = None
+                if fact['key'] in facts:
+                    parent_value = facts[fact['key']]
+
+                print "fact: %s, parent_value: %s by %s" % (fact,
+                                                            parent_value,
+                                                            f)
+
+                facts[fact['key']] = f(fact, parent_value)
 
             return facts
 
-        return merge_upward(self, facts)
-        # return dict([[x['key'], x['value']] for x in
-        #              self.api._model_query('facts',
-        #                                    'node_id=%d' % self.id)])
+        apply_inheritance(self, facts)
+        return facts
 
     @property
     def attrs(self):
