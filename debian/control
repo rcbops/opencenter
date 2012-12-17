@@ -37,7 +37,7 @@ Package: roush-simple
 Architecture: all
 Section: python
 Depends: ${python:Depends}, ${misc:Depends},
- roush (= ${binary:Version})
+ python-roush (= ${binary:Version})
 Provides: ${python:Provides}
 Description: init scripts for running roush in self-hosted flask.
  These init scripts run roush out of the flask built-in web server.
