@@ -240,12 +240,12 @@ class Nodes(JsonRenderer, Base):
 
             for fact in fact_list:
                 fact_def = roush.backends.fact_by_name(fact['key'])
-                if fact_def is None:
-                    raise ValueError('No fact found in any backend for "%s"' %
-                                     fact['key'])
+                f = fact_none  # default to the provided value
+                if not fact_def is None:
+                    f = locals_no_workee.get(fact_def['inheritance'],
+                                             fact_clobber)
                 # f = ns.get('fact_%s' % fact_def['inheritance'], fact_clobber)
                 # f = ns.get('fact_%s' % fact_def['inheritance'])
-                f = locals_no_workee.get(fact_def['inheritance'], fact_clobber)
 
                 parent_value = None
                 if fact['key'] in facts:
