@@ -208,8 +208,8 @@ class Nodes(JsonRenderer, Base):
             if value is FactDoesNotExist:
                 value = []
             if not isinstance(parent_value, list):
-                raise ValueError("Union inheritance called on non-list fact: %s"
-                                 % fact)
+                raise ValueError("Union inheritance called on non-list fact:"
+                                 "%s" % fact)
 
             for item in parent_value:
                 if not item in value:
@@ -323,6 +323,7 @@ class Primitives(JsonRenderer, inmemory.InMemoryBase):
         self.args = args
         self.constraints = constraints
         self.consequences = consequences
+
 
 class CFactDoesNotExist(object):
     pass

@@ -125,7 +125,6 @@ class FactsTests(RoushTestCase):
         self._model_delete('fact', f2['id'])
         self._model_delete('fact', f3['id'])
 
-
     def test_fact_inheritance_clobber(self):
         self.inheritance_helper("clobbered", "c2", "c1", "n1", "c2", "c2")
 
