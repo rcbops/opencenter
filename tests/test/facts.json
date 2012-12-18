@@ -1,1 +1,14 @@
-["array_fact", "node-1", "selfref", "array", "int", "string", "x", "node_data", "test_fact", {"clobbered": {"inheritance": "clobber"}}]
+["array_fact",
+"node-1",
+"selfref",
+"array",
+"int",
+"string",
+"x",
+"node_data",
+"test_fact",
+"defaulted",
+{"clobbered": {"inheritance": "clobber"}},
+{"unioned": {"inheritance": "union"}},
+{"noned": {"inheritance": "none"}}
+]

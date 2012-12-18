@@ -5,6 +5,27 @@ from util import RoushTestCase
 from util import inject
 
 
+def identity(x):
+    return x
+
+
+def to_list(x):
+    return [x]
+
+
+class UnorderedList(list):
+    def __eq__(self, x):
+        if isinstance(x, list):
+            if len(x) != len(self):
+                return False
+            for element in x:
+                if not element in self:
+                    return False
+            return True
+        else:
+            return super(UnorderedList, self).__eq__(x)
+
+
 class FactsTests(RoushTestCase):
     base_object = 'fact'
 
@@ -50,50 +71,59 @@ class FactsTests(RoushTestCase):
 
         self.assertEquals(n1_facts['node_data'], 'blah')
 
-    def test_002_fact_inheritance_clobber(self):
+    def inheritance_helper(self, fact, grand_parent,
+                           parent, child_only, f=identity):
+        # setup grandparent -> parent -> node with conflicting facts
         f1 = self._model_create('fact', node_id=self.n1['id'],
-                                key="clobbered",
-                                value="should be overridden")
+                                key=fact,
+                                value=f('n1'))
         f2 = self._model_create('fact', node_id=self.c1['id'],
-                                key='clobbered',
-                                value='blah')
+                                key=fact,
+                                value=f('c1'))
+
+        f3 = self._model_create('fact', node_id=self.c2['id'],
+                                key=fact,
+                                value=f('c2'))
+
+        # parents should always be unchanged by their descendants
+        c2 = self._model_get_by_id('node', self.c2['id'])
+        self.assertEquals(c2['facts'][fact], f('c2'))
+
+        # test grandparent policy enforced
         n1 = self._model_get_by_id('node', self.n1['id'])
-        self.assertEquals(n1['facts']['clobbered'], 'blah')
+        self.assertEquals(n1['facts'][fact], grand_parent)
+        self._model_delete('fact', f3['id'])
+
+        # c1 is now the top parent, verify fact is unchanged
+        c1 = self._model_get_by_id('node', self.c1['id'])
+        self.assertEquals(c1['facts'][fact], f('c1'))
+
+        # test parent policy enforced
+        n1 = self._model_get_by_id('node', self.n1['id'])
+        self.assertEquals(n1['facts'][fact], parent)
         self._model_delete('fact', f2['id'])
+
+        # test no parent behavior
         n1 = self._model_get_by_id('node', self.n1['id'])
-        self.assertEquals(n1['facts']['clobbered'], 'should be overridden')
+        self.assertEquals(n1['facts'][fact], child_only)
+
         self._model_delete('fact', f1['id'])
 
-#    def test_003_fact_inheritance_default
+    def test_fact_inheritance_clobber(self):
+        self.inheritance_helper("clobbered", "c2", "c1", "n1")
 
-    # def test_003_conflicting_facts(self):
-    #     # currently, this is allowed, and parents override children.
-    #     # The API itself should _probably_ disallow fact conflicts
-    #     self._model_create('fact', node_id=self.n1['id'],
-    #                        key='node_data',
-    #                        value='blah')
+    def test_fact_inheritance_default(self):
+        self.inheritance_helper("defaulted", "c2", "c1", "n1")
 
-    #     c1_fact = self._model_create('fact', node_id=self.c1['id'],
-    #                                  key='node_data',
-    #                                  value='c1override')
+    def test_fact_inheritance_none(self):
+        self.inheritance_helper("noned", "n1", "n1", "n1")
 
-    #     n1 = self._model_get_by_id('node', self.n1['id'])
-    #     self.assertEquals(n1['facts']['node_data'], 'c1override')
-
-    #     c2_fact = self._model_create('fact', node_id=self.c2['id'],
-    #                                  key='node_data',
-    #                                  value='c2override')
-
-    #     n1 = self._model_get_by_id('node', self.n1['id'])
-    #     self.assertEquals(n1['facts']['node_data'], 'c2override')
-
-    #     self._model_delete('fact', c2_fact['id'])
-    #     n1 = self._model_get_by_id('node', self.n1['id'])
-    #     self.assertEquals(n1['facts']['node_data'], 'c1override')
-
-    #     self._model_delete('fact', c1_fact['id'])
-    #     n1 = self._model_get_by_id('node', self.n1['id'])
-    #     self.assertEquals(n1['facts']['node_data'], 'blah')
+    def test_fact_inheritance_union(self):
+        self.inheritance_helper("unioned",
+                                UnorderedList(["c2", "c1", "n1"]),
+                                UnorderedList(["c1", "n1"]),
+                                UnorderedList(["n1"]),
+                                f=to_list)
 
     def test_updating_facts(self):
         self._model_create('fact', node_id=self.n1['id'],
