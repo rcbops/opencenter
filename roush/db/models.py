@@ -235,8 +235,6 @@ class Nodes(JsonRenderer, Base):
             locals_no_workee = {'clobber': fact_clobber,
                                 'union': fact_union,
                                 'none': fact_none}
-            # ns = locals()
-            # print "ns: %s" % ns
 
             for fact in fact_list:
                 fact_def = roush.backends.fact_by_name(fact['key'])
@@ -244,16 +242,10 @@ class Nodes(JsonRenderer, Base):
                 if not fact_def is None:
                     f = locals_no_workee.get(fact_def['inheritance'],
                                              fact_clobber)
-                # f = ns.get('fact_%s' % fact_def['inheritance'], fact_clobber)
-                # f = ns.get('fact_%s' % fact_def['inheritance'])
 
                 parent_value = None
                 if fact['key'] in facts:
                     parent_value = facts[fact['key']]
-
-                print "fact: %s, parent_value: %s by %s" % (fact,
-                                                            parent_value,
-                                                            f)
 
                 facts[fact['key']] = f(fact, parent_value)
 
