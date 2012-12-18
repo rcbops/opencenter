@@ -61,6 +61,7 @@ class NodeBackend(backends.Backend):
         self.logger.debug('running add_backend')
 
         roush.webapp.ast.apply_expression(
-            node_id, 'facts.backends = union(facts.backends, backend)', api)
+            node_id, 'facts.backends := union(facts.backends, "%s")' % backend,
+            api)
 
         return True
