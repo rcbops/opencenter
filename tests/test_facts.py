@@ -4,11 +4,14 @@ import unittest2
 from util import RoushTestCase
 from util import inject
 
+
 def identity(x):
     return x
 
+
 def to_list(x):
     return [x]
+
 
 class UnorderedList(list):
     def __eq__(self, x):
@@ -21,6 +24,7 @@ class UnorderedList(list):
             return True
         else:
             return super(UnorderedList, self).__eq__(x)
+
 
 class FactsTests(RoushTestCase):
     base_object = 'fact'
