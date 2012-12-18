@@ -202,7 +202,7 @@ class Nodes(JsonRenderer, Base):
     def facts(self):
         facts = dict([(fact['key'], fact['value'])
                       for fact in self.api.facts_query(
-                              'node_id=%d' % self.id)])
+                          'node_id=%d' % self.id)])
 
         def fact_union(fact, value, parent_value):
             if value is FactDoesNotExist:
@@ -225,13 +225,15 @@ class Nodes(JsonRenderer, Base):
             return value
 
         def apply_inheritance(node, facts, ns):
+            # this is really bad right now and should be optimized.
             n = node.parent_id
-            while n:
-                print n
+            node_list = set([node])
+            while n and not n in node_list:
+                node_list.add(n)
                 parent_facts = dict(
                     [(fact['key'], fact['value'])
                      for fact in self.api.facts_query(
-                             'node_id=%d' % int(n))])
+                         'node_id=%d' % int(n))])
                 for parent_k, parent_v in parent_facts.iteritems():
                     fact_def = roush.backends.fact_by_name(parent_k)
                     f = fact_none
@@ -239,9 +241,9 @@ class Nodes(JsonRenderer, Base):
                         f = ns.get("fact_%s" % fact_def['inheritance'],
                                    fact_clobber)
                     facts[parent_k] = f(
-                            parent_k,
-                            facts.get(parent_k, FactDoesNotExist),
-                            parent_v)
+                        parent_k,
+                        facts.get(parent_k, FactDoesNotExist),
+                        parent_v)
                     if facts[parent_k] is FactDoesNotExist:
                         del facts[parent_k]
                 n = self.api.node_get_by_id(n)['parent_id']
