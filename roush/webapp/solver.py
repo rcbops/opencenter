@@ -388,6 +388,11 @@ class Solver:
                         new_constraints + constraints,
                         sub_plan)
                     new_solver = sub_solver.children[0]
+            elif new_constraints is None:
+                # we'll just jettison this solution if the exposed
+                # constraints are None -- i.e. it cannot be solved
+                # given the bound parameters.
+                pass
             else:
                 # find the concrete consequence so we can roll forward
                 # the cluster api representation

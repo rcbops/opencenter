@@ -9,20 +9,6 @@
         "constraints": [],
         "consequences": [ "attrs.backends := union(attrs.backends, '{backend}')" ]
     },
-    "set_attr": {
-        "args": {
-            "key": {
-                "type": "string",
-                "required": true
-            },
-            "value": {
-                "type": "string",
-                "required": true
-            }
-        },
-        "constraints": [],
-        "consequences": [ "attrs.{key} := \"{value}\"" ]
-    },
     "set_fact": {
         "args": {
             "key": {

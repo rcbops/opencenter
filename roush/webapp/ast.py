@@ -25,9 +25,18 @@ def concrete_expression(expression, ns={}):
 
 
 def apply_expression(node, expression, api):
+    """
+    run an arbitrary expression on a node or node_id against
+    a specific api endpoint
+    """
+
     builder = FilterBuilder(FilterTokenizer(), expression,
                             api=api)
     root_node = builder.build()
+
+    if not isinstance(node, dict):
+        node = api._model_get_by_id('nodes', node)
+
     root_node.eval_node(node)
 
 
