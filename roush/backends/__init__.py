@@ -111,14 +111,12 @@ def load():
 
     for file_name in os.listdir(os.path.dirname(__file__)):
         full_path = os.path.join(os.path.dirname(__file__), file_name)
-        if os.path.isdir(full_path):
-            init_path = os.path.join(full_path, '__init__.py')
-            if os.path.exists(init_path):
-                import_str = 'roush.backends.%s' % file_name
-                class_str = '%sBackend' % ''.join(map(lambda x: x.capitalize(),
-                                                      file_name.split('-')))
-
-                load_specific_backend(import_str, class_str)
+        init_path = os.path.join(full_path, '__init__.py')
+        if os.path.isdir(full_path) and os.path.exists(init_path):
+            import_str = 'roush.backends.%s' % file_name
+            class_str = '%sBackend' % ''.join(map(lambda x: x.capitalize(),
+                                                  file_name.split('-')))
+            load_specific_backend(import_str, class_str)
 
 
 def normalize_facts(facts, backend):
@@ -141,6 +139,7 @@ def normalize_fact(proposed, backend):
         fact.update(proposed)
         if not isinstance(fact[name], dict):
             raise ValueError("Not a valid fact %s" % proposed)
+
     fact[name]["inheritance"] = fact[name].get("inheritance", "clobber")
     fact[name]["type"] = fact[name].get("type", "untyped")
     fact[name]["settable"] = fact[name].get("settable", True)
