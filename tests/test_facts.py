@@ -60,7 +60,6 @@ class FactsTests(RoushTestCase):
         n1 = self._model_get_by_id('node', self.n1['id'])
         self.assertEquals(n1['facts']['clobbered'], 'blah')
         self._model_delete('fact', f2['id'])
-        self.logger.debug( self._model_get_all('fact'))
         n1 = self._model_get_by_id('node', self.n1['id'])
         self.assertEquals(n1['facts']['clobbered'], 'should be overridden')
         self._model_delete('fact', f1['id'])
