@@ -17,6 +17,7 @@ from roush.db.api import api_from_models
 from roush.webapp.adventures import bp as adventures
 from roush.webapp.ast import FilterBuilder, FilterTokenizer
 from roush.webapp.facts import bp as facts
+from roush.webapp.facts_please import bp as facts_please
 from roush.webapp.attrs import bp as attrs
 from roush.webapp.filters import bp as filters
 from roush.webapp.index import bp as index
@@ -147,12 +148,19 @@ class Thing(Flask):
 
         self.register_blueprint(index)
         self.register_blueprint(nodes, url_prefix='/nodes')
+        self.register_blueprint(nodes, url_prefix='/admin/nodes')
         self.register_blueprint(tasks, url_prefix='/tasks')
+        self.register_blueprint(tasks, url_prefix='/admin/tasks')
         self.register_blueprint(adventures, url_prefix='/adventures')
+        self.register_blueprint(adventures, url_prefix='/admin/adventures')
         self.register_blueprint(filters, url_prefix='/filters')
+        self.register_blueprint(filters, url_prefix='/admin/filters')
         self.register_blueprint(facts, url_prefix='/facts')
+        self.register_blueprint(facts_please, url_prefix='/admin/facts')
         self.register_blueprint(attrs, url_prefix='/attrs')
+        self.register_blueprint(attrs, url_prefix='/admin/attrs')
         self.register_blueprint(primitives, url_prefix='/primitives')
+        self.register_blueprint(primitives, url_prefix='/admin/primitives')
         self.testing = debug
 
         if debug:
@@ -209,23 +217,37 @@ class Thing(Flask):
             schema = {'schema': {'objects': self.registered_models}}
             return jsonify(schema)
 
-        if url_prefix != '/' and hasattr(models, blueprint.name.capitalize()):
-            self.registered_models.append(blueprint.name)
-            url = '/%s/schema' % (blueprint.name,)
+        bpname = blueprint.name
+        if bpname.endswith('_please'):
+            bpname = bpname.split('_')[0]
+
+        if url_prefix != '/' and hasattr(models, bpname.capitalize()):
+            self._logger.debug('registering %s at %s' % (blueprint.name,
+                                                         url_prefix))
+
+            self._logger.debug('mangling name to %s' % bpname)
+
+            if not url_prefix.startswith('/admin/'):
+                self.registered_models.append(bpname)
+
+            url = '%s/schema' % (url_prefix,)
             self.add_url_rule(url, '%s.schema' % blueprint.name,
-                              schema_details(blueprint.name),
+                              schema_details(bpname),
                               methods=['GET'])
-            filter_url = '/%s/filter' % (blueprint.name,)
+            filter_url = '%s/filter' % (url_prefix,)
             self.add_url_rule(filter_url, '%s.filter' % blueprint.name,
-                              filter_object(blueprint.name),
+                              filter_object(bpname),
                               methods=['POST'])
-            f_id_url = '/%s/filter/<filter_id>' % (blueprint.name,)
+            f_id_url = '%s/filter/<filter_id>' % (url_prefix,)
             self.add_url_rule(f_id_url, '%s.filter_by_id' % blueprint.name,
-                              filter_object_by_id(blueprint.name),
+                              filter_object_by_id(bpname),
                               methods=['GET'])
 
         elif url_prefix == '/':
             self.add_url_rule('/schema', 'root.schema',
+                              root_schema,
+                              methods=['GET'])
+            self.add_url_rule('/admin/schema', 'admin.schema',
                               root_schema,
                               methods=['GET'])
 

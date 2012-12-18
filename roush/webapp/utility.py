@@ -2,6 +2,8 @@
 
 import logging
 import gevent.event
+
+import solver
 from roush.db.api import api_from_models
 
 api = api_from_models()
@@ -87,7 +89,7 @@ def run_adventure(adventure_id=None, adventure_dsl=None, nodes=None):
     payload['nodes'] = node_list
 
     # find the node with the adventurator plugin
-    query = "'adventurator' in facts.roush_agent_output_modules"
+    query = "'adventurator' in attrs.roush_agent_output_modules"
 
     adventure_nodes = api.nodes_query(query)
 
@@ -97,7 +99,41 @@ def run_adventure(adventure_id=None, adventure_dsl=None, nodes=None):
         task = api.task_create({'action': 'adventurate',
                                 'node_id': adventure_node,
                                 'payload': payload})
+        # FAIL: create a task update -- this should be done
+        # via the model...
+        task_semaphore = 'task-for-%s' % adventure_node
+        notify(task_semaphore)
     else:
         raise ValueError('no adventurator')
+
+    return task
+
+
+def solve_for_node(node_id, constraints, api=api):
+    """
+    given a node id and a list of constraints, run a solver
+    to try and find a solution path.
+
+    it returns (is_solvable, requires_input, solution_plan, adventure)
+    """
+
+    task_solver = solver.Solver(api, node_id, constraints)
+    is_solvable, requires_input, solution_plan = task_solver.solve()
+    adventure = None
+
+    if is_solvable:
+        adventure = task_solver.adventure()
+
+    return (is_solvable, requires_input, solution_plan, adventure)
+
+
+def solve_and_run(node_id, constraints, api=api):
+    is_solvable, requires_input, solution_plan, adventure = solve_for_node(
+        node_id, constraints, api)
+
+    task = None
+
+    if is_solvable:
+        task = run_adventure(adventure_dsl=adventure, nodes=[node_id])
 
     return task

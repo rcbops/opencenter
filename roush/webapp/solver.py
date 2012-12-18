@@ -105,6 +105,7 @@ class Solver:
 
     def _can_meet_constraints(self, primitive):
         """see if the node in question meets the primitive constraints"""
+        self.logger.debug('Can I meet constraints on %s?' % primitive)
         can_add = True
 
         if primitive['constraints'] != []:
@@ -112,6 +113,7 @@ class Solver:
                                                  primitive['constraints']))
 
             can_add = self._constraint_satisfied(constraint_filter)
+        self.logger.debug('Answer: %s' % can_add)
         return can_add
 
     def can_coerce(self, constraint_node, consequence_node):
@@ -225,6 +227,7 @@ class Solver:
         for key in ns_rhs.keys():
             ns_lhs[key] = ns_rhs[key]
 
+        self.logger.debug("Yes, they are!  With ns: %s" % ns_lhs)
         return True, ns_lhs
 
     def _is_forwarding_solution(self, primitive, constraints, ns=None):
@@ -250,6 +253,9 @@ class Solver:
                        satisfied
         """
 
+        self.logger.debug('Can %s solve any constraints %s?' % (primitive,
+                                                                constraints))
+
         f_builder = ast.FilterBuilder(ast.FilterTokenizer())
         valid_solutions = []
 
@@ -272,6 +278,7 @@ class Solver:
                                 'consequence': constraint['consequence']}
                     valid_solutions.append(solution)
 
+        self.logger.debug('Answer: %s' % valid_solutions)
         return valid_solutions
 
     def solve_one(self, proposed_plan=None):
@@ -381,6 +388,11 @@ class Solver:
                         new_constraints + constraints,
                         sub_plan)
                     new_solver = sub_solver.children[0]
+            elif new_constraints is None:
+                # we'll just jettison this solution if the exposed
+                # constraints are None -- i.e. it cannot be solved
+                # given the bound parameters.
+                pass
             else:
                 # find the concrete consequence so we can roll forward
                 # the cluster api representation

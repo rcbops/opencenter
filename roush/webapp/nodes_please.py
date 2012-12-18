@@ -39,9 +39,8 @@ def tasks_blocking_by_node_id(node_id):
             utility.clear(semaphore)
 
     result = flask.jsonify({'task': task})
-    # we are going to let the client do this...
-    # task['state'] = 'delivered'
-    # api._model_update_by_id('tasks', task['id'], task)
+    task['state'] = 'delivered'
+    api._model_update_by_id('tasks', task['id'], task)
     return result
 
 
