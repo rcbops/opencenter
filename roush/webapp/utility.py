@@ -89,7 +89,7 @@ def run_adventure(adventure_id=None, adventure_dsl=None, nodes=None):
     payload['nodes'] = node_list
 
     # find the node with the adventurator plugin
-    query = "'adventurator' in facts.roush_agent_output_modules"
+    query = "'adventurator' in attrs.roush_agent_output_modules"
 
     adventure_nodes = api.nodes_query(query)
 
