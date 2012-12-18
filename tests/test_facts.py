@@ -52,8 +52,8 @@ class FactsTests(RoushTestCase):
 
     def test_002_fact_inheritance_clobber(self):
         f1 = self._model_create('fact', node_id=self.n1['id'],
-                            key="clobbered",
-                            value="should be overridden")
+                                key="clobbered",
+                                value="should be overridden")
         f2 = self._model_create('fact', node_id=self.c1['id'],
                                 key='clobbered',
                                 value='blah')
