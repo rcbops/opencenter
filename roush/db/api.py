@@ -96,7 +96,7 @@ class RoushApi(object):
 
 def api_from_endpoint(endpoint):
     if 'endpoint-based-%s' % endpoint in _cached_apis:
-        return _cached_apis['endpoint-based']
+        return _cached_apis['endpoint-based-%s' % endpoint]
 
     from roushclient import client
     from roush.db import models

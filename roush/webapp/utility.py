@@ -99,6 +99,10 @@ def run_adventure(adventure_id=None, adventure_dsl=None, nodes=None):
         task = api.task_create({'action': 'adventurate',
                                 'node_id': adventure_node,
                                 'payload': payload})
+        # FAIL: create a task update -- this should be done
+        # via the model...
+        task_semaphore = 'task-for-%s' % adventure_node
+        notify(task_semaphore)
     else:
         raise ValueError('no adventurator')
 
@@ -121,6 +125,7 @@ def solve_for_node(node_id, constraints, api=api):
         adventure = task_solver.adventure()
 
     return (is_solvable, requires_input, solution_plan, adventure)
+
 
 def solve_and_run(node_id, constraints, api=api):
     is_solvable, requires_input, solution_plan, adventure = solve_for_node(

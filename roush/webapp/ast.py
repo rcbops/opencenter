@@ -684,6 +684,19 @@ class Node:
                     self.api._model_create('facts', {'node_id': node['id'],
                                                      'key': rest,
                                                      'value': value})
+            elif attr == 'attrs' and object_type == 'nodes':
+                existing_attr = self.api._model_query(
+                    'attrs',
+                    'node_id=%d and key=%s' % (node['id'], rest))
+
+                if existing_attr:
+                    self.api._model_update_by_id('attrs',
+                                                 existing_attr['id'],
+                                                 {'value': value})
+                else:
+                    self.api._model_create('attrs', {'node_id': node['id'],
+                                                     'key': rest,
+                                                     'value': value})
             return
 
         raise ValueError('Cannot express assignment to id: %s' % identifier)

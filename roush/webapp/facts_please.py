@@ -35,23 +35,31 @@ def create():
                                                    'key': data['key']})
 
     if old_fact:
-        model_object = api._model_update_by_id(
-            object_type, old_fact['id'], data)
-        # send update notification
-        generic._notify(model_object, object_type, old_fact['id'])
-    else:
-        try:
-            model_object = api._model_create(object_type, data)
-        except KeyError as e:
-            # missing required field
-            return generic.http_badrequest(msg=str(e))
+        return modify_fact(old_fact['id'])
 
-        generic._notify(model_object, object_type, model_object['id'])
+    # here, if the fact is a fact on a container,
+    # we need to solve for fact application on all
+    # child nodes.  <eek>
+    #
+    # FIXME(rp): so we'll punt for now, and just refuse fact
+    # creates on containers.
+    children = api._model_get_by_filter('nodes',
+                                        {'parent_id': data['node_id']})
+    if len(children) > 0:
+        return generic.http_response(403,
+                                     msg='cannot set fact on containers',
+                                     friendly='oopsie')
 
-    href = flask.request.base_url + str(model_object['id'])
-    return generic.http_response(201, '%s Created' %
-                                 singular_object_type.capitalize(), ref=href,
-                                 **{singular_object_type: model_object})
+    constraints = ['facts.%s = "%s"' %
+                   (data['key'],
+                    data['value'])]
+
+    return generic.http_solver_request(
+        data['node_id'], constraints, api=api,
+        result={'fact': {'id': -1,
+                         'node_id': data['node_id'],
+                         'key': data['key'],
+                         'value': data['value']}})
 
 
 @bp.route('/<object_id>', methods=['GET'])

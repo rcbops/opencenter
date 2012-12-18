@@ -16,7 +16,7 @@ class NodeBackend(backends.Backend):
             # see what backend this key is in...
             for name, obj in backends.backend_objects.iteritems():
                 if key in obj.facts:
-                    return ['"%s" in facts.backends' % name]
+                    return ['"%s" in attrs.backends' % name]
 
             return ['1=2']
         if action == 'set_parent':
@@ -36,6 +36,9 @@ class NodeBackend(backends.Backend):
         parent = kwargs['parent']
         api._model_update_by_id('nodes', node_id,
                                 {'parent_id': parent})
+        return True
+
+    def set_attr(self, api, node_id, **kwargs):
         return True
 
     def set_fact(self, api, node_id, **kwargs):

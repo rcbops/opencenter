@@ -222,8 +222,8 @@ class Thing(Flask):
             bpname = bpname.split('_')[0]
 
         if url_prefix != '/' and hasattr(models, bpname.capitalize()):
-            self._logger.debug('registering %s at %s' % (
-                    blueprint.name, url_prefix))
+            self._logger.debug('registering %s at %s' % (blueprint.name,
+                                                         url_prefix))
 
             self._logger.debug('mangling name to %s' % bpname)
 
