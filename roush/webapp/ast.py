@@ -25,9 +25,18 @@ def concrete_expression(expression, ns={}):
 
 
 def apply_expression(node, expression, api):
+    """
+    run an arbitrary expression on a node or node_id against
+    a specific api endpoint
+    """
+
     builder = FilterBuilder(FilterTokenizer(), expression,
                             api=api)
     root_node = builder.build()
+
+    if not isinstance(node, dict):
+        node = api._model_get_by_id('nodes', node)
+
     root_node.eval_node(node)
 
 
@@ -682,6 +691,19 @@ class Node:
                                                  {'value': value})
                 else:
                     self.api._model_create('facts', {'node_id': node['id'],
+                                                     'key': rest,
+                                                     'value': value})
+            elif attr == 'attrs' and object_type == 'nodes':
+                existing_attr = self.api._model_query(
+                    'attrs',
+                    'node_id=%d and key=%s' % (node['id'], rest))
+
+                if existing_attr:
+                    self.api._model_update_by_id('attrs',
+                                                 existing_attr['id'],
+                                                 {'value': value})
+                else:
+                    self.api._model_create('attrs', {'node_id': node['id'],
                                                      'key': rest,
                                                      'value': value})
             return

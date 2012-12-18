@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from roush import backends
+import roush.webapp.ast
 
 
 class NodeBackend(backends.Backend):
@@ -16,9 +17,9 @@ class NodeBackend(backends.Backend):
             # see what backend this key is in...
             for name, obj in backends.backend_objects.iteritems():
                 if key in obj.facts:
-                    return ['"%s" in facts.backends' % name]
+                    return ['"%s" in attrs.backends' % name]
 
-            return ['1=2']
+            return None
         if action == 'set_parent':
             if not 'parent' in ns:
                 raise ValueError('no parent set')
@@ -29,7 +30,7 @@ class NodeBackend(backends.Backend):
                         for k, v in inherited_facts.items()]
             else:
                 # cannot set_parent to something that isn't a container
-                return ['1=2']
+                return None
         return []
 
     def set_parent(self, api, node_id, **kwargs):
@@ -58,4 +59,9 @@ class NodeBackend(backends.Backend):
     def add_backend(self, api, node_id, **kwargs):
         backend = kwargs['backend']
         self.logger.debug('running add_backend')
+
+        roush.webapp.ast.apply_expression(
+            node_id, 'facts.backends := union(facts.backends, "%s")' % backend,
+            api)
+
         return True

@@ -7,7 +7,7 @@
             }
         },
         "constraints": [],
-        "consequences": [ "facts.backends := union(facts.backends, '{backend}')" ]
+        "consequences": [ "attrs.backends := union(attrs.backends, '{backend}')" ]
     },
     "set_fact": {
         "args": {
