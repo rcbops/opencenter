@@ -25,18 +25,12 @@ def upgrade(migrate_engine):
     support = api.node_create({'name': 'support',
                                'parent_id': workspace['id']})
 
-    # Add default fact to workspace node
-    api.fact.create({'node_id': workspace['id'],
-                     'key': 'backends',
-                     'value': ["container"]})
-    # Add default fact to unprovisioned node
-    api.fact.create({'node_id': unprov['id'],
-                     'key': 'backends',
-                     'value': ["container"]})
-    # Add default fact to support node
-    api.fact.create({'node_id': support['id'],
-                     'key': 'backends',
-                     'value': ["container"]})
+    # Add default fact to the default nodes
+    node_list = [workspace['id'], unprov['id'], support['id']]
+    for nid in node_id_list:
+        api.fact.create({'node_id': nid,
+                         'key': 'backends',
+                         'value': ["container"]})
 
 
 def downgrade(migrate_engine):
