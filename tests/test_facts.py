@@ -55,8 +55,8 @@ class FactsTests(RoushTestCase):
                             key="clobbered",
                             value="should be overridden")
         f2 = self._model_create('fact', node_id=self.c1['id'],
-                            key='clobbered',
-                            value='blah')
+                                key='clobbered',
+                                value='blah')
         n1 = self._model_get_by_id('node', self.n1['id'])
         self.assertEquals(n1['facts']['clobbered'], 'blah')
         self._model_delete('fact', f2['id'])
