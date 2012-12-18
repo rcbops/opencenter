@@ -20,7 +20,7 @@ set -e
 case "$1" in
     configure)
         /bin/true
-        python /usr/share/roush/manage.py -c /etct /roush/roush.conf version_control || /bin/true
+        python /usr/share/roush/manage.py -c /etc/roush/roush.conf version_control || /bin/true
         python /usr/share/roush/manage.py -c /etc/roush/roush.conf upgrade || /bin/true
     ;;
 
