@@ -200,51 +200,51 @@ class Nodes(JsonRenderer, Base):
 
     @property
     def facts(self):
-        facts = {}
+        facts = dict([(fact['key'], fact['value'])
+                      for fact in self.api.facts_query(
+                              'node_id=%d' % self.id)])
 
-        def fact_union(fact, parent_value):
-            if not isinstance(fact['value'], list):
-                raise ValueError('Union inheritance on non-list fact "%s"' %
-                                 fact['key'])
+        def fact_union(fact, value, parent_value):
+            if value is FactDoesNotExist:
+                value = []
+            if not isinstance(parent_value, list):
+                raise ValueError("Union inheritance called on non-list fact: %s"
+                                 % fact)
 
-            value = parent_value if parent_value else []
-
-            for item in fact['value']:
+            for item in parent_value:
                 if not item in value:
                     value.append(item)
-
             return value
 
-        def fact_clobber(fact, parent_value):
+        def fact_clobber(fact, value, parent_value):
             if parent_value:
                 return parent_value
-            return fact['value']
+            return value
 
-        def fact_none(fact, parent_value):
-            return fact['value']
+        def fact_none(fact, value, parent_value):
+            return value
 
         def apply_inheritance(node, facts, ns):
-            # to prevent infinite recursion, we will get the
-            # parent facts first, then apply our specific node facts
-            if node.parent_id:
-                parent = self.api.node_get_by_id(node.parent_id)
-                for key, value in parent['facts'].items():
-                    facts[key] = value
-            fact_list = self.api.facts_query('node_id=%d' % int(node.id))
-
-            for fact in fact_list:
-                fact_def = roush.backends.fact_by_name(fact['key'])
-                f = fact_none  # default undefined facts to the provided value
-                if not fact_def is None:
-                    f = ns.get("fact_%s" % fact_def['inheritance'],
-                               fact_clobber)
-
-                parent_value = None
-                if fact['key'] in facts:
-                    parent_value = facts[fact['key']]
-
-                facts[fact['key']] = f(fact, parent_value)
-
+            n = node.parent_id
+            while n:
+                print n
+                parent_facts = dict(
+                    [(fact['key'], fact['value'])
+                     for fact in self.api.facts_query(
+                             'node_id=%d' % int(n))])
+                for parent_k, parent_v in parent_facts.iteritems():
+                    fact_def = roush.backends.fact_by_name(parent_k)
+                    f = fact_none
+                    if not fact_def is None:
+                        f = ns.get("fact_%s" % fact_def['inheritance'],
+                                   fact_clobber)
+                    facts[parent_k] = f(
+                            parent_k,
+                            facts.get(parent_k, FactDoesNotExist),
+                            parent_v)
+                    if facts[parent_k] is FactDoesNotExist:
+                        del facts[parent_k]
+                n = self.api.node_get_by_id(n)['parent_id']
             return facts
 
         apply_inheritance(self, facts, locals())
@@ -323,3 +323,8 @@ class Primitives(JsonRenderer, inmemory.InMemoryBase):
         self.args = args
         self.constraints = constraints
         self.consequences = consequences
+
+class CFactDoesNotExist(object):
+    pass
+
+FactDoesNotExist = CFactDoesNotExist()

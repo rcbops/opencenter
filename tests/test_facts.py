@@ -72,7 +72,9 @@ class FactsTests(RoushTestCase):
         self.assertEquals(n1_facts['node_data'], 'blah')
 
     def inheritance_helper(self, fact, grand_parent,
-                           parent, child_only, f=identity):
+                           parent, child_only,
+                           skip_parent, skip_child,
+                           f=identity):
         # setup grandparent -> parent -> node with conflicting facts
         f1 = self._model_create('fact', node_id=self.n1['id'],
                                 key=fact,
@@ -80,12 +82,11 @@ class FactsTests(RoushTestCase):
         f2 = self._model_create('fact', node_id=self.c1['id'],
                                 key=fact,
                                 value=f('c1'))
-
         f3 = self._model_create('fact', node_id=self.c2['id'],
                                 key=fact,
                                 value=f('c2'))
 
-        # parents should always be unchanged by their descendants
+        #all attributes set, eldest should not be modified
         c2 = self._model_get_by_id('node', self.c2['id'])
         self.assertEquals(c2['facts'][fact], f('c2'))
 
@@ -94,7 +95,7 @@ class FactsTests(RoushTestCase):
         self.assertEquals(n1['facts'][fact], grand_parent)
         self._model_delete('fact', f3['id'])
 
-        # c1 is now the top parent, verify fact is unchanged
+        # c1 is now the top parent, verify c1 fact is unchanged
         c1 = self._model_get_by_id('node', self.c1['id'])
         self.assertEquals(c1['facts'][fact], f('c1'))
 
@@ -107,22 +108,40 @@ class FactsTests(RoushTestCase):
         n1 = self._model_get_by_id('node', self.n1['id'])
         self.assertEquals(n1['facts'][fact], child_only)
 
+        # test skipped parent (grandparent + node)
+        f3 = self._model_create('fact', node_id=self.c2['id'],
+                                key=fact,
+                                value=f('c2'))
+        n1 = self._model_get_by_id('node', self.n1['id'])
+        self.assertEquals(n1['facts'][fact], skip_parent)
         self._model_delete('fact', f1['id'])
 
+        # test grandparent + parent (no child node attribute)
+        f2 = self._model_create('fact', node_id=self.c1['id'],
+                                key=fact,
+                                value=f('c1'))
+        n1 = self._model_get_by_id('node', self.n1['id'])
+        self.assertEquals(n1['facts'].get(fact, None), skip_child)
+        self._model_delete('fact', f2['id'])
+        self._model_delete('fact', f3['id'])
+
+
     def test_fact_inheritance_clobber(self):
-        self.inheritance_helper("clobbered", "c2", "c1", "n1")
+        self.inheritance_helper("clobbered", "c2", "c1", "n1", "c2", "c2")
 
     def test_fact_inheritance_default(self):
-        self.inheritance_helper("defaulted", "c2", "c1", "n1")
+        self.inheritance_helper("defaulted", "c2", "c1", "n1", "c2", "c2")
 
     def test_fact_inheritance_none(self):
-        self.inheritance_helper("noned", "n1", "n1", "n1")
+        self.inheritance_helper("noned", "n1", "n1", "n1", "n1", None)
 
     def test_fact_inheritance_union(self):
         self.inheritance_helper("unioned",
                                 UnorderedList(["c2", "c1", "n1"]),
                                 UnorderedList(["c1", "n1"]),
                                 UnorderedList(["n1"]),
+                                UnorderedList(["c2", "n1"]),
+                                UnorderedList(["c2", "c1"]),
                                 f=to_list)
 
     def test_updating_facts(self):
