@@ -26,7 +26,7 @@ setup(name='python-roush',
                    'Programming Language :: Python',
                    ],
       include_package_data=True,
-      packages=find_packages(),
+      packages=find_packages(exclude=excludes),
       install_requires=requirements,
       entry_points={'console_scripts': ['roush = roush:main']},
       )
