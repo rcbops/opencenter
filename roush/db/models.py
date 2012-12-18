@@ -223,25 +223,21 @@ class Nodes(JsonRenderer, Base):
         def fact_none(fact, parent_value):
             return fact['value']
 
-        def apply_inheritance(node, facts):
+        def apply_inheritance(node, facts, ns):
             # to prevent infinite recursion, we will get the
             # parent facts first, then apply our specific node facts
             if node.parent_id:
                 parent = self.api.node_get_by_id(node.parent_id)
                 for key, value in parent['facts'].items():
                     facts[key] = value
-
             fact_list = self.api.facts_query('node_id=%d' % int(node.id))
-            locals_no_workee = {'clobber': fact_clobber,
-                                'union': fact_union,
-                                'none': fact_none}
 
             for fact in fact_list:
                 fact_def = roush.backends.fact_by_name(fact['key'])
-                f = fact_none  # default to the provided value
+                f = fact_none  # default undefined facts to the provided value
                 if not fact_def is None:
-                    f = locals_no_workee.get(fact_def['inheritance'],
-                                             fact_clobber)
+                    f = ns.get("fact_%s" % fact_def['inheritance'],
+                               fact_clobber)
 
                 parent_value = None
                 if fact['key'] in facts:
@@ -251,7 +247,7 @@ class Nodes(JsonRenderer, Base):
 
             return facts
 
-        apply_inheritance(self, facts)
+        apply_inheritance(self, facts, locals())
         return facts
 
     @property
