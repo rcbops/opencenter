@@ -50,24 +50,21 @@ class FactsTests(RoushTestCase):
 
         self.assertEquals(n1_facts['node_data'], 'blah')
 
-    # def test_002_fact_inheritance(self):
-    #     self._model_create('fact', node_id=self.n1['id'],
-    #                        key='node_data',
-    #                        value='blah')
+    def test_002_fact_inheritance_clobber(self):
+        f1 = self._model_create('fact', node_id=self.n1['id'],
+                                key="clobbered",
+                                value="should be overridden")
+        f2 = self._model_create('fact', node_id=self.c1['id'],
+                                key='clobbered',
+                                value='blah')
+        n1 = self._model_get_by_id('node', self.n1['id'])
+        self.assertEquals(n1['facts']['clobbered'], 'blah')
+        self._model_delete('fact', f2['id'])
+        n1 = self._model_get_by_id('node', self.n1['id'])
+        self.assertEquals(n1['facts']['clobbered'], 'should be overridden')
+        self._model_delete('fact', f1['id'])
 
-    #     self._model_create('fact', node_id=self.c1['id'],
-    #                        key='c1_data',
-    #                        value='blah')
-
-    #     self._model_create('fact', node_id=self.c2['id'],
-    #                        key='c2_data',
-    #                        value='blah')
-
-    #     n1 = self._model_get_by_id('node', self.n1['id'])
-
-    #     self.assertEquals(n1['facts']['node_data'], 'blah')
-    #     self.assertEquals(n1['facts']['c1_data'], 'blah')
-    #     self.assertEquals(n1['facts']['c2_data'], 'blah')
+#    def test_003_fact_inheritance_default
 
     # def test_003_conflicting_facts(self):
     #     # currently, this is allowed, and parents override children.
