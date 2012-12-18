@@ -1,6 +1,3 @@
-import json
-import os
-
 from sqlalchemy import *
 from migrate import *
 
