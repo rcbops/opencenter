@@ -28,7 +28,7 @@ def upgrade(migrate_engine):
     # Add default fact to the default nodes
     node_id_list = [workspace['id'], unprov['id'], support['id']]
     for nid in node_id_list:
-        api.fact.create({'node_id': nid,
+        api.fact_create({'node_id': nid,
                          'key': 'backends',
                          'value': ["container"]})
 
