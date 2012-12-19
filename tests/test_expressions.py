@@ -29,6 +29,11 @@ class ExpressionTestCase(RoushTestCase):
         root_node = builder.build()
         return root_node.eval_node(node, symbol_table=ns)
 
+    def _simple_expression(self, expression):
+        node = self._model_get_by_id('node', self.nodes['node-1']['id'])
+        return self._run_expression(node,
+                                    'nodes: %s' % expression)
+
     def _invert_expression(self, expression, ns={}):
         builder = ast.FilterBuilder(ast.FilterTokenizer(), expression)
         root_node = builder.build()
@@ -86,13 +91,12 @@ class ExpressionTestCase(RoushTestCase):
         node = self._eval_expression(expression, node_id)
         self.assertTrue(node['parent_id'] == self.nodes['container']['id'])
 
-        # FIXME: this fails due to inheritance.
-    # def test_eval_union(self):
-    #     node_id = self.nodes['node-1']['id']
-    #     expression = "facts.woof := union(facts.woof, 3)"
+    def test_eval_union(self):
+        node_id = self.nodes['node-1']['id']
+        expression = "facts.woof := union(facts.woof, 3)"
 
-    #     node = self._eval_expression(expression, node_id)
-    #     self.assertTrue(node['facts']['woof'] == [3])
+        node = self._eval_expression(expression, node_id)
+        self.assertTrue(node['facts']['woof'] == [3])
 
     def test_eval_namespaces(self):
         node_id = self.nodes['node-1']['id']
@@ -133,3 +137,51 @@ class ExpressionTestCase(RoushTestCase):
         self.logger.debug('Got concrete expression "%s" for "%s"' %
                           (concrete, expression))
         self.assertTrue('foo = 3', concrete)
+
+    def test_apply_expression(self):
+        expression = 'facts.test := union(facts.test, "test")'
+
+        node = self._model_get_by_id('node', self.nodes['node-1']['id'])
+
+        # make sure we are applying into an empty fact
+        self.assertFalse('test' in node['facts'])
+        ast.apply_expression(self.nodes['node-1']['id'], expression, api)
+
+        node = self._model_get_by_id('node', self.nodes['node-1']['id'])
+
+        self.assertTrue('test' in node['facts'])
+        self.assertTrue(node['facts']['test'] == ['test'])
+
+    # FIXME: when we get types
+    def test_util_nth_with_none(self):
+        expression = 'nth(0, facts.test)'  # nth of none?
+        res = self._simple_expression(expression)
+        self.assertTrue(res is None)
+
+    # FIXME: when we get types
+    def test_util_nth_not_integer(self):
+        expression = 'nth("a", facts.test)'  # raise with type error?
+        res = self._simple_expression(expression)
+        self.assertTrue(res is None)
+
+    # FIXME: when we get types
+    def test_util_nth_index_out_of_range(self):
+        self._model_create('fact', node_id=self.nodes['node-1']['id'],
+                           key='test', value=[1, 2, 3])
+
+        self.assertTrue(self._simple_expression('nth(2, facts.test)') is 3)
+        self.assertTrue(self._simple_expression('nth(3, facts.test)') is None)
+
+    # FIXME: when we get types
+    def test_str_casting_none(self):
+        # this should fail, too, I think
+        self.assertTrue(self._simple_expression('str(facts.test)') is None)
+
+        self._model_create('fact', node_id=self.nodes['node-1']['id'],
+                           key='test', value=[1, 2, 3])
+        self.assertTrue(
+            self._simple_expression('str(facts.test)') == '[1, 2, 3]')
+
+        self._model_create('fact', node_id=self.nodes['node-1']['id'],
+                           key='test', value=1)
+        self.assertTrue(self._simple_expression('str(facts.test)') == '1')
