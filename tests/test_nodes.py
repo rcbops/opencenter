@@ -136,7 +136,7 @@ class NodeOtherTests(util.RoushTestCase):
 
         self.assertEquals(resp.status_code, 200)
 
-        data = json.loads(resp.data)['tree']
+        data = json.loads(resp.data)['children']
 
         self.assertEquals(data['id'], self.cluster['id'])
         self.assertEquals(len(data['children']), 1)
@@ -148,7 +148,7 @@ class NodeOtherTests(util.RoushTestCase):
 
         self.assertEquals(resp.status_code, 200)
 
-        data = json.loads(resp.data)['tree']
+        data = json.loads(resp.data)['children']
 
         self.assertEquals(data['id'], self.node['id'])
         self.assertTrue('children' not in data)
@@ -170,7 +170,7 @@ class NodeOtherTests(util.RoushTestCase):
 
     #     self.assertEquals(resp.status_code, 200)
 
-    #     data = json.loads(resp.data)['tree']
+    #     data = json.loads(resp.data)['children']
 
     #     self.assertEquals(data['id'], self.cluster['id'])
     #     self.assertEquals(len(data['children']), 1)

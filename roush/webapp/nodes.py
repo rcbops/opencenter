@@ -112,5 +112,5 @@ def tree_by_id(node_id):
         return generic.http_notfound()
     else:
         fill_children(node)
-        resp = generic.http_response(tree=node)
+        resp = generic.http_response(children=node)
         return resp
