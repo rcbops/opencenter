@@ -31,6 +31,6 @@
             }
         },
         "constraints": [],
-        "consequences": [ "parent_id := \"{parent}\"" ]
+        "consequences": [ "parent_id := {parent}" ]
     }
 }

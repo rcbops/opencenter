@@ -146,37 +146,41 @@ class Solver:
                                    constraint_node.rhs[0]))
             return False, {}
 
-        if constraint_node.op not in ['IDENTIFIER', 'STRING']:
-            self.logger.debug('Cannot coerce vars not IDENTIFIER or STRING:'
+        if constraint_node.op not in ['IDENTIFIER', 'STRING', 'NUMBER']:
+            self.logger.debug('Cannot coerce vars not ID, STRING, NUM:'
                               ' %s' % constraint_node.op)
             return False, {}
 
-        if consequence_node.op not in ['IDENTIFIER', 'STRING']:
-            self.logger.debug('Cannot coerce vars not IDENTIFIER or STRING:'
+        if consequence_node.op not in ['IDENTIFIER', 'STRING', 'NUMBER']:
+            self.logger.debug('Cannot coerce vars not ID, STRING, NUM:'
                               ' %s' % consequence_node.op)
             return False, {}
 
-        if consequence_node.op != constraint_node.op:
-            self.logger.debug('Cannot coerce dissimilar op types: %s != %s' %
-                              (consequence_node.op, constraint_node.op))
-            return False, {}
+        # if consequence_node.op != constraint_node.op:
+        #     self.logger.debug('Cannot coerce dissimilar op types: %s != %s' %
+        #                       (consequence_node.op, constraint_node.op))
+        #     return False, {}
 
-        if consequence_node.lhs == constraint_node.lhs:
+        str_consequence = str(consequence_node.lhs)
+        str_constraint = str(constraint_node.lhs)
+
+        if str_consequence == str_constraint and \
+                consequence_node.op == constraint_node.op:
             self.logger.debug('Equal literals!  Success!')
             return True, {}
 
-        match = re.match("(.*)\{(.*?)}(.*)", consequence_node.lhs)
+        match = re.match("(.*)\{(.*?)}(.*)", str_consequence)
         if match is None:
             self.logger.debug('dissimilar literals')
             return False, {}
 
-        if not constraint_node.lhs.startswith(match.group(1)) or \
-                not constraint_node.lhs.endswith(match.group(3)):
+        if not str_constraint.startswith(match.group(1)) or \
+                not str_constraint.endswith(match.group(3)):
             self.logger.debug('cant coerce even with var binding')
             return False, {}
 
         key = match.group(2)
-        value = constraint_node.lhs[len(match.group(1)):]
+        value = str_constraint[len(match.group(1)):]
         if len(match.group(3)):
             value = value[:-len(match.group(3))]
 
