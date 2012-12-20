@@ -14,16 +14,18 @@ from flask import Flask, jsonify, request
 # from roush import backends
 from roush.db import models
 from roush.db.api import api_from_models
-from roush.webapp.adventures import bp as adventures
 from roush.webapp.ast import FilterBuilder, FilterTokenizer
-from roush.webapp.facts import bp as facts
+
+from roush.webapp.adventures import bp as adventures_bp
+from roush.webapp.facts import bp as facts_bp
 from roush.webapp.facts_please import bp as facts_please
-from roush.webapp.attrs import bp as attrs
-from roush.webapp.filters import bp as filters
-from roush.webapp.index import bp as index
-from roush.webapp.nodes import bp as nodes
-from roush.webapp.primitives import bp as primitives
-from roush.webapp.tasks import bp as tasks
+from roush.webapp.attrs import bp as attrs_bp
+from roush.webapp.filters import bp as filters_bp
+from roush.webapp.index import bp as index_bp
+from roush.webapp.nodes import bp as nodes_bp
+from roush.webapp.nodes_please import bp as nodes_please
+from roush.webapp.primitives import bp as primitives_bp
+from roush.webapp.tasks import bp as tasks_bp
 
 
 api = api_from_models()
@@ -146,21 +148,21 @@ class Thing(Flask):
               (daemonize, debug, configfile,
                logging.getLevelName(LOG.getEffectiveLevel())))
 
-        self.register_blueprint(index)
-        self.register_blueprint(nodes, url_prefix='/nodes')
-        self.register_blueprint(nodes, url_prefix='/admin/nodes')
-        self.register_blueprint(tasks, url_prefix='/tasks')
-        self.register_blueprint(tasks, url_prefix='/admin/tasks')
-        self.register_blueprint(adventures, url_prefix='/adventures')
-        self.register_blueprint(adventures, url_prefix='/admin/adventures')
-        self.register_blueprint(filters, url_prefix='/filters')
-        self.register_blueprint(filters, url_prefix='/admin/filters')
-        self.register_blueprint(facts, url_prefix='/facts')
+        self.register_blueprint(index_bp)
+        self.register_blueprint(nodes_bp, url_prefix='/nodes')
+        self.register_blueprint(nodes_please, url_prefix='/admin/nodes')
+        self.register_blueprint(tasks_bp, url_prefix='/tasks')
+        self.register_blueprint(tasks_bp, url_prefix='/admin/tasks')
+        self.register_blueprint(adventures_bp, url_prefix='/adventures')
+        self.register_blueprint(adventures_bp, url_prefix='/admin/adventures')
+        self.register_blueprint(filters_bp, url_prefix='/filters')
+        self.register_blueprint(filters_bp, url_prefix='/admin/filters')
+        self.register_blueprint(facts_bp, url_prefix='/facts')
         self.register_blueprint(facts_please, url_prefix='/admin/facts')
-        self.register_blueprint(attrs, url_prefix='/attrs')
-        self.register_blueprint(attrs, url_prefix='/admin/attrs')
-        self.register_blueprint(primitives, url_prefix='/primitives')
-        self.register_blueprint(primitives, url_prefix='/admin/primitives')
+        self.register_blueprint(attrs_bp, url_prefix='/attrs')
+        self.register_blueprint(attrs_bp, url_prefix='/admin/attrs')
+        self.register_blueprint(primitives_bp, url_prefix='/primitives')
+        self.register_blueprint(primitives_bp, url_prefix='/admin/primitives')
         self.testing = debug
 
         if debug:
