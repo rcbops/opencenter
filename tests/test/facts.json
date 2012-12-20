@@ -8,7 +8,8 @@
 "node_data",
 "test_fact",
 "defaulted",
-{"clobbered": {"inheritance": "clobber"}},
+{"parent_clobbered": {"inheritance": "parent_clobber"}},
+{"child_clobbered": {"inheritance": "child_clobber"}},
 {"unioned": {"inheritance": "union"}},
 {"noned": {"inheritance": "none"}}
 ]

@@ -216,10 +216,15 @@ class Nodes(JsonRenderer, Base):
                     value.append(item)
             return value
 
-        def fact_clobber(fact, value, parent_value):
+        def fact_parent_clobber(fact, value, parent_value):
             if parent_value:
                 return parent_value
             return value
+
+        def fact_child_clobber(fact, value, parent_value):
+            if value is not FactDoesNotExist:
+                return value
+            return parent_value
 
         def fact_none(fact, value, parent_value):
             return value
@@ -239,7 +244,7 @@ class Nodes(JsonRenderer, Base):
                     f = fact_none
                     if not fact_def is None:
                         f = ns.get("fact_%s" % fact_def['inheritance'],
-                                   fact_clobber)
+                                   fact_parent_clobber)
                     facts[parent_k] = f(
                         parent_k,
                         facts.get(parent_k, FactDoesNotExist),
