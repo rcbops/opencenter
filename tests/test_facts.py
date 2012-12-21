@@ -35,11 +35,17 @@ class FactsTests(RoushTestCase):
         self.c2 = self._model_create('node',
                                      name=self._random_str())
         self.c1 = self._model_create('node',
-                                     name=self._random_str(),
-                                     parent_id=self.c2['id'])
+                                     name=self._random_str())
+        self._model_create('fact',
+                           node_id=self.c1['id'],
+                           key='parent_id',
+                           value=self.c2['id'])
         self.n1 = self._model_create('node',
-                                     name=self._random_str(),
-                                     parent_id=self.c1['id'])
+                                     name=self._random_str())
+        self._model_create('fact',
+                           node_id=self.n1['id'],
+                           key='parent_id',
+                           value=self.c1['id'])
 
     def tearDown(self):
         c2_facts = self._model_filter('fact',
@@ -183,7 +189,8 @@ class FactsTests(RoushTestCase):
                            key='test_fact',
                            value='test_value')
         result = self._model_get_all('fact')
-        self.assertEquals(len(result), 1)
+        # 2 facts are parent_ids from setup
+        self.assertEquals(len(result), 3)
 
     def test_request_bad_fact(self):
         resp = self.client.get('/facts/9999')

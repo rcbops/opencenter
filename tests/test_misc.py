@@ -18,10 +18,14 @@ class MiscTests(RoushTestCase):
 
     def test_node_expansion(self):
         container1 = self._model_create('node', name='container1')
-        container2 = self._model_create('node', name='container2',
-                                        parent_id=container1['id'])
-        node1 = self._model_create('node', name='node1',
-                                   parent_id=container2['id'])
+        container2 = self._model_create('node', name='container2')
+        self._model_create('fact', node_id=container1['id'],
+                           key='parent_id',
+                           value=container2['id'])
+        node1 = self._model_create('node', name='node1')
+        self._model_create('fact', node_id=node1['id'],
+                           key='parent_id',
+                           value=container1['id'])
         self._model_create('fact', node_id=container1['id'],
                            key='backends', value=['container', 'node'])
         self._model_create('fact', node_id=container2['id'],

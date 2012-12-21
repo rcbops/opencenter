@@ -86,10 +86,12 @@ class ExpressionTestCase(RoushTestCase):
 
     def test_eval_assign(self):
         node_id = self.nodes['node-1']['id']
-        expression = "parent_id := %d" % int(self.nodes['container']['id'])
+        expression = "facts.parent_id := %d" % int(
+            self.nodes['container']['id'])
 
         node = self._eval_expression(expression, node_id)
-        self.assertTrue(node['parent_id'] == self.nodes['container']['id'])
+        self.assertTrue(node['facts'].get('parent_id', None)
+                        == self.nodes['container']['id'])
 
     def test_eval_union(self):
         node_id = self.nodes['node-1']['id']
@@ -100,11 +102,12 @@ class ExpressionTestCase(RoushTestCase):
 
     def test_eval_namespaces(self):
         node_id = self.nodes['node-1']['id']
-        expression = "parent_id := value"
+        expression = "facts.parent_id := value"
         ns = {"value": self.nodes['container']['id']}
 
         node = self._eval_expression(expression, node_id, ns)
-        self.assertTrue(node['parent_id'] == self.nodes['container']['id'])
+        self.assertTrue(node['facts'].get('parent_id', None)
+                        == self.nodes['container']['id'])
 
     # test the inverter and regularizer functions
     def test_regularize_expression(self):

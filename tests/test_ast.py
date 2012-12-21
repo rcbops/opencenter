@@ -18,8 +18,9 @@ class AstTests(RoushTestCase):
         self.cluster = self._model_create('node', name='cluster')
 
         for name, node in self.nodes.items():
-            self._model_update('node', node['id'],
-                               parent_id=self.cluster['id'])
+            self._model_create('fact', node_id=node['id'],
+                               key='parent_id',
+                               value=self.cluster['id'])
 
         self._model_create('fact', node_id=self.nodes['node-1']['id'],
                            key='array_fact', value=[1, 2])
@@ -35,7 +36,7 @@ class AstTests(RoushTestCase):
         self._model_delete('node', self.cluster['id'])
 
     def test_001_int_equality(self):
-        result = self._model_filter('node', 'parent_id=%d' %
+        result = self._model_filter('node', 'facts.parent_id=%d' %
                                     self.cluster['id'])
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), len(self.nodes))
@@ -51,12 +52,12 @@ class AstTests(RoushTestCase):
         self.assertEquals(len(result), 1)
 
     def test_004_greater_than(self):
-        result = self._model_filter('node', 'parent_id > 0')
+        result = self._model_filter('node', 'facts.parent_id > 0')
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), len(self.nodes))
 
     def test_005_less_than(self):
-        result = self._model_filter('node', 'parent_id < 999')
+        result = self._model_filter('node', 'facts.parent_id < 999')
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), len(self.nodes))
 
@@ -66,26 +67,26 @@ class AstTests(RoushTestCase):
         self.assertEquals(len(result), len(self.nodes) + 1)
 
     def test_007_unary_negative(self):
-        result = self._model_filter('node', 'parent_id !< 999')
+        result = self._model_filter('node', 'facts.parent_id !< 999')
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), 0)
 
     def test_008_less_than_equal(self):
-        result = self._model_filter('node', 'parent_id <= %s' %
+        result = self._model_filter('node', 'facts.parent_id <= %s' %
                                     self.cluster['id'])
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), len(self.nodes))
-        result = self._model_filter('node', 'parent_id < %s' %
+        result = self._model_filter('node', 'facts.parent_id < %s' %
                                     self.cluster['id'])
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), 0)
 
     def test_009_greater_than_equal(self):
-        result = self._model_filter('node', 'parent_id >= %s' %
+        result = self._model_filter('node', 'facts.parent_id >= %s' %
                                     self.cluster['id'])
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), len(self.nodes))
-        result = self._model_filter('node', 'parent_id > %s' %
+        result = self._model_filter('node', 'facts.parent_id > %s' %
                                     self.cluster['id'])
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), 0)
@@ -137,7 +138,8 @@ class AstTests(RoushTestCase):
         # self.assertEquals(len(result), 1)
 
     def test_016_filter(self):
-        query = 'count(filter("nodes", printf("parent_id=%s", parent_id))) > 1'
+        query = 'count(filter("nodes", "facts.parent_id=' \
+                '{facts.parent_id}")) > 1'
         result = self._model_filter('node', query)
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), len(self.nodes))
