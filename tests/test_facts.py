@@ -126,20 +126,39 @@ class FactsTests(RoushTestCase):
         self._model_delete('fact', f3['id'])
 
     def test_fact_inheritance_parent_clobber(self):
-        self.inheritance_helper("parent_clobbered",
-                                "c2", "c1", "n1", "c2", "c2")
+        # inheritance helper sets up a number of fact chains and checks
+        # the results against the provided arguments.
+        # each container/node contains f(node_name) as its value.
+        # f is a kwarg that defaults to identity (lambda x: x)
+        # c2 is a container that is the parent of c1.
+        # c1 is a container that is the parent of n1
+        # n1 is a terminal node.
+        self.inheritance_helper("parent_clobbered",  # which fact to set
+                                "c2",  # c2, c1, n1 set
+                                "c1",  # c1, n1 set
+                                "n1",  # n1 only set
+                                "c2",  # c2, n1 set
+                                "c2")  # c2, c1 set
 
     def test_fact_inheritance_child_clobber(self):
+        # see test_fact_inheritance_parent_clobber for an example of
+        # writing inheritance test.
         self.inheritance_helper("child_clobbered",
                                 "n1", "n1", "n1", "n1", "c1")
 
     def test_fact_inheritance_default(self):
+        # see test_fact_inheritance_parent_clobber for an example of
+        # writing inheritance test.
         self.inheritance_helper("defaulted", "c2", "c1", "n1", "c2", "c2")
 
     def test_fact_inheritance_none(self):
+        # see test_fact_inheritance_parent_clobber for an example of
+        # writing inheritance test.
         self.inheritance_helper("noned", "n1", "n1", "n1", "n1", None)
 
     def test_fact_inheritance_union(self):
+        # see test_fact_inheritance_parent_clobber for an example of
+        # writing inheritance test.
         self.inheritance_helper("unioned",
                                 UnorderedList(["c2", "c1", "n1"]),
                                 UnorderedList(["c1", "n1"]),
