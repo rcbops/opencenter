@@ -173,8 +173,6 @@ class Nodes(JsonRenderer, Base):
     __tablename__ = 'nodes'
     id = Column(Integer, primary_key=True)
     name = Column(String(64), unique=True, nullable=False)
-    parent_id = Column(Integer, ForeignKey('nodes.id'), default=None)
-    parent = relationship('Nodes', remote_side=[id])
     backend = Column(String(30))  # Adventures.backend
     backend_state = Column(String(30))  # Adventures.backend_state
     adventure_id = Column(Integer, ForeignKey('adventures.id'))
@@ -185,11 +183,10 @@ class Nodes(JsonRenderer, Base):
     _non_updatable_fields = ['id', 'name']
     _synthesized_fields = ['facts', 'attrs']
 
-    def __init__(self, name, parent_id=None,
+    def __init__(self, name,
                  backend=None, backend_state=None,
                  adventure_id=None, task_id=None):
         self.name = name
-        self.parent_id = parent_id
         self.backend = backend
         self.backend_state = backend_state
         self.adventure_id = adventure_id
@@ -231,10 +228,13 @@ class Nodes(JsonRenderer, Base):
 
         def apply_inheritance(node, facts, ns):
             # this is really bad right now and should be optimized.
-            n = node.parent_id
+            # it should also be rewritten to be beautiful by someone
+            # who cares.  node.facts cannot be touched directly
+            # without instantaneous roush combustion
+            n = facts.get('parent_id', None)
             node_list = set([node])
             while n and not n in node_list:
-                node_list.add(n)
+                node_list.add(n)  # naive loop detection
                 parent_facts = dict(
                     [(fact['key'], fact['value'])
                      for fact in self.api.facts_query(
@@ -251,11 +251,12 @@ class Nodes(JsonRenderer, Base):
                         parent_v)
                     if facts[parent_k] is FactDoesNotExist:
                         del facts[parent_k]
-                n = self.api.node_get_by_id(n)['parent_id']
+                n = self.api.node_get_by_id(n)
+                if n is not None:
+                    n = n['facts'].get('parent_id', None)
             return facts
 
-        apply_inheritance(self, facts, locals())
-        return facts
+        return apply_inheritance(self, facts, locals())
 
     @property
     def attrs(self):

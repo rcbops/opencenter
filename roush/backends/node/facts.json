@@ -1,1 +1,3 @@
-["ostype", {"backends": {"inheritance": "none"}}]
+["ostype",
+ {"backends": {"inheritance": "none"}},
+ {"parent_id": {"inheritance": "none"}}]

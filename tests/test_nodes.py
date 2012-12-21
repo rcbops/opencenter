@@ -123,8 +123,10 @@ class NodeInvalidHTTPMethodTests(unittest2.TestCase):
 class NodeOtherTests(util.RoushTestCase):
     def setUp(self):
         self.cluster = self._model_create('node', name='cluster-1')
-        self.node = self._model_create('node', name='node-1',
-                                       parent_id=self.cluster['id'])
+        self.node = self._model_create('node', name='node-1')
+        self._model_create('fact', node_id=self.node['id'],
+                           key='parent_id',
+                           value=self.cluster['id'])
 
     def tearDown(self):
         self._model_delete('node', self.node['id'])

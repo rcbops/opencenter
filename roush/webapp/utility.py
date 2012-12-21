@@ -57,7 +57,7 @@ def expand_nodelist(nodelist, api=api):
         if not is_container:
             final_nodelist.append(node_id)
         else:
-            query = 'parent_id = %s' % node_id
+            query = 'facts.parent_id = %s' % node_id
             child_nodes = api.nodes_query(query)
             child_node_ids = [x['id'] for x in child_nodes]
 

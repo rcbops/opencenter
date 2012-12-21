@@ -90,8 +90,8 @@ def tree_by_id(node_id):
     def fill_children(node_hash):
         node_id = node_hash['id']
 
-        children = api._model_get_by_filter(
-            'nodes', {'parent_id': node_id})
+        children = api._model_query(
+            'nodes', 'facts.parent_id = %s' % node_id)
 
         for child in children:
             if child['id'] in seen_nodes:
