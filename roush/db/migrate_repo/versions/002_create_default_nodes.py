@@ -30,7 +30,7 @@ def upgrade(migrate_engine):
     for nid in node_id_list:
         api.fact_create({'node_id': nid,
                          'key': 'backends',
-                         'value': ["container"]})
+                         'value': ["container", "node"]})
 
 
 def downgrade(migrate_engine):
