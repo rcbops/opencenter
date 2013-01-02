@@ -173,8 +173,6 @@ class Nodes(JsonRenderer, Base):
     __tablename__ = 'nodes'
     id = Column(Integer, primary_key=True)
     name = Column(String(64), unique=True, nullable=False)
-    backend = Column(String(30))  # Adventures.backend
-    backend_state = Column(String(30))  # Adventures.backend_state
     adventure_id = Column(Integer, ForeignKey('adventures.id'))
     task_id = Column(Integer, ForeignKey('tasks.id',
                                          use_alter=True,
@@ -187,8 +185,6 @@ class Nodes(JsonRenderer, Base):
                  backend=None, backend_state=None,
                  adventure_id=None, task_id=None):
         self.name = name
-        self.backend = backend
-        self.backend_state = backend_state
         self.adventure_id = adventure_id
         self.task_id = task_id
 

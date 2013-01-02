@@ -31,11 +31,11 @@ class Backend(object):
                 self.facts = normalize_facts(json.loads(f.read()),
                                              backend)
 
-    def additional_constraints(self, api, action, ns):
+    def additional_constraints(self, api, node_id, action, ns):
         return []
 
 
-def additional_constraints(api, primitive_id, ns):
+def additional_constraints(api, node_id, primitive_id, ns):
     if not primitive_id in backend_primitives:
         raise ValueError('bad primitive id %s' % primitive_id)
 
@@ -44,7 +44,7 @@ def additional_constraints(api, primitive_id, ns):
 
     backend, primitive = fullname.split('.')
     backend_obj = backend_objects[backend]
-    return backend_obj.additional_constraints(api, primitive, ns)
+    return backend_obj.additional_constraints(api, node_id, primitive, ns)
 
 
 def fact_by_name(fact_name):

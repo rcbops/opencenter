@@ -43,8 +43,8 @@ def create():
     #
     # FIXME(rp): so we'll punt for now, and just refuse fact
     # creates on containers.
-    children = api._model_get_by_filter('nodes',
-                                        {'parent_id': data['node_id']})
+    children = api._model_query('nodes',
+                                'facts.parent_id = %s' % data['node_id'])
     if len(children) > 0:
         return generic.http_response(403,
                                      msg='cannot set fact on containers',

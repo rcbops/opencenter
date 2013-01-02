@@ -23,7 +23,7 @@ from roush.webapp.attrs import bp as attrs_bp
 from roush.webapp.filters import bp as filters_bp
 from roush.webapp.index import bp as index_bp
 from roush.webapp.nodes import bp as nodes_bp
-from roush.webapp.nodes_please import bp as nodes_please
+# from roush.webapp.nodes_please import bp as nodes_please
 from roush.webapp.primitives import bp as primitives_bp
 from roush.webapp.tasks import bp as tasks_bp
 
@@ -150,7 +150,7 @@ class Thing(Flask):
 
         self.register_blueprint(index_bp)
         self.register_blueprint(nodes_bp, url_prefix='/nodes')
-        self.register_blueprint(nodes_please, url_prefix='/admin/nodes')
+        self.register_blueprint(nodes_bp, url_prefix='/admin/nodes')
         self.register_blueprint(tasks_bp, url_prefix='/tasks')
         self.register_blueprint(tasks_bp, url_prefix='/admin/tasks')
         self.register_blueprint(adventures_bp, url_prefix='/adventures')

@@ -7,7 +7,7 @@
             }
         },
         "constraints": [],
-        "consequences": [ "attrs.backends := union(attrs.backends, '{backend}')" ]
+        "consequences": [ "facts.backends := union(facts.backends, '{backend}')" ]
     },
     "set_fact": {
         "args": {
@@ -31,6 +31,6 @@
             }
         },
         "constraints": [],
-        "consequences": [ "parent_id := \"{parent}\"" ]
+        "consequences": [ "facts.parent_id := \"{parent}\"" ]
     }
 }
