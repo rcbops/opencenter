@@ -1,3 +1,5 @@
 ["ostype",
- {"backends": {"inheritance": "none"}},
- {"parent_id": {"inheritance": "none"}}]
+ {"backends": {"settable": false,
+               "inheritance": "none"}},
+ {"parent_id": {"settable": false,
+                "inheritance": "none"}}]

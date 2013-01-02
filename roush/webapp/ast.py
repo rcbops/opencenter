@@ -429,7 +429,8 @@ class FilterBuilder(AstBuilder):
                     if token != 'COMMA':
                         raise SyntaxError('expecting comma or close paren')
 
-        raise SyntaxError('expecting evaluable item')
+        raise SyntaxError('expecting evaluable item in "%s"' %
+                          self.input_expression)
 
     # expr -> T_OPENPAREN andexpr T_CLOSEPAREN | criterion
     def parse_expr(self):

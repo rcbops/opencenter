@@ -370,6 +370,7 @@ class Solver:
             # get additional constraints from the primitive itself.
             new_constraints = roush.backends.additional_constraints(
                 self.api,
+                self.node_id,
                 solution['primitive']['id'],
                 solution['ns'])
 
