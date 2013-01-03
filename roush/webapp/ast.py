@@ -138,6 +138,38 @@ def util_printf(context, fmt, *args):
         return None
 
 
+def util_childof(context, parent_name_or_id):
+    if not 'api' in context or context['api'] is None:
+        raise ValueError('no api in util_childof context')
+
+    if not 'node' in context or context['node'] is None:
+        raise ValueError('not node in util_childof context')
+
+    api = context['api']
+    node = context['node']
+
+    parent_id = parent_name_or_id
+    if isinstance(parent_name_or_id, basestring):
+        # this is a name
+        parent = api._model_query('nodes',
+                                  'name="%s"' % parent_name_or_id)
+        if parent is None:
+            return False
+
+        parent_id = parent[0]['id']
+
+    current_parent = node['facts'].get('parent_id', None)
+    while(current_parent):
+        if current_parent == parent_id:
+            return True
+
+        # otherwise, get parent of this parent
+        parent = api._model_get_by_id('nodes', current_parent)
+        current_parent = parent['facts'].get('parent_id', None)
+
+    return False
+
+
 default_functions = {'nth': util_nth,
                      'str': util_str,
                      'int': util_int,
@@ -146,7 +178,8 @@ default_functions = {'nth': util_nth,
                      'count': util_count,
                      'printf': util_printf,
                      'union': util_union,
-                     'ifcount': util_ifcount}
+                     'ifcount': util_ifcount,
+                     'childof': util_childof}
 
 
 class AbstractTokenizer(object):
@@ -838,7 +871,8 @@ class Node:
                                                  functions, symbol_table),
                            self.rhs)
 
-                retval = functions[self.lhs]({'api': self.api}, *args)
+                retval = functions[self.lhs]({'api': self.api,
+                                              'node': node}, *args)
 
             self.logger.debug('evaluated %s to %s' % (str(self), retval))
             return retval
