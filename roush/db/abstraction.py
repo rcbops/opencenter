@@ -299,6 +299,7 @@ class APIAbstraction(DbAbstraction):
         new_data = self._sanitize_for_create(data)
         new_node = self.objects.new(**new_data)
         new_node.save()
+        return new_node.to_hash()
 
     def delete(self, id):
         id = int(id)
@@ -317,6 +318,15 @@ class APIAbstraction(DbAbstraction):
         id = int(id)
 
         try:
+            obj = self.objects[id]
+
+            if obj is None:
+                self.objects._refresh(True)
+
+            obj = self.objects[id]
+            if obj is not None:
+                obj._request('get')
+
             json_object = self.objects[id].to_hash()
         except KeyError:
             return None
