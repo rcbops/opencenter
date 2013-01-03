@@ -1,0 +1,7 @@
+{
+    "chef-server": {
+        "required": true,
+        "type": "interface",
+        "name": "chef-server"
+    }
+}

@@ -2,8 +2,12 @@
     "start_state": "s1",
     "states": {
         "s1": {
-            "primitive": "install_chef",
-            "parameters": {},
+            "primitive": "agent.run_task",
+            "parameters": {
+                "action": "sleep",
+                "payload": {
+                    "CHEF_SERVER": "{chef-server}"
+                }},
             "on_success": "s2"
         },
         "s2": {
@@ -14,10 +18,10 @@
             "on_success": "s3"
         },
         "s3": {
-            "primitive": "set_backend",
+            "primitive": "node.add_backend",
             "parameters": {
-                "backend": "chef-client",
-                "backend_state": "installed" }
+                "backend": "chef-client"
+            }
         }
     }
 }

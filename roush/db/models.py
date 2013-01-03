@@ -267,13 +267,15 @@ class Adventures(JsonRenderer, Base):
     name = Column(String(30))
     dsl = Column(JsonBlob, default={})
     criteria = Column(String(255))
+    args = Column(JsonBlob, default={})
 
     _non_updatable_fields = ['id']
 
-    def __init__(self, name, dsl, criteria='true'):
+    def __init__(self, name, dsl, criteria='true', args={}):
         self.name = name
         self.dsl = dsl
         self.criteria = criteria
+        self.args = args
 
     def __repr__(self):
         return '<Adventures %r>' % (self.name)
