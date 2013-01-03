@@ -2,26 +2,16 @@
     "start_state": "s1",
     "states": {
         "s1": {
-            "primitive": "run_task",
+            "primitive": "agent.run_task",
             "parameters": {
                 "action": "install_chef_server",
                 "payload": {}},
             "on_success": "s2"
         },
         "s2": {
-            "primitive": "set_backend",
+            "primitive": "node.add_backend",
             "parameters": {
-                "backend": "chef-server",
-                "backend_state": "installed"
-            },
-            "on_success": "s3"
-        },
-        "s3": {
-            "primitive": "run_task",
-            "parameters": {
-                "action": "service_restart",
-                "payload": { "service": "roush",
-                             "sleep": 10}
+                "backend": "chef-server"
             }
         }
     }
