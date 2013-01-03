@@ -1,0 +1,16 @@
+{
+    "run_task": {
+        "args": {
+            "action": {
+                "type": "string",
+                "required" : true
+            },
+            "payload": {
+                "type": "json",
+                "required": true
+            }
+        },
+        "constraints": [],
+        "consequences": []
+    }
+}
