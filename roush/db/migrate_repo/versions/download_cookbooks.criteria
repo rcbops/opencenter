@@ -1,1 +1,1 @@
-(backend='chef-server') and (backend_state='installed')
+('chef-server' in facts.backends) and ('agent' in facts.backends)

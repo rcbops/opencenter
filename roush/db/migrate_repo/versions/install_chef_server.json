@@ -4,7 +4,7 @@
         "s1": {
             "primitive": "agent.run_task",
             "parameters": {
-                "action": "install_chef_server",
+                "action": "sleep",
                 "payload": {}},
             "on_success": "s2"
         },

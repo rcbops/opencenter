@@ -24,33 +24,44 @@ def upgrade(migrate_engine):
     adventures = [
         {'name': 'install chef client',
          'dsl': 'install_chef.json',
-         'criteria': 'install_chef.criteria'},
+         'criteria': 'install_chef.criteria',
+         'args': 'install_chef.args'},
         {'name': 'run chef',
          'dsl': 'run_chef.json',
-         'criteria': 'run_chef.criteria'},
+         'criteria': 'run_chef.criteria',
+         'args': 'run_chef.args'},
         {'name': 'install chef server',
          'dsl':  'install_chef_server.json',
-         'criteria': 'install_chef_server.criteria'},
+         'criteria': 'install_chef_server.criteria',
+         'args': 'install_chef_server.args'},
         {'name': 'install nova controller',
          'dsl': 'install_nova_controller.json',
-         'criteria': 'install_nova_controller.criteria'},
+         'criteria': 'install_nova_controller.criteria',
+         'args': 'install_nova_controller.args'},
         {'name': 'install nova compute',
          'dsl': 'install_nova_compute.json',
-         'criteria': 'install_nova_compute.criteria'},
+         'criteria': 'install_nova_compute.criteria',
+         'args': 'install_nova_compute.args'},
         {'name': 'download chef cookbooks',
          'dsl': 'download_cookbooks.json',
-         'criteria': 'download_cookbooks.criteria'},
+         'criteria': 'download_cookbooks.criteria',
+         'args': 'download_cookbooks.args'},
         {'name': 'sleep',
          'dsl': 'sleep.json',
-         'criteria': 'sleep.criteria'}]
+         'criteria': 'sleep.criteria',
+         'args': 'sleep.args'}]
 
     for adventure in adventures:
         json_path = os.path.join(
             os.path.dirname(__file__), adventure['dsl'])
         criteria_path = os.path.join(
             os.path.dirname(__file__), adventure['criteria'])
+        args_path = os.path.join(
+            os.path.dirname(__file__), adventure['args'])
+
         adventure['dsl'] = json.loads(open(json_path).read())
         adventure['criteria'] = open(criteria_path).read()
+        adventure['args'] = json.loads(open(args_path).read())
         adv = api.adventure_create(adventure)
 
     canned_filters = [{'name': 'unprovisioned nodes',

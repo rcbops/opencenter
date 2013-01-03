@@ -1,1 +1,1 @@
-(backend='unprovisioned') and (count(filter('nodes', 'backend=\'chef-server\' and backend_state=\'ready\'')) != 0)
+('agent' in facts.backends) and (childof('unprovisioned')) and (ifcount('chef-server') > 0)
