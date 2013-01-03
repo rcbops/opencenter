@@ -106,7 +106,7 @@ def api_from_endpoint(endpoint):
 
     # the index page should be wired up right, and we should
     # have an api call to get all the object types
-    for model_name in ['nodes', 'filters',
+    for model_name in ['nodes', 'filters', 'tasks',
                        'adventures', 'facts']:
         model = getattr(models, model_name.title())
         api_abstraction = abstraction.APIAbstraction(new_api, model,
