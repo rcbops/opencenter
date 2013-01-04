@@ -14,7 +14,8 @@ class AgentBackend(roush.backends.Backend):
 
     def run_task(self, api, node_id, **kwargs):
         action = kwargs['action']
-        payload = kwargs['payload']
+        # payload = kwargs['payload']
+        payload = dict([(x, kwargs[x]) for x in kwargs if x != 'action'])
 
         task = api._model_create('tasks', {'node_id': node_id,
                                            'action': action,

@@ -72,7 +72,8 @@ def upgrade(migrate_engine):
                        'expr': 'backend=\'chef-client\''},
                       {'name': 'chef-server',
                        'filter_type': 'interface',
-                       'expr': 'facts.chef_server_uri != None'}]
+                       'expr': 'facts.chef_server_uri != None and '
+                               'facts.chef_server_pem != None'}]
 
     for new_filter in canned_filters:
         api._model_create('filters', new_filter)

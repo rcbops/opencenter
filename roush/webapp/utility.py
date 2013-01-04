@@ -76,11 +76,33 @@ def run_adventure(adventure_id=None, adventure_dsl=None, nodes=None):
     """
 
     payload = {}
+    globals = {}
 
     if adventure_id:
         payload['adventure'] = adventure_id
+
+        # we might have to solve global vars here.
+        adventure = api._model_get_by_id('adventures', adventure_id)
+        args = adventure['args']
+        for arg in args:
+            if args[arg]['required'] is True:
+                value = solve_adventure_arg(arg, args[arg])
+                if value is None:
+                    raise ValueError('cannot solve arg %s' % arg)
+
+                # we have solution for required arg.  Dump it into the
+                # global namespace
+                globals[arg] = value
+
+        globals['solved_adventure'] = False
+        globals['defined_adventure'] = True
+
     elif adventure_dsl:
         payload['adventure_dsl'] = adventure_dsl
+        globals['solved_adventure'] = True
+        globals['defined_adventure'] = False
+
+    payload['globals'] = globals
 
     node_list = expand_nodelist(nodes)
     if len(node_list) == 0:
@@ -107,6 +129,44 @@ def run_adventure(adventure_id=None, adventure_dsl=None, nodes=None):
         raise ValueError('no adventurator')
 
     return task
+
+
+def solve_adventure_arg(arg_name, arg_hash):
+    """
+    solve for required adventure args, solver-style
+    """
+
+    # I don't feel bad about this trivial approach, as we are
+    # going to fold together execution plans and adventures,
+    # and this will be run through the solver at that time.
+    # so this is short-term throwaway.
+    if arg_hash['type'] == 'interface':
+        interface_name = arg_hash['name']
+        int_query = 'filter_type="interface" and name="%s"' % interface_name
+        iface = api._model_query('filters', int_query)
+
+        if len(iface) != 1:
+            LOG.error('bad interface: %s' % interface_name)
+            return None
+
+        iface_query = iface[0]['full_expr']
+        nodes = api._model_query('nodes', iface_query)
+
+        if len(nodes) == 0:
+            LOG.warn('no solution for interface %s' %
+                     interface_name)
+            return None
+
+        if len(iface) > 1:
+            LOG.warn('multiple solutions for interface %s' %
+                     interface_name)
+            return None
+
+        return nodes[0]['id']
+    else:
+        LOG.error('no node meets requirement "%s"' %
+                  interface_name)
+        return None
 
 
 def solve_for_node(node_id, constraints, api=api):

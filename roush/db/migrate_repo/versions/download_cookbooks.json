@@ -4,8 +4,8 @@
         "s1": {
             "primitive": "agent.run_task",
             "parameters": {
-                "action": "download_cookbooks",
-                "payload": {}}
+                "action": "download_cookbooks"
+            }
         }
     }
 }

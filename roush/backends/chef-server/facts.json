@@ -1,0 +1,5 @@
+[
+    {"chef_server_uri": {"inheritance": "none",
+                         "settable": false}},
+    {"chef_server_pem": {"inheritance": "none",
+                         "settable": false}}]
