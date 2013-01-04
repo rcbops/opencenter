@@ -23,6 +23,8 @@ class Solver:
         self.logger = logging.getLogger('%s.%s' % (__name__, classname))
         self.parent = parent
         self.prim = prim
+        self.task_primitives = {}
+        self.adventures = []
         self.ns = ns
 
         # roll the applied consequences forward in an ephemeral
@@ -31,16 +33,34 @@ class Solver:
         pre_node = self.api._model_get_by_id('nodes', self.node_id)
 
         for consequence in self.applied_consequences:
-            ephemeral_node = self.api._model_get_by_id('nodes', self.node_id)
-            ast.apply_expression(ephemeral_node, consequence, self.api)
+            node = self.api._model_get_by_id('nodes', self.node_id)
+            ast.apply_expression(node, consequence, self.api)
 
-        self.logger.debug('Node before applying consequences: %s' %
-                          pre_node)
+        node = self.api._model_get_by_id('nodes', self.node_id)
+
+        # grab the tasks published from this node as possible primitives
+        # ...
+        # we aren't actually solving through tasks and adventures
+        # yet, but likely have the need
+        if 'roush_agent_actions' in node['attrs'] and \
+                'backends' in node['facts'] and \
+                'agent' in node['facts']['backends']:
+            for task_name in node['attrs']['roush_agent_actions']:
+                mangled_name = 'wrapped:agent.run_task.%s' % task_name
+                task = node['attrs']['roush_agent_actions'][task_name]
+
+                id = hash(mangled_name) & 0xFFFFFFFF
+                # should verify this unique against backends
+                self.task_primitives[id] = {}
+                self.task_primitives[id]['name'] = mangled_name
+                self.task_primitives[id]['constraints'] = task['constraints']
+                self.task_primitives[id]['consequences'] = task['consequences']
+
+        self.logger.debug('Node before applying consequences: %s' % pre_node)
         self.logger.debug('Applied consequences: %s' %
                           self.applied_consequences)
-        ephemeral_node = self.api._model_get_by_id('nodes', self.node_id)
-        self.logger.debug('Node after applying consequences: %s' %
-                          ephemeral_node)
+        # ephemeral_node = self.api._model_get_by_id('nodes', self.node_id)
+        self.logger.debug('Node after applying consequences: %s' % node)
 
     @classmethod
     def from_plan(cls, api, node_id, constraints, plan):

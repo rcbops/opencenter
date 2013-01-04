@@ -6,15 +6,18 @@
             "parameters": {
                 "action": "sleep",
                 "payload": {
-                    "CHEF_SERVER": "{chef-server}"
-                }},
+                    "CHEF_URI": "{chef-server}.facts.chef_server_uri",
+                    "CHEF_PEM": "{chef-server}.facts.chef_server_pem"
+                }
+            },
             "on_success": "s2"
         },
         "s2": {
-            "primitive": "run_task",
+            "primitive": "agent.run_task",
             "parameters": {
-                "action": "run_chef",
-                "payload": {}},
+                "action": "sleep",
+                "payload": {}
+            },
             "on_success": "s3"
         },
         "s3": {
