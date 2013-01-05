@@ -28,7 +28,7 @@ from roush.webapp.primitives import bp as primitives_bp
 from roush.webapp.tasks import bp as tasks_bp
 
 
-api = api_from_models()
+# api = api_from_models()
 
 
 # Stolen: http://code.activestate.com/recipes/\
@@ -165,6 +165,9 @@ class Thing(Flask):
         self.register_blueprint(primitives_bp, url_prefix='/admin/primitives')
         self.testing = debug
 
+        ast_log = logging.getLogger('roush.webapp.ast')
+        ast_log.setLevel(logging.WARNING)
+
         if debug:
             self.config['TESTING'] = True
 
@@ -179,6 +182,7 @@ class Thing(Flask):
         # auto-register the schema url
         def schema_details(what):
             def f():
+                api = api_from_models()
                 return jsonify({"schema": api._model_get_schema(what)})
             return f
 
@@ -189,7 +193,7 @@ class Thing(Flask):
                 builder = FilterBuilder(
                     FilterTokenizer(),
                     '%s: %s' % (what, request.json['filter']),
-                    api=api)
+                    api=api_from_models())
 
                 # try:
                 result = builder.filter()
@@ -206,6 +210,7 @@ class Thing(Flask):
 
         def filter_object_by_id(what):
             def f(filter_id):
+                api = api_from_models()
                 filter_obj = api.filter_get_by_id(filter_id)
                 full_expr = filter_obj['full_expr']
                 builder = FilterBuilder(FilterTokenizer(),

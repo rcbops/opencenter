@@ -6,8 +6,8 @@
             "parameters": {
                 "action": "sleep",
                 "payload": {
-                    "CHEF_URI": "{chef-server}.facts.chef_server_uri",
-                    "CHEF_PEM": "{chef-server}.facts.chef_server_pem"
+                    "CHEF_URI": "chef_server.facts.chef_server_uri",
+                    "CHEF_PEM": "chef_server.facts.chef_server_pem"
                 }
             },
             "on_success": "s2"
