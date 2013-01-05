@@ -37,7 +37,7 @@ def apply_expression(node, expression, api):
     if not isinstance(node, dict):
         node = api._model_get_by_id('nodes', node)
 
-    root_node.eval_node(node)
+    return root_node.eval_node(node)
 
 
 # some common utility functions for filter/expr language

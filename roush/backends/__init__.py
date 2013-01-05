@@ -17,6 +17,8 @@ class Backend(object):
         classname = self.__class__.__name__.lower()
         backend = classname[:len(classname) - len("backend")]
         self.logger = logging.getLogger('%s.%s' % (__name__, classname))
+        self.logger.setLevel(logging.DEBUG)
+        self.logger.debug('Initializing')
 
         my_path = os.path.dirname(path)
         json_path = os.path.join(my_path, 'primitives.json')

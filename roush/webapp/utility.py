@@ -104,7 +104,10 @@ def run_adventure(adventure_id=None, adventure_dsl=None, nodes=None):
 
     payload['globals'] = globals
 
+    LOG.debug('node list before expansion: %s' % nodes)
     node_list = expand_nodelist(nodes)
+    LOG.debug('node list after expansion: %s' % node_list)
+
     if len(node_list) == 0:
         raise ValueError('no nodes specified to run on')
 
@@ -162,7 +165,7 @@ def solve_adventure_arg(arg_name, arg_hash):
                      interface_name)
             return None
 
-        return nodes[0]['id']
+        return nodes[0]
     else:
         LOG.error('no node meets requirement "%s"' %
                   interface_name)
