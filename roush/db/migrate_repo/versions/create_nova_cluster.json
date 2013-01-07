@@ -1,0 +1,36 @@
+{
+    "start_state": "s1",
+    "states": {
+        "s1": {
+            "primitive": "container.create_subcontainer",
+            "parameters": {
+                "name": "Nova Cluster",
+                "parent_id": 1
+            },
+            "on_success": "s2"
+        },
+        "s2": {
+            "primitive": "container.create_subcontainer",
+            "parameters": {
+                "name": "Infrastructure",
+                "parent_name": "Nova Cluster"
+            },
+            "on_success": "s3"
+        },
+        "s3": {
+            "primitive": "container.create_subcontainer",
+            "parameters": {
+                "name": "Compute",
+                "parent_name": "Nova Cluster"
+            },
+            "on_success": "s4"
+        },
+        "s4": {
+            "primitive": "container.create_subcontainer",
+            "parameters": {
+                "name": "Nova AZ",
+                "parent_name": "Compute"
+            }
+        }
+    }
+}
