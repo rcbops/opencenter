@@ -4,7 +4,8 @@
         "s1": {
             "primitive": "agent.run_task",
             "parameters": {
-                "action": "sleep"
+                "action": "sleep",
+                "payload": {}
             },
             "on_success": "s2"
         },

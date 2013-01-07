@@ -20,10 +20,14 @@ def upgrade(migrate_engine):
 
     # Create default nodes
     workspace = api.node_create({'name': 'workspace'})
-    unprov = api.node_create({'name': 'unprovisioned',
-                              'parent_id': workspace['id']})
-    support = api.node_create({'name': 'support',
-                               'parent_id': workspace['id']})
+    unprov = api.node_create({'name': 'unprovisioned'})
+    api._model_create('facts', {'node_id': unprov['id'],
+                                'key': 'parent_id',
+                                'value': workspace['id']})
+    support = api.node_create({'name': 'support'})
+    api._model_create('facts', {'node_id': support['id'],
+                                'key': 'parent_id',
+                                'value': workspace['id']})
 
     # Add default fact to the default nodes
     node_id_list = [workspace['id'], unprov['id'], support['id']]
