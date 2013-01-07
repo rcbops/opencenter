@@ -1,0 +1,12 @@
+[
+    {"nova_dmz_cidr": {"type": "string",
+                       "settable": false}},
+    {"nova_public_if": {"type": "string",
+                        "settable": false}},
+    {"nova_private_if": {"type": "string",
+                         "settable": false}},
+    {"nova_admin_pw": {"type": "string",
+                       "settable": false}},
+    {"nova_fixed_cidr": {"type": "string",
+                         "settable": false}}
+]

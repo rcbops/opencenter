@@ -40,12 +40,25 @@ class ContainerBackend(roush.backends.Backend):
         new_container = api._model_create('nodes', {'name': kwargs['name']})
         new_id = new_container['id']
 
+        addl_backends = []
+        if 'backends' in kwargs:
+            addl_backends += kwargs['backends']
+
         # now, set up the proper facts.
         api._model_create('facts', {'node_id': new_id,
                                     'key': 'backends',
-                                    'value': ['node', 'container']})
+                                    'value': ['node', 'container'] +
+                                    addl_backends})
+
         api._model_create('facts', {'node_id': new_id,
                                     'key': 'parent_id',
                                     'value': parent_id})
+
+        # see if there are any additional facts.
+        if 'facts' in kwargs:
+            for fact in kwargs['facts']:
+                api._model_create('facts', {'node_id': new_id,
+                                            'key': fact,
+                                            'value': kwargs['facts'][fact]})
 
         return True

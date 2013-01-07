@@ -128,6 +128,8 @@ class Solver:
         self.logger.debug('Can I meet constraints on %s?' % primitive)
         can_add = True
 
+        self.logger.error('current primitive: %s' % primitive)
+
         if primitive['constraints'] != []:
             constraint_filter = ' AND '.join(map(lambda x: '(%s)' % x,
                                                  primitive['constraints']))
