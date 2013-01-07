@@ -104,9 +104,17 @@ def run_adventure(adventure_id=None, adventure_dsl=None, nodes=None):
 
     payload['globals'] = globals
 
-    LOG.debug('node list before expansion: %s' % nodes)
-    node_list = expand_nodelist(nodes)
-    LOG.debug('node list after expansion: %s' % node_list)
+    node_list = nodes
+
+    # we will no longer expand node lists.  At some point
+    # we either need hints on adventures for whether they are
+    # targetted at nodes or containers, or whether they
+    # should be expanded.  Or perhaps offer an API call
+    # to expand node lists.  Or something else altogether.
+
+    # LOG.debug('node list before expansion: %s' % nodes)
+    # node_list = expand_nodelist(nodes)
+    # LOG.debug('node list after expansion: %s' % node_list)
 
     if len(node_list) == 0:
         raise ValueError('no nodes specified to run on')
