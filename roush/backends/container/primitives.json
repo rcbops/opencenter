@@ -12,9 +12,9 @@
             "parent_name": {
                 "type": "string",
                 "required": false
-            },
-            "constraints": [],
-            "consequences": []
-        }
+            }
+        },
+        "constraints": [],
+        "consequences": []
     }
 }

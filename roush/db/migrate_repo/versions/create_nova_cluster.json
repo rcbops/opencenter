@@ -5,7 +5,14 @@
             "primitive": "container.create_subcontainer",
             "parameters": {
                 "name": "Nova Cluster",
-                "parent_id": 1
+                "parent_id": 1,
+                "backends": [ "nova" ],
+                "facts": { "nova_dmz_cidr": "10.0.0.0/8",
+                           "nova_public_if": "eth0",
+                           "nova_private_if": "eth1",
+                           "nova_admin_pw": "secrete",
+                           "nova_fixed_cidr": "172.16.0.0/12"
+                         }
             },
             "on_success": "s2"
         },
@@ -13,7 +20,8 @@
             "primitive": "container.create_subcontainer",
             "parameters": {
                 "name": "Infrastructure",
-                "parent_name": "Nova Cluster"
+                "parent_name": "Nova Cluster",
+                "backends": [ "nova" ]
             },
             "on_success": "s3"
         },
@@ -21,7 +29,8 @@
             "primitive": "container.create_subcontainer",
             "parameters": {
                 "name": "Compute",
-                "parent_name": "Nova Cluster"
+                "parent_name": "Nova Cluster",
+                "backends": [ "nova" ]
             },
             "on_success": "s4"
         },
@@ -29,7 +38,8 @@
             "primitive": "container.create_subcontainer",
             "parameters": {
                 "name": "Nova AZ",
-                "parent_name": "Compute"
+                "parent_name": "Compute",
+                "backends": [ "nova" ]
             }
         }
     }
