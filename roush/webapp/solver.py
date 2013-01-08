@@ -128,7 +128,7 @@ class Solver:
         self.logger.debug('Can I meet constraints on %s?' % primitive)
         can_add = True
 
-        self.logger.error('current primitive: %s' % primitive)
+        self.logger.debug('current primitive: %s' % primitive)
 
         if primitive['constraints'] != []:
             constraint_filter = ' AND '.join(map(lambda x: '(%s)' % x,
@@ -319,8 +319,8 @@ class Solver:
         # fix/regularize our internal constraint list
         self.constraints = [x['constraint'] for x in constraint_list]
 
-        self.logger.debug('Solving for constraints: %s with plan: %s' %
-                          (self.constraints, proposed_plan))
+        self.logger.info('New solver for constraints: %s (plan: %s)' %
+                         (self.constraints, proposed_plan))
 
         # walk through all the primitives, and see what primitives
         # have constraints that are met, and spin off a new solver
@@ -376,12 +376,15 @@ class Solver:
         # Now that we know all possible solutions, let's
         # spin up sub-solvers so we can continue to work
         # through them.
-        self.logger.debug("Found %d solutions:" % len(all_solutions))
+        self.logger.info("Found %d helpful solutions: %s" %
+                         (len(all_solutions),
+                         [x['primitive']['name'] for x in all_solutions]))
+
         for solution in all_solutions:
-            self.logger.debug("%s with %s, solving %s" %
-                              (solution['primitive']['name'],
-                               solution['ns'],
-                               solution['solves']))
+            self.logger.info("%s with %s, solving %s" %
+                             (solution['primitive']['name'],
+                              solution['ns'],
+                              solution['solves']))
 
             constraints = copy.deepcopy(self.constraints)
             applied_consequences = copy.deepcopy(self.applied_consequences)
@@ -396,8 +399,8 @@ class Solver:
                 solution['primitive']['id'],
                 solution['ns'])
 
-            self.logger.debug('New constraints from primitive: %s' %
-                              new_constraints)
+            self.logger.info(' - New constraints from primitive: %s' %
+                             new_constraints)
 
             new_solver = None
 
@@ -407,7 +410,13 @@ class Solver:
 
             if new_constraints and len(new_constraints) > 0:
                 # do a subsolve on this
-                subsolve = Solver(self.api, self.node_id, new_constraints)
+                self.logger.info(' - running subsolver for %s' %
+                                 new_constraints)
+
+                subsolve = Solver(
+                    self.base_api, self.node_id, new_constraints,
+                    applied_consequences=self.applied_consequences)
+
                 sub_success, _, sub_plan = subsolve.solve()
                 if sub_success:
                     sub_solver = Solver.from_plan(
@@ -415,11 +424,16 @@ class Solver:
                         new_constraints + constraints,
                         sub_plan)
                     new_solver = sub_solver.children[0]
+
+                self.logger.info(' - subsolver for %s: %s' %
+                                 (new_constraints,
+                                  "ok!" if sub_success else "no!"))
+
             elif new_constraints is None:
                 # we'll just jettison this solution if the exposed
                 # constraints are None -- i.e. it cannot be solved
                 # given the bound parameters.
-                pass
+                self.logger.info(' - abandoning solution -- unsolvable')
             else:
                 # find the concrete consequence so we can roll forward
                 # the cluster api representation
@@ -427,19 +441,24 @@ class Solver:
                 # these should really be the consequences of the primitive.
                 consequences = solution['primitive']['consequences']
 
+                self.logger.info(' - old constraints: %s' % constraints)
+
                 for consequence in consequences:
                     concrete_consequence = ast.concrete_expression(
                         consequence, solution['ns'])
                     applied_consequences.append(concrete_consequence)
                     concrete_constraints = ast.invert_expression(
                         concrete_consequence)
-                    self.logger.debug(
+                    self.logger.info(
                         'Adding consequence %s, solving constraints %s' %
                         (concrete_consequence, concrete_constraints))
 
-                    for concrete_constraint in concrete_constraints:
-                        if concrete_constraint in constraints:
-                            constraints.remove(concrete_constraint)
+                    # for concrete_constraint in concrete_constraints:
+                    #     if concrete_constraint in constraints:
+                    #         constraints.remove(concrete_constraint)
+
+                if solution['solves'] in constraints:
+                    constraints.remove(solution['solves'])
 
                 # consequence = solution['consequence']
                 # if consequence:
@@ -448,7 +467,9 @@ class Solver:
                 #     applied_consequences.append(concrete_consequence)
                 #     constraints.remove(solution['solves'])
 
-                new_solver = Solver(self.api, self.node_id,
+                self.logger.info(' - Implementing as new solve step: %s' %
+                                 constraints)
+                new_solver = Solver(self.base_api, self.node_id,
                                     constraints, self,
                                     solution['primitive'], ns=solution['ns'],
                                     applied_consequences=applied_consequences)
@@ -464,18 +485,18 @@ class Solver:
 
     def print_tree(self, level=0):
         if self.prim:
-            self.logger.debug('%sPrim: %s' % (
+            self.logger.info('%sPrim: %s' % (
                 '  ' * level, self.prim['name']))
-            self.logger.debug('%sNS: %s' % (
+            self.logger.info('%sNS: %s' % (
                 '  ' * level, self.ns))
-            self.logger.debug('%sConstraints: %s' % (
+            self.logger.info('%sConstraints: %s' % (
                 '  ' * level, self.constraints))
-            self.logger.debug('%sApplied consequences: %s' % (
+            self.logger.info('%sApplied consequences: %s' % (
                 '  ' * level, self.applied_consequences))
         else:
-            self.logger.debug('ROOT NODE')
+            self.logger.info('ROOT NODE')
 
-        self.logger.debug('%s (with %d children)' % (
+        self.logger.info('%s (with %d children)' % (
             '  ' * level, len(self.children)))
 
         for child in self.children:
