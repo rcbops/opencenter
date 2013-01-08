@@ -13,6 +13,14 @@ class AgentBackend(roush.backends.Backend):
         # this is probably a bit viscious.
         return None
 
+    def add_backend(self, api, node_id, **kwargs):
+        self.logger.debug('adding agent backend')
+
+        roush.webapp.ast.apply_expression(
+            node_id, 'facts.backends := union(facts.backends, "agent")', api)
+
+        return True
+
     def run_task(self, api, node_id, **kwargs):
         action = kwargs['action']
         payload = kwargs['payload']
