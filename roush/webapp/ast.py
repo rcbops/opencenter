@@ -780,24 +780,32 @@ class Node:
         if attr in node:
             return self.eval_identifier(node[attr], rest, symbol_table)
         else:
-            self.logger.debug('no attr... try %s in link %s' % (rest, attr))
+            return None
 
-            if "%s%s" % (attr, '_id') in node:
-                the_id = node["%s%s" % (attr, '_id')]
-                if the_id:
-                    self.logger.debug('found link type %s with id: %s' %
-                                      (attr, str(the_id)))
-                    try:
-                        # grab the linked object...
-                        new_node = self.api._model_get_by_id("%ss" %
-                                                             attr, the_id)
-                        self.logger.debug("Indirected object: %s" % new_node)
-                    except Exception as e:
-                        self.logger.debug('cannot lookup the object type: %s' %
-                                          str(e))
-                        return None
+        # we can return to this once we have typing.. base nodes can
+        # be a specific type (basenode?) and we can leverage schema
+        # properties directly and indirect properly.  Otherwise we
+        # stand the risk of accidentally indirecting on poorly named
+        # fact attributes, etc.
 
-                    return self.eval_identifier(new_node, rest, symbol_table)
+        # self.logger.debug('no attr... try %s in link %s' % (rest, attr))
+
+        # if "%s%s" % (attr, '_id') in node:
+        #     the_id = node["%s%s" % (attr, '_id')]
+        #     if the_id:
+        #         self.logger.debug('found link type %s with id: %s' %
+        #                           (attr, str(the_id)))
+        #         try:
+        #             # grab the linked object...
+        #             new_node = self.api._model_get_by_id("%ss" %
+        #                                                  attr, the_id)
+        #             self.logger.debug("Indirected object: %s" % new_node)
+        #         except Exception as e:
+        #             self.logger.debug('cannot lookup the object type: %s' %
+        #                               str(e))
+        #             return None
+
+        #         return self.eval_identifier(new_node, rest, symbol_table)
 
         return None
 

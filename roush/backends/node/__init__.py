@@ -29,6 +29,21 @@ class NodeBackend(backends.Backend):
                         return None
             return None
 
+        if action == 'apply_fact':
+            if not 'key' in ns:
+                raise ValueError('no key in ns')
+            key = ns['key']
+
+            # see what backend this key is in...
+            for name, obj in backends.backend_objects.iteritems():
+                if key in obj.facts:
+                    # we can only solve for settable facts.  If the
+                    # fact is not settable, then there is likely (HAS TO BE!)
+                    # a primitive to set this somewhere else.  Probably in
+                    # the same backend.
+                    return ['"%s" in facts.backends' % name]
+            return None
+
         if action == 'set_parent':
             new_constraints = []
 
@@ -39,13 +54,17 @@ class NodeBackend(backends.Backend):
                 # should already be the case, but...
                 new_constraints.append('"node" in facts.backends')
 
-                ephemeral_api = roush.db.api.ephemeral_api_from_api(api)
-                roush.webapp.ast.apply_expression(node_id,
-                                                  'facts.parent := "%s"' %
-                                                  parent, ephemeral_api)
                 existing_node = api._model_get_by_id('nodes', node_id)
+
+                ephemeral_api = roush.db.api.ephemeral_api_from_api(api)
+                roush.webapp.ast.apply_expression(existing_node,
+                                                  'facts.parent_id := "%s"' %
+                                                  parent['id'], ephemeral_api)
                 proposed_node = ephemeral_api._model_get_by_id('nodes',
                                                                node_id)
+
+                self.logger.debug('Setting parent would change %s to %s' %
+                                  (existing_node, proposed_node))
 
                 # this should be much smarter.  losing vs gaining,
                 # and add/remove facts as appropriate.
@@ -63,15 +82,28 @@ class NodeBackend(backends.Backend):
                 required_facts = []
                 for key in changed_facts:
                     if not key in proposed_node['facts']:
+                        # we'll assume deleting a constraint doesn't
+                        # actually increase your constraints
                         new_constraints.append('facts.%s := None' % key)
                     else:
                         # FIXME: needs to be type aware
-                        new_constraints.append('facts.%s := "%s"' %
-                                               (key,
-                                                proposed_node['facts'][key]))
+                        value = proposed_node['facts'][key]
+
+                        # run this through the fact discovery
+                        new_fact_reqs = self.additional_constraints(
+                            api, node_id, 'apply_fact', {'key': key,
+                                                         'value': value})
+
+                        if new_fact_reqs is None:
+                            self.logger.debug('Impossible to satisfy %s->%s' %
+                                              (key, value))
+                            return None
+
+                        for fact in new_fact_reqs:
+                            if not fact in new_constraints:
+                                new_constraints.append(fact)
 
                 self.logger.debug('Required facts: %s' % required_facts)
-
                 return new_constraints
 
                 # parent_facts = api._model_get_by_id('nodes', parent)
@@ -95,12 +127,27 @@ class NodeBackend(backends.Backend):
 
         return True
 
+    def apply_fact(self, api, node_id, **kwargs):
+        key, value = kwargs['key'], kwargs['value']
+
+        self.logger.debug("Applying (vs. setting) fact %s->%s" %
+                          (key, value))
+
+        # something should be done here.
+        return True
+
     def set_fact(self, api, node_id, **kwargs):
         key, value = kwargs['key'], kwargs['value']
 
         # if the fact exists, update it, else create it.
         oldkeys = api._model_query('facts', 'node_id=%s and key=%s' %
                                    (node_id, key))
+
+        _by_key = dict([[x['key'], x['value']] for x in oldkeys])
+
+        if key in _by_key and _by_key[key] == value:
+            # we dont' need to set the value, merely apply it
+            return self.apply_fact(api, node_id, **kwargs)
 
         if len(oldkeys) > 0:
             # update
