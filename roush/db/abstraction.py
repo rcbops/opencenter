@@ -481,7 +481,7 @@ class CachedAbstraction(DbAbstraction):
         else:
             if not id in self.cache:
                 raise exceptions.IdNotFound(
-                    message='id %d does not exist' % id)
+                    message='id %d does not exist' % int(id))
             else:
                 return self.cache[id]
 
