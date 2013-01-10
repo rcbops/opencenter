@@ -84,7 +84,8 @@ class NodeBackend(backends.Backend):
                     if not key in proposed_node['facts']:
                         # we'll assume deleting a constraint doesn't
                         # actually increase your constraints
-                        new_constraints.append('facts.%s := None' % key)
+                        # new_constraints.append('facts.%s := None' % key)
+                        pass
                     else:
                         # FIXME: needs to be type aware
                         value = proposed_node['facts'][key]
