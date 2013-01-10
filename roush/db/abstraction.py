@@ -22,6 +22,9 @@ class DbAbstraction(object):
         self.name = name
         self.model = model
 
+    def destroy_cache(self):
+        pass
+
     def get_columns(self):
         raise NotImplementedError
 
@@ -437,6 +440,57 @@ class InMemoryAbstraction(DbAbstraction):
         if len(self.dictionary) == 0:
             return 1
         return max(self.dictionary.keys()) + 1
+
+
+class CachedAbstraction(DbAbstraction):
+    def __init__(self, api, model, name, base_abstraction):
+        self.cache = None
+        self.base = base_abstraction
+
+        super(CachedAbstraction, self).__init__(api, model, name)
+
+    def destroy_cache(self):
+        self.cache = None
+
+    def get_columns(self):
+        return self.base.get_columns()
+
+    def get_all(self):
+        if self.cache is None:
+            self.cache = {}
+
+            for obj in self.base.get_all():
+                self.cache[obj['id']] = obj
+
+        return self.cache.values()
+
+    def get_schema(self):
+        return self.base.get_schema()
+
+    def create(self, data):
+        self.api.destroy_cache()
+        return self.base.create(data)
+
+    def delete(self, data):
+        self.api.destroy_cache()
+        return self.base.delete(data)
+
+    def get(self, id):
+        if self.cache is None:
+            return self.base.get(id)
+        else:
+            if not id in self.cache:
+                raise exceptions.IdNotFound(
+                    message='id %d does not exist' % id)
+            else:
+                return self.cache[id]
+
+    def update(self, id, data):
+        self.api.destroy_cache()
+        return self.base.update(id, data)
+
+    def filter(self, filters):
+        return self.base.filter(filters)
 
 
 class EphemeralAbstraction(DbAbstraction):

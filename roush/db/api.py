@@ -8,6 +8,7 @@ import abstraction
 
 
 _cached_apis = {}
+use_cached_api = True
 
 
 class RoushApi(object):
@@ -15,6 +16,10 @@ class RoushApi(object):
         self.model_list = {}
         classname = self.__class__.__name__.lower()
         self.logger = logging.getLogger('%s.%s' % (__name__, classname))
+
+    def destroy_cache(self):
+        for model, backend in self.model_list.items():
+            backend.destroy_cache()
 
     def transactions(self):
         result = {}
@@ -149,8 +154,13 @@ def api_from_models():
         if abst is not None:
             new_api.add_model(d, abst)
 
-    _cached_apis['model-based'] = new_api
-    return new_api
+    if use_cached_api:
+        cached_api = cached_api_from_api(new_api)
+        _cached_apis['model-based'] = cached_api
+        return cached_api
+    else:
+        _cached_apis['model-based'] = new_api
+        return new_api
 
 
 def ephemeral_api_from_api(backed_api):
@@ -161,6 +171,23 @@ def ephemeral_api_from_api(backed_api):
     for name, backend in backed_api.model_list.items():
         abst = abstraction.EphemeralAbstraction(new_api, backend.model,
                                                 name, backend)
+        new_api.add_model(name, abst)
+
+    if use_cached_api:
+        cached_api = cached_api_from_api(new_api)
+        return cached_api
+    else:
+        return new_api
+
+
+def cached_api_from_api(backed_api):
+    # run through the existing backends and create a new
+    # ephemeral data source backed by those backends
+    new_api = RoushApi()
+
+    for name, backend in backed_api.model_list.items():
+        abst = abstraction.CachedAbstraction(new_api, backend.model,
+                                             name, backend)
         new_api.add_model(name, abst)
 
     return new_api
