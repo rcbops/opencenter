@@ -39,7 +39,8 @@
             "parameters": {
                 "name": "Nova AZ",
                 "parent_name": "Compute",
-                "backends": [ "nova" ]
+                "backends": [ "nova" ],
+                "facts": { "nova_az": "nova" }
             }
         }
     }

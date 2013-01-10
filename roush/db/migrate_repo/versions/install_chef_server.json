@@ -10,10 +10,8 @@
             "on_success": "s2"
         },
         "s2": {
-            "primitive": "node.add_backend",
-            "parameters": {
-                "backend": "chef-server"
-            }
+            "primitive": "chef-server.add_backend",
+            "parameters": {}
         }
     }
 }
