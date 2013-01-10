@@ -222,43 +222,6 @@ class Nodes(JsonRenderer, Base):
         def fact_none(fact, value, parent_value):
             return value
 
-        def apply_inheritance(node_id, facts, ns):
-            # this is really bad right now and should be optimized.
-            # it should also be rewritten to be beautiful by someone
-            # who cares.  node.facts cannot be touched directly
-            # without instantaneous roush combustion
-            n = facts.get('parent_id', None)
-            node_list = set([node_id])
-            while n and not n in node_list:
-                node_list.add(n)  # naive loop detection
-                parent_facts = dict(
-                    [(fact['key'], fact['value'])
-                     for fact in self.api.facts_query(
-                         'node_id=%d' % int(n))])
-                for parent_k, parent_v in parent_facts.iteritems():
-                    fact_def = roush.backends.fact_by_name(parent_k)
-                    f = fact_none
-                    if not fact_def is None:
-                        f = ns.get("fact_%s" % fact_def['inheritance'],
-                                   fact_parent_clobber)
-                    facts[parent_k] = f(
-                        parent_k,
-                        facts.get(parent_k, FactDoesNotExist),
-                        parent_v)
-                    if facts[parent_k] is FactDoesNotExist:
-                        del facts[parent_k]
-
-                n = self.api._model_query('facts',
-                                          'key="parent_id" and node_id=%s' % n)
-                n = None if len(n) != 1 else n[0]['value']
-
-                # n = self.api.node_get_by_id(n)
-                # if n is not None:
-                #     n = n['facts'].get('parent_id', None)
-            return facts
-
-        # return apply_inheritance(self.id, facts, locals())
-
         # walk up the parent tree, applying facts downward
         tree = []
         n = self.id
