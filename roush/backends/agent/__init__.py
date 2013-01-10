@@ -64,14 +64,14 @@ class AgentBackend(roush.backends.Backend):
             factlist = task['result']['result_data'].get('facts', {})
 
             for attr, value in attrlist.iteritems():
-                api._model_create('attrs',{'node_id': node_id,
-                                           'key': attr,
-                                           'value': value})
+                api._model_create('attrs', {'node_id': node_id,
+                                            'key': attr,
+                                            'value': value})
 
             for fact, value in factlist.iteritems():
-                api._model_create('facts',{'node_id': node_id,
-                                           'key': fact,
-                                           'value': value})
+                api._model_create('facts', {'node_id': node_id,
+                                            'key': fact,
+                                            'value': value})
 
             return True
 
