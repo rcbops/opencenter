@@ -28,8 +28,6 @@ class AgentBackend(roush.backends.Backend):
 
         # payload = dict([(x, kwargs[x]) for x in kwargs if x != 'action'])
 
-        print '******************** kwargs: %s' % kwargs
-
         self.logger.debug('run_task: got kwargs %s' % kwargs)
 
         # push global variables, unless they have been specifically
@@ -44,9 +42,7 @@ class AgentBackend(roush.backends.Backend):
         ns.update(copy.deepcopy(adventure_globals))
 
         for k, v in payload.items():
-            print(' ***** applying "%s" on "%s"' % (v, ns))
             payload[k] = roush.webapp.ast.apply_expression(ns, v, api)
-            print(' ***** ...resulting in %s' % payload[k])
 
         task = api._model_create('tasks', {'node_id': node_id,
                                            'action': action,
@@ -58,4 +54,25 @@ class AgentBackend(roush.backends.Backend):
             time.sleep(5)
             task = api._model_get_by_id('tasks', task['id'])
 
-        return True
+        if task['state'] != 'done':
+            return False
+
+        if 'result_code' in task['result'] and \
+                task['result']['result_code'] == 0:
+            # see if there are facts or attrs to apply.
+            attrlist = task['result']['result_data'].get('attrs', {})
+            factlist = task['result']['result_data'].get('facts', {})
+
+            for attr, value in attrlist.iteritems():
+                api._model_create('attrs', {'node_id': node_id,
+                                            'key': attr,
+                                            'value': value})
+
+            for fact, value in factlist.iteritems():
+                api._model_create('facts', {'node_id': node_id,
+                                            'key': fact,
+                                            'value': value})
+
+            return True
+
+        return False

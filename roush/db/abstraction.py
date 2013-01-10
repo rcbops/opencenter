@@ -460,7 +460,7 @@ class CachedAbstraction(DbAbstraction):
             self.cache = {}
 
             for obj in self.base.get_all():
-                self.cache[obj['id']] = obj
+                self.cache[int(obj['id'])] = obj
 
         return self.cache.values()
 
@@ -479,11 +479,11 @@ class CachedAbstraction(DbAbstraction):
         if self.cache is None:
             return self.base.get(id)
         else:
-            if not id in self.cache:
+            if not int(id) in self.cache:
                 raise exceptions.IdNotFound(
-                    message='id %d does not exist' % id)
+                    message='id %d does not exist' % int(id))
             else:
-                return self.cache[id]
+                return self.cache[int(id)]
 
     def update(self, id, data):
         self.api.destroy_cache()
