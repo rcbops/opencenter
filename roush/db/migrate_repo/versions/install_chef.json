@@ -21,9 +21,8 @@
             "on_success": "s3"
         },
         "s3": {
-            "primitive": "node.add_backend",
+            "primitive": "chef-client.add_backend",
             "parameters": {
-                "backend": "chef-client"
             }
         }
     }
