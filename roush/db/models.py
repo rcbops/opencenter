@@ -257,7 +257,47 @@ class Nodes(JsonRenderer, Base):
                 #     n = n['facts'].get('parent_id', None)
             return facts
 
-        return apply_inheritance(self.id, facts, locals())
+        # return apply_inheritance(self.id, facts, locals())
+
+        # walk up the parent tree, applying facts downward
+        tree = []
+        n = self.id
+        ns = locals()
+        while(n is not None and n not in tree):
+            tree.append(n)
+            parent = self.api.facts_query(
+                'key="parent_id" and node_id=%s' % int(n))
+            n = None if len(parent) != 1 else parent[0]['value']
+
+        # okay, we have the tree... apply facts top down
+        tree.reverse()
+
+        n = tree.pop(0)
+        my_facts = dict(
+            [(fact['key'], fact['value'])
+             for fact in self.api.facts_query('node_id=%d' % int(n))])
+
+        for n in tree:
+            parent_facts = my_facts
+
+            my_facts = dict(
+                [(fact['key'], fact['value'])
+                 for fact in self.api.facts_query('node_id=%d' % int(n))])
+
+            for parent_k, parent_v in parent_facts.iteritems():
+                fact_def = roush.backends.fact_by_name(parent_k)
+                f = fact_none
+                if not fact_def is None:
+                    f = ns["fact_%s" % fact_def['inheritance']]
+
+                my_facts[parent_k] = f(
+                    parent_k, my_facts.get(parent_k, FactDoesNotExist),
+                    parent_v)
+
+                if my_facts[parent_k] is FactDoesNotExist:
+                    del my_facts[parent_k]
+
+        return my_facts
 
     @property
     def attrs(self):

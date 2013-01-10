@@ -142,7 +142,7 @@ def normalize_fact(proposed, backend):
         if not isinstance(fact[name], dict):
             raise ValueError("Not a valid fact %s" % proposed)
 
-    fact[name]["inheritance"] = fact[name].get("inheritance", "clobber")
+    fact[name]["inheritance"] = fact[name].get("inheritance", "parent_clobber")
     fact[name]["type"] = fact[name].get("type", "untyped")
     fact[name]["settable"] = fact[name].get("settable", True)
     fact[name]["backend"] = backend
