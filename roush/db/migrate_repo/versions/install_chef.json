@@ -4,7 +4,7 @@
         "s1": {
             "primitive": "agent.run_task",
             "parameters": {
-                "action": "sleep",
+                "action": "install_chef",
                 "payload": {
                     "CHEF_URI": "chef_server.facts.chef_server_uri",
                     "CHEF_PEM": "chef_server.facts.chef_server_pem"
@@ -15,7 +15,7 @@
         "s2": {
             "primitive": "agent.run_task",
             "parameters": {
-                "action": "sleep",
+                "action": "run_chef",
                 "payload": {}
             },
             "on_success": "s3"
