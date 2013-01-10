@@ -8,5 +8,7 @@
     {"nova_admin_pw": {"type": "string",
                        "settable": false}},
     {"nova_fixed_cidr": {"type": "string",
-                         "settable": false}}
+                         "settable": false}},
+    {"nova_az": {"type": "string",
+                 "settable": false}}
 ]
