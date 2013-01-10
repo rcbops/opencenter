@@ -222,13 +222,13 @@ class Nodes(JsonRenderer, Base):
         def fact_none(fact, value, parent_value):
             return value
 
-        def apply_inheritance(node, facts, ns):
+        def apply_inheritance(node_id, facts, ns):
             # this is really bad right now and should be optimized.
             # it should also be rewritten to be beautiful by someone
             # who cares.  node.facts cannot be touched directly
             # without instantaneous roush combustion
             n = facts.get('parent_id', None)
-            node_list = set([node])
+            node_list = set([node_id])
             while n and not n in node_list:
                 node_list.add(n)  # naive loop detection
                 parent_facts = dict(
@@ -247,12 +247,17 @@ class Nodes(JsonRenderer, Base):
                         parent_v)
                     if facts[parent_k] is FactDoesNotExist:
                         del facts[parent_k]
-                n = self.api.node_get_by_id(n)
-                if n is not None:
-                    n = n['facts'].get('parent_id', None)
+
+                n = self.api._model_query('facts',
+                                          'key="parent_id" and node_id=%s' % n)
+                n = None if len(n) != 1 else n[0]['value']
+
+                # n = self.api.node_get_by_id(n)
+                # if n is not None:
+                #     n = n['facts'].get('parent_id', None)
             return facts
 
-        return apply_inheritance(self, facts, locals())
+        return apply_inheritance(self.id, facts, locals())
 
     @property
     def attrs(self):
