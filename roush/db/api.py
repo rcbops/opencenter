@@ -17,6 +17,13 @@ class RoushApi(object):
         classname = self.__class__.__name__.lower()
         self.logger = logging.getLogger('%s.%s' % (__name__, classname))
 
+    def __repr__(self):
+        types = ["%s:%s" % (x, self.model_list[x].__class__.__name__)
+                 for x in self.model_list]
+        types = ",".join(types)
+
+        return '<RoushApi: %s>' % types
+
     def destroy_cache(self):
         for model, backend in self.model_list.items():
             backend.destroy_cache()

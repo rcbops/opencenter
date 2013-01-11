@@ -135,7 +135,7 @@ def object_by_id(object_type, object_id):
 def http_solver_request(node_id, constraints, api=api, result=None):
     task = utility.solve_and_run(node_id, constraints, api=api)
     if task is None:
-        is_solvable, requires_input, solution_plan, _ = utility.solve_for_node(
+        is_solvable, requires_input, solution_plan = utility.solve_for_node(
             node_id, constraints, api)
 
         if not is_solvable:

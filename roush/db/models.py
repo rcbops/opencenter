@@ -193,10 +193,6 @@ class Nodes(JsonRenderer, Base):
 
     @property
     def facts(self):
-        facts = dict([(fact['key'], fact['value'])
-                      for fact in self.api.facts_query(
-                          'node_id=%d' % self.id)])
-
         def fact_union(fact, value, parent_value):
             if value is FactDoesNotExist:
                 value = []

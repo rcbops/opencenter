@@ -185,26 +185,22 @@ def solve_for_node(node_id, constraints, api=api):
     given a node id and a list of constraints, run a solver
     to try and find a solution path.
 
-    it returns (is_solvable, requires_input, solution_plan, adventure)
+    it returns (is_solvable, requires_input, solution_plan)
     """
 
     task_solver = solver.Solver(api, node_id, constraints)
     is_solvable, requires_input, solution_plan = task_solver.solve()
-    adventure = None
 
-    if is_solvable:
-        adventure = task_solver.adventure()
-
-    return (is_solvable, requires_input, solution_plan, adventure)
+    return (is_solvable, requires_input, solution_plan)
 
 
 def solve_and_run(node_id, constraints, api=api):
-    is_solvable, requires_input, solution_plan, adventure = solve_for_node(
+    is_solvable, requires_input, solution_plan = solve_for_node(
         node_id, constraints, api)
 
     task = None
 
     if is_solvable:
-        task = run_adventure(adventure_dsl=adventure, nodes=[node_id])
+        task = run_adventure(adventure_dsl=solution_plan, nodes=[node_id])
 
     return task

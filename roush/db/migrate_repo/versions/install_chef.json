@@ -1,29 +1,23 @@
-{
-    "start_state": "s1",
-    "states": {
-        "s1": {
-            "primitive": "agent.run_task",
-            "parameters": {
-                "action": "install_chef",
-                "payload": {
-                    "CHEF_URI": "chef_server.facts.chef_server_uri",
-                    "CHEF_PEM": "chef_server.facts.chef_server_pem"
-                }
-            },
-            "on_success": "s2"
-        },
-        "s2": {
-            "primitive": "agent.run_task",
-            "parameters": {
-                "action": "run_chef",
-                "payload": {}
-            },
-            "on_success": "s3"
-        },
-        "s3": {
-            "primitive": "chef-client.add_backend",
-            "parameters": {
+[
+    {
+        "primitive": "agent.run_task",
+        "ns": {
+            "action": "install_chef",
+            "payload": {
+                "CHEF_URI": "chef_server.facts.chef_server_uri",
+                "CHEF_PEM": "chef_server.facts.chef_server_pem"
             }
         }
+    },
+    {
+        "primitive": "agent.run_task",
+        "ns": {
+            "action": "run_chef",
+            "payload": {}
+        }
+    },
+    {
+        "primitive": "chef-client.add_backend",
+        "ns": {}
     }
-}
+]
