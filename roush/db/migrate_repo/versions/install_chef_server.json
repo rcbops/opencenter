@@ -1,17 +1,13 @@
-{
-    "start_state": "s1",
-    "states": {
-        "s1": {
-            "primitive": "agent.run_task",
-            "parameters": {
-                "action": "install_chef_server",
-                "payload": {}
-            },
-            "on_success": "s2"
-        },
-        "s2": {
-            "primitive": "chef-server.add_backend",
-            "parameters": {}
+[
+    {
+        "primitive": "agent.run_task",
+        "ns": {
+            "action": "install_chef_server",
+            "payload": {}
         }
+    },
+    {
+        "primitive": "chef-server.add_backend",
+        "ns": {}
     }
-}
+]

@@ -1,12 +1,9 @@
-{
-    "start_state": "s1",
-    "states": {
-        "s1": {
-            "primitive": "run_task",
-            "parameters": {
-                "action": "run_chef",
-                "payload": {}
-            }
+[
+    {
+        "primitive": "agent.run_task",
+        "ns": {
+            "action": "run_chef",
+            "payload": {}
         }
     }
-}
+]

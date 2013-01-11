@@ -329,9 +329,10 @@ class Solver:
         primitives = []
 
         if proposed_plan:
-            primitives = [self.api._model_get_by_id(
+            # fix this up so it looks more like it used to.  ;)
+            primitives = self.api._model_query(
                 'primitives',
-                proposed_plan['primitive']['id'])]
+                'name="%s"' % proposed_plan['primitive'])
         else:
             primitives = self.api._model_get_all('primitives')
 
@@ -345,12 +346,14 @@ class Solver:
         all_solutions = []
 
         if proposed_plan:
-            plan_prim = proposed_plan['primitive']
-            plan_ns = proposed_plan['args']
+            # plan_prim = primitives[0]
+            plan_ns = proposed_plan['ns']
 
-            primitive = self.api._model_get_by_id(
-                'primitives',
-                plan_prim['id'])
+            primitive = primitives[0]
+
+            # primitive = self.api._model_get_by_id(
+            #     'primitives',
+            #     plan_prim['id'])
 
             solution = self._is_forwarding_solution(primitive,
                                                     constraint_list,
@@ -548,9 +551,8 @@ class Solver:
     def plan(self):
         current = []
         if self.prim:
-            current.append({'primitive': self.prim,
-                            'args': self.ns,
-                            'consequences': self.applied_consequences})
+            current.append({'primitive': self.prim['name'],
+                            'ns': self.ns})
 
         if len(self.children) > 1:
             raise ValueError('solution tree not pruned')

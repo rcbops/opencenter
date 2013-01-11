@@ -1,11 +1,8 @@
-{
-    "start_state": "s1",
-    "states": {
-        "s1": {
-            "primitive": "agent.run_task",
-            "parameters": {
-                "action": "download_cookbooks"
-            }
+[
+    {
+        "primitive": "agent.run_task",
+        "ns": {
+            "action": "download_cookbooks"
         }
     }
-}
+]
