@@ -51,7 +51,6 @@ class DbAbstraction(object):
         """get data with filter language query"""
         query = '%s: %s' % (self.name, query)
 
-        self.logger.debug('Running query "%s" against %s' % (query, self.api))
         builder = FilterBuilder(FilterTokenizer(), query, api=self.api)
         result = builder.filter()
         return result
@@ -545,7 +544,19 @@ class EphemeralAbstraction(DbAbstraction):
         return self.base.get_schema()
 
     def create(self, data):
+        # this is totally wrong.  we need to
+        # fix up this data model
         new_data = self._sanitize_for_create(data)
+
+        if self.name == 'facts':
+
+            existing = self.api._model_query(
+                'facts', 'node_id=%d and key="%s"' % (
+                    int(new_data['node_id']), new_data['key']))
+            if len(existing) != 0:
+                # this is an update
+                return self.update(existing[0]['id'], data)
+
         new_data['id'] = self._get_new_id()
 
         self.new_obj[new_data['id']] = new_data
@@ -575,8 +586,8 @@ class EphemeralAbstraction(DbAbstraction):
             raise exceptions.IdNotFound(message='id %d does not exist' % id)
 
         new_obj = self._update_object(obj)
-        r = self.model(**(self._sanitize_for_create(new_obj)))
 
+        r = self.model(**(self._sanitize_for_create(new_obj)))
         r.id = id
 
         result = r.jsonify(api=self.api)
