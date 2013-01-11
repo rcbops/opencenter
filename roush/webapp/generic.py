@@ -146,9 +146,9 @@ def http_solver_request(node_id, constraints, api=api, result=None):
             return http_response(409, msg='need additional input',
                                  plan=solution_plan)
 
-        # here we need to return the object (node/fact),
-        # but should consequence be applied?!?
-        if result is None:
-            result = {'node': api._model_get_by_id('nodes', node_id)}
+    # here we need to return the object (node/fact),
+    # but should consequence be applied?!?
+    if result is None:
+        result = {'node': api._model_get_by_id('nodes', node_id)}
 
-        return http_response(202, 'executing change', **result)
+    return http_response(202, 'executing change', **result)
