@@ -193,11 +193,11 @@ class FactsTests(RoushTestCase):
         self.assertEquals(len(result), 3)
 
     def test_request_bad_fact(self):
-        resp = self.client.get('/facts/9999')
+        resp = self.client.get('/admin/facts/9999')
         self.assertEquals(resp.status_code, 404)
 
     def update_bad_fact(self):
-        resp = self.client.put('/facts/9999',
+        resp = self.client.put('/admin/facts/9999',
                                content_type='application/json',
                                data=json.dumps({'value': 'test'}))
         self.assertEquals(resp.status_code, 404)
