@@ -72,7 +72,7 @@ class RoushTestCase(unittest2.TestCase):
                   data=json.dumps(kwargs))
 
     def _model_create(self, model, **kwargs):
-        resp = self.client.post('/%s/' % self._pluralize(model),
+        resp = self.client.post('/admin/%s/' % self._pluralize(model),
                                 content_type='application/json',
                                 data=json.dumps(kwargs))
 
@@ -81,14 +81,15 @@ class RoushTestCase(unittest2.TestCase):
         return json.loads(resp.data)[model]
 
     def _model_update(self, model, id, **kwargs):
-        resp = self.client.put('/%s/%s' % (self._pluralize(model), id),
+        resp = self.client.put('/admin/%s/%s' % (self._pluralize(model), id),
                                content_type='application/json',
                                data=json.dumps(kwargs))
         self.assertEquals(resp.status_code, 200)
         return json.loads(resp.data)[model]
 
     def _model_delete(self, model, id):
-        resp = self.client.delete('/%s/%s' % (self._pluralize(model), id))
+        resp = self.client.delete('/admin/%s/%s' %
+                                  (self._pluralize(model), id))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.app.logger.debug('model_delete response: %s' % out)
@@ -97,14 +98,14 @@ class RoushTestCase(unittest2.TestCase):
                           model.capitalize())
 
     def _model_get_by_id(self, model, id):
-        resp = self.client.get('/%s/%s' % (self._pluralize(model), id))
+        resp = self.client.get('/admin/%s/%s' % (self._pluralize(model), id))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.app.logger.debug('model_get_by_id response: %s' % out)
         return out[model]
 
     def _model_filter(self, model, filter_str):
-        resp = self.client.post('/%s/filter' % self._pluralize(model),
+        resp = self.client.post('/admin/%s/filter' % self._pluralize(model),
                                 content_type='application/json',
                                 data=json.dumps({'filter': filter_str}))
         self.app.logger.debug('response: %s' % resp)
@@ -114,14 +115,14 @@ class RoushTestCase(unittest2.TestCase):
         return out[self._pluralize(model)]
 
     def _model_get_all(self, model):
-        resp = self.client.get('/%s/' % self._pluralize(model))
+        resp = self.client.get('/admin/%s/' % self._pluralize(model))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.app.logger.debug('get_all response: %s' % out)
         return out[self._pluralize(model)]
 
     def _model_get_schema(self, model):
-        resp = self.client.get('/%s/schema' % self._pluralize(model))
+        resp = self.client.get('/admin/%s/schema' % self._pluralize(model))
         self.app.logger.debug('get_schema response: %s' % resp.data)
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
@@ -152,7 +153,7 @@ def _test_missing_create_field(self, missing_field, expected_code):
 
     self.logger.debug('creating with data %s (missing %s)' %
                       (data, missing_field))
-    resp = self._client_request('post', '/%s/' % bop, **data)
+    resp = self._client_request('post', '/admin/%s/' % bop, **data)
 
     self.logger.debug('got status_code of %d, %s' % (resp.status_code,
                                                      resp.data))
@@ -176,7 +177,7 @@ def inject(cls):
     client = app.test_client()
     logger = app.logger
 
-    resp = client.get('%ss/schema' % model)
+    resp = client.get('/admin/%ss/schema' % model)
     out = json.loads(resp.data)
     schema = out['schema']
 
