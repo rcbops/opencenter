@@ -71,20 +71,23 @@ class Thing(Flask):
 
         if argv:
             try:
-                opts, args = getopt.getopt(argv, 'c:vd')
+                opts, args = getopt.getopt(argv, 'c:vd',
+                                           ['config=', 'verbose', 'daemonize'])
             except getopt.GetoptError as err:
                 print str(err)
+                self.usage()
                 sys.exit(1)
 
             for o, a in opts:
-                if o == '-c':
+                if o in ('-c', '--config'):
                     configfile = a
-                elif o == '-v':
+                elif o in ('-v', '--verbose'):
                     debug = True
-                elif o == '-d':
+                elif o in ('-d', '--daemonize'):
                     daemonize = True
                 else:
                     print "Bad option"
+                    self.usage()
                     sys.exit(1)
 
             sys.argv = [sys.argv[0]] + args
@@ -173,6 +176,15 @@ class Thing(Flask):
 
         if daemonize:
             self.config['daemonize'] = True
+
+    def usage(self):
+        """Print a usage message."""
+
+        print """The following command line flags are supported:
+
+[-c|--config] <file>: use this config file
+[-v|--verbose]:       include if you want verbose logging
+[-d|--deamonize]:     if set then roush will run as a daemon"""
 
     def register_blueprint(self, blueprint, url_prefix='/', **kwargs):
         super(Thing, self).register_blueprint(blueprint,
