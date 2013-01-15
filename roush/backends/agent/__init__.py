@@ -9,9 +9,9 @@ class AgentBackend(roush.backends.Backend):
     def __init__(self):
         super(AgentBackend, self).__init__(__file__)
 
-    def additional_constraints(self):
+    def additional_constraints(self, api, node_id, actions, ns):
         # this is probably a bit viscious.
-        return None
+        return ['"agent" in facts.backends']
 
     def add_backend(self, api, node_id, **kwargs):
         self.logger.debug('adding agent backend')
@@ -22,24 +22,40 @@ class AgentBackend(roush.backends.Backend):
         return True
 
     def run_task(self, api, node_id, **kwargs):
-        action = kwargs['action']
-        payload = kwargs['payload']
+        action = kwargs.pop('action')
+        payload = kwargs.pop('payload')
+
         adventure_globals = []
 
         # payload = dict([(x, kwargs[x]) for x in kwargs if x != 'action'])
 
         self.logger.debug('run_task: got kwargs %s' % kwargs)
 
-        # push global variables, unless they have been specifically
-        # set in the task payload.
+        # push global variables
         if 'globals' in kwargs:
             adventure_globals = kwargs['globals']
-            # for k, v in globals.items():
-            #     if not k in payload:
-            #         payload[k] = v
+
+        # run through the rest of the args and typecast them
+        # as appropriate.
+        node = api._model_get_by_id('nodes', node_id)
+        typed_args = {}
+
+        if 'roush_agent_actions' in node['attrs']:
+            if action in node['attrs']['roush_agent_actions']:
+                action_info = node['attrs']['roush_agent_actions'][action]
+                typed_args = action_info['args']
 
         ns = copy.deepcopy(payload)
         ns.update(copy.deepcopy(adventure_globals))
+
+        for k, v in kwargs.items():
+            # we'll type these, if we know them, and cast them
+            # appropriately.
+            if k in typed_args:
+                arg_info = typed_args[k]
+                if arg_info['type'] == 'interface':  # cast this to a full node
+                    v = api._model_get_by_id('nodes', v)
+            ns[k] = v
 
         for k, v in payload.items():
             payload[k] = roush.webapp.ast.apply_expression(ns, v, api)

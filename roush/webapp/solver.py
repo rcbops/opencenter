@@ -27,6 +27,8 @@ class Solver:
         self.adventures = []
         self.ns = ns
 
+        self.logger.debug('New solver for constraints %s' % constraints)
+
         # roll the applied consequences forward in an ephemeral
         # api, and do our resolution from that.
         self.api = db_api.ephemeral_api_from_api(self.base_api)
@@ -53,8 +55,10 @@ class Solver:
                 # should verify this unique against backends
                 self.task_primitives[id] = {}
                 self.task_primitives[id]['name'] = mangled_name
+                self.task_primitives[id]['task_name'] = task_name
                 self.task_primitives[id]['constraints'] = task['constraints']
                 self.task_primitives[id]['consequences'] = task['consequences']
+                self.task_primitives[id]['args'] = task['args']
 
         self.logger.debug('Node before applying consequences: %s' % pre_node)
         self.logger.debug('Applied consequences: %s' %
@@ -78,6 +82,35 @@ class Solver:
             raise ValueError("Plan didn't satisfy constraints")
 
         return root_solver
+
+    # we need to dummy up the primitives to add the node tasks
+    # to them.  This is something of a fail.  Maybe we could
+    # dummy this up in the model somehow?
+    def _get_all_primitives(self):
+        primitive_list = self.api._model_get_all('primitives')
+        primitive_list += self.task_primitives.values()
+        return primitive_list
+
+    def _get_primitive_by_name(self, name):
+        primitives = self.api._model_query(
+            'primitives',
+            'name="%s"' % name)
+
+        if len(primitives) > 0:
+            return primitives[0]
+
+        # walk through the self.task_primitives
+        primitives = [x for x in self.task_primitives if x['name'] == name]
+        if len(primitives) > 0:
+            return primitives[0]
+
+    def _get_additional_constraints(self, primitive_id, ns):
+        if primitive_id in self.task_primitives:
+            return []
+        else:
+            return roush.backends.additional_constraints(self.api,
+                                                         self.node_id,
+                                                         primitive_id, ns)
 
     def _build_constraints(self, constraints):
         """
@@ -313,6 +346,8 @@ class Solver:
         available primitives that can solve any existing constraint.
         """
 
+        self.logger.debug("solving %s with plan %s" % (self.constraints,
+                                                       proposed_plan))
         # first, build up asts of all my unsolved constraints
         constraint_list = self._build_constraints(self.constraints)
 
@@ -330,13 +365,17 @@ class Solver:
 
         if proposed_plan:
             # fix this up so it looks more like it used to.  ;)
-            primitives = self.api._model_query(
-                'primitives',
-                'name="%s"' % proposed_plan['primitive'])
+            prim_item = self._get_primitive_by_name(proposed_plan['primitive'])
+            if prim_item:
+                primitives = [prim_item]
+            # primitives = self.api._model_query(
+            #     'primitives',
+            #     'name="%s"' % proposed_plan['primitive'])
         else:
-            primitives = self.api._model_get_all('primitives')
-
-        primitives = [x for x in primitives if self._can_meet_constraints(x)]
+            primitives = self._get_all_primitives()
+            # primitives = self.api._model_get_all('primitives')
+            primitives = [x for x in primitives
+                          if self._can_meet_constraints(x)]
 
         # get all the primitives capable of being run, given the
         # primitive constraints
@@ -396,9 +435,13 @@ class Solver:
             #     raise RuntimeError('constraint disappeared?!?!')
 
             # get additional constraints from the primitive itself.
-            new_constraints = roush.backends.additional_constraints(
-                self.api,
-                self.node_id,
+            self.logger.debug("finding addl constraints for %s using ns %s" %
+                              (solution['primitive']['id'],
+                               solution['ns']))
+
+            self.logger.debug("%s" % dir(roush.backends))
+
+            new_constraints = self._get_additional_constraints(
                 solution['primitive']['id'],
                 solution['ns'])
 
@@ -544,7 +587,64 @@ class Solver:
                 solution_node = solution_node.parent
 
             # solution_node is now the root.
-            return True, False, solution_node.plan()
+            # now we need to solve for args...
+            plan = solution_node.plan()
+            self.logger.debug("PLAN IS: %s" % plan)
+
+            plan_solvable = True
+            plan_choosable = False
+
+            for step in plan:
+                self.logger.debug('Solving args for step: %s' % step)
+                prim = self._get_primitive_by_name(step['primitive'])
+                if prim is None:
+                    raise ValueError('cannot find prim in proposed plan. doh!')
+
+                # terribleness below -- add in the task args if it is runtask
+                #
+                # this should really solve itself as a consequence of having
+                # strong type knowledge, but as we have no strong knowledge
+                # (or even weak type knowledge) we have to stuff this in
+                # manually.  FIXME(rp): revisit this when we have types
+                addl_args = {}
+
+                if prim['name'] == 'agent.run_task':
+                    task_name = step['ns']['action']
+                    task = [x for x in self.task_primitives.values()
+                            if x['task_name'] == task_name]
+                    if len(task) == 1:
+                        addl_args = task[0]['args']
+
+                self.logger.debug('discovered additional args: %s' % addl_args)
+
+                addl_args.update(prim['args'])
+
+                for arg in addl_args:
+                    # walk through and see if we can solve this.
+                    # man, this is stupid ugly
+                    solvable, msg, choices = self.solve_arg(arg,
+                                                            addl_args[arg],
+                                                            step['ns'])
+                    argv = [addl_args[arg]]
+                    if solvable:
+                        step['ns'][arg] = choices
+                    elif choices:
+                        plan_choosable = True
+                        if(argv['required']):
+                            plan_solvable = False
+                        if not 'args' in step:
+                            step['args'] = {}
+                        step['args'][arg] = argv
+                        step['args'][arg]['options'] = choices
+                        step['args'][arg]['message'] = msg
+                    else:
+                        plan_solvable = False
+                        if not 'args' in step:
+                            step['args'] = {}
+                        step['args'][arg] = argv
+                        step['args'][arg]['message'] = msg
+
+            return plan_solvable, plan_choosable, plan
         else:
             return False, False, []
 
@@ -606,29 +706,41 @@ class Solver:
 
     # solves any args not necessary for meeting constraints,
     # but otherwise required (or optional)
+    #
+    # returns (solvable, msg, choices | selected choice)
+    #
+    # so... (False, "Cannot find interface 'chef-server'", None)
+    # or... (False, "Choose interface 'chef-server'", [2,3])
+    # or... (True, None, 2)
+    #
+    # It is up to the caller to decide whether unsolvability
+    # of these args is a fatal or non-fatal condition
+    #
     def solve_arg(self, name, arg, ns):
         if name in ns:
-            return (True, ns[name])
+            return (True, None, ns[name])
 
         if arg['type'] == 'interface':
             iname = arg['name']
             int_query = 'filter_type="interface" and name="%s"' % iname
             iface = self.api._model_query('filters', int_query)
             if len(iface) == 0:
-                return (False, 'unknown interface "%s"' % iname)
+                return (False, 'unknown interface "%s"' % iname, None)
 
             if len(iface) > 1:
-                return (False, 'multiple definitions of "%s"' % iname)
+                return (False, 'multiple definitions of iface "%s"' % iname,
+                        None)
 
             iface_query = iface[0]['full_expr']
             nodes = self.api._model_query('nodes', iface_query)
 
             if len(nodes) == 0:
-                return (False, 'unsatisifed interface "%s"' % iname)
+                return (False, 'unsatisifed interface "%s"' % iname, None)
 
             if len(nodes) == 1:
-                return nodes[0]['id']
+                return (True, None, nodes[0]['id'])
 
-            return (False, 'Choice: %s' % ([x['id'] for x in nodes],))
+            return (False, 'Multiple interfaces for "%s"' % arg['name'],
+                    [x['id'] for x in nodes])
 
-        return (False, 'Somehow unknowable')
+        return (False, 'I cannot solve for type "%s"' % arg['type'], None)
