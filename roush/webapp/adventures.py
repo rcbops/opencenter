@@ -5,6 +5,7 @@ import generic
 import utility
 
 from roush.db.api import api_from_models
+from roush.webapp import solver
 
 
 api = api_from_models()
@@ -26,16 +27,28 @@ def by_id(object_id):
 def execute_adventure(adventure_id):
     data = flask.request.json
 
-    if not 'nodes' in data:
-        return generic.http_badrequest(msg='no nodes specified')
+    if not 'node' in data:
+        return generic.http_badrequest(msg='node not specified')
+
+    adventure = api._model_get_by_id('adventures', int(adventure_id))
+
+    if adventure is None:
+        return generic.http_notfound()
 
     try:
-        task = utility.run_adventure(adventure_id=adventure_id,
-                                     nodes=data['nodes'])
-    except ValueError as e:
+        task_solver = solver.Solver.from_plan(api, data['node'],
+                                              [],  # no constraint, fing do it
+                                              adventure['dsl'])
+    except ValueError as e:  # could not apply plan
         return generic.http_badrequest(msg=str(e))
 
-    href = flask.request.base_url + str(task['id'])
+    is_solvable, requires_input, solution_plan = task_solver.solve()
+    if is_solvable:
+        task = utility.run_adventure(
+            adventure_dsl=solution_plan, nodes=[data['node']])
 
-    return generic.http_response(201, 'Task Created', task=task,
-                                 ref=href)
+        href = flask.request.base_url + str(task['id'])
+        return generic.http_response(201, 'Task Created', task=task,
+                                     ref=href)
+    else:
+        return generic.http_response(403, 'Cannot solve')

@@ -4,11 +4,5 @@
         "ns": {
             "action": "sleep",
             "payload": {}}
-    },
-    {
-        "primitive": "agent.run_task",
-        "ns": {
-            "action": "sleep",
-            "payload": {}}
     }
 ]
