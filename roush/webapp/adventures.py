@@ -35,20 +35,5 @@ def execute_adventure(adventure_id):
     if adventure is None:
         return generic.http_notfound()
 
-    try:
-        task_solver = solver.Solver.from_plan(api, data['node'],
-                                              [],  # no constraint, fing do it
-                                              adventure['dsl'])
-    except ValueError as e:  # could not apply plan
-        return generic.http_badrequest(msg=str(e))
-
-    is_solvable, requires_input, solution_plan = task_solver.solve()
-    if is_solvable:
-        task = utility.run_adventure(
-            adventure_dsl=solution_plan, nodes=[data['node']])
-
-        href = flask.request.base_url + str(task['id'])
-        return generic.http_response(201, 'Task Created', task=task,
-                                     ref=href)
-    else:
-        return generic.http_response(403, 'Cannot solve')
+    return generic.http_solver_request(data['node'], [],
+                                       api=api, plan=adventure['dsl'])

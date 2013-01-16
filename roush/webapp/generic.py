@@ -132,23 +132,28 @@ def object_by_id(object_type, object_id):
         return http_notfound(msg='Unknown method %s' % flask.request.method)
 
 
-def http_solver_request(node_id, constraints, api=api, result=None):
-    task = utility.solve_and_run(node_id, constraints, api=api)
+def http_solver_request(node_id, constraints, api=api, result=None, plan=None):
+    task, solution_plan = utility.solve_and_run(node_id,
+                                                constraints,
+                                                api=api,
+                                                plan=plan)
     if task is None:
         is_solvable, requires_input, solution_plan = utility.solve_for_node(
-            node_id, constraints, api)
+            node_id, constraints, api, plan=plan)
 
+        if ((not is_solvable) and requires_input):
+            return http_response(409, msg='need additional input',
+                                 plan=solution_plan)
         if not is_solvable:
             return http_response(403, msg='cannot be solved',
                                  friendly='sorry about that')
 
-        if requires_input:
-            return http_response(409, msg='need additional input',
-                                 plan=solution_plan)
-
     # here we need to return the object (node/fact),
     # but should consequence be applied?!?
+    # no, we are just going to return a bare 20x
     if result is None:
-        result = {'node': api._model_get_by_id('nodes', node_id)}
+        result = {}
+
+    result['plan'] = solution_plan
 
     return http_response(202, 'executing change', **result)

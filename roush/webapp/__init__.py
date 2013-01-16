@@ -26,6 +26,7 @@ from roush.webapp.nodes import bp as nodes_bp
 # from roush.webapp.nodes_please import bp as nodes_please
 from roush.webapp.primitives import bp as primitives_bp
 from roush.webapp.tasks import bp as tasks_bp
+from roush.webapp.plan import bp as plan_bp
 
 
 # api = api_from_models()
@@ -166,6 +167,8 @@ class Thing(Flask):
         self.register_blueprint(attrs_bp, url_prefix='/admin/attrs')
         self.register_blueprint(primitives_bp, url_prefix='/primitives')
         self.register_blueprint(primitives_bp, url_prefix='/admin/primitives')
+        self.register_blueprint(plan_bp, url_prefix='/plan')
+        self.register_blueprint(plan_bp, url_prefix='/admin/plan')
         self.testing = debug
 
         ast_log = logging.getLogger('roush.webapp.ast')
