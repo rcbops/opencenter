@@ -274,7 +274,7 @@ class FilterTokenizer(AbstractTokenizer):
         if whatquote == '\'':
             escaped_quote = "\\'"
 
-        return token[1:-1].replace(escaped_quote, whatquote)
+        return 'STRING', token[1:-1].replace(escaped_quote, whatquote)
 
     def open_paren(self, scanner, token):
         return 'OPENPAREN', token
