@@ -625,7 +625,7 @@ class Solver:
                     solvable, msg, choices = self.solve_arg(arg,
                                                             addl_args[arg],
                                                             step['ns'])
-                    argv = [addl_args[arg]]
+                    argv = addl_args[arg]
                     if solvable:
                         step['ns'][arg] = choices
                     elif choices:
@@ -638,12 +638,16 @@ class Solver:
                         step['args'][arg]['options'] = choices
                         step['args'][arg]['message'] = msg
                     else:
+                        plan_choosable = True
                         plan_solvable = False
                         if not 'args' in step:
                             step['args'] = {}
                         step['args'][arg] = argv
                         step['args'][arg]['message'] = msg
 
+            self.logger.debug('returning (%s, %s, %s)' % (plan_solvable,
+                                                          plan_choosable,
+                                                          plan))
             return plan_solvable, plan_choosable, plan
         else:
             return False, False, []

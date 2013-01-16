@@ -270,11 +270,11 @@ class FilterTokenizer(AbstractTokenizer):
 
     def qstring(self, scanner, token):
         whatquote = token[0]
-        otherquote = '\\"'
-        if whatquote == '"':
-            otherquote = "\\'"
+        escaped_quote = '\\"'
+        if whatquote == '\'':
+            escaped_quote = "\\'"
 
-        return 'STRING', token[1:-1].replace(otherquote, whatquote)
+        return 'STRING', token[1:-1].replace(escaped_quote, whatquote)
 
     def open_paren(self, scanner, token):
         return 'OPENPAREN', token
@@ -578,7 +578,7 @@ class Node:
 
     def value_to_s(self):
         if self.op == 'STRING':
-            return "'%s'" % self.lhs.replace("'", "\'")
+            return "'%s'" % self.lhs.replace("\\'", "'").replace("'", "\\'")
 
         return str(self.lhs)
 

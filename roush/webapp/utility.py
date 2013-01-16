@@ -66,7 +66,7 @@ def expand_nodelist(nodelist, api=api):
     return final_nodelist
 
 
-def run_adventure(adventure_id=None, adventure_dsl=None, nodes=None):
+def run_adventure(adventure_dsl=None, nodes=None):
     """
     run an arbitrary adventure on a set of nodes, either by ID or
     as an ad-hoc adventure dsl.
@@ -78,29 +78,9 @@ def run_adventure(adventure_id=None, adventure_dsl=None, nodes=None):
     payload = {}
     globals = {}
 
-    if adventure_id:
-        payload['adventure'] = adventure_id
-
-        # we might have to solve global vars here.
-        adventure = api._model_get_by_id('adventures', adventure_id)
-        args = adventure['args']
-        for arg in args:
-            if args[arg]['required'] is True:
-                value = solve_adventure_arg(arg, args[arg])
-                if value is None:
-                    raise ValueError('cannot solve arg %s' % arg)
-
-                # we have solution for required arg.  Dump it into the
-                # global namespace
-                globals[arg] = value
-
-        globals['solved_adventure'] = False
-        globals['defined_adventure'] = True
-
-    elif adventure_dsl:
-        payload['adventure_dsl'] = adventure_dsl
-        globals['solved_adventure'] = True
-        globals['defined_adventure'] = False
+    payload['adventure_dsl'] = adventure_dsl
+    globals['solved_adventure'] = True
+    globals['defined_adventure'] = False
 
     payload['globals'] = globals
 
@@ -142,45 +122,7 @@ def run_adventure(adventure_id=None, adventure_dsl=None, nodes=None):
     return task
 
 
-def solve_adventure_arg(arg_name, arg_hash):
-    """
-    solve for required adventure args, solver-style
-    """
-
-    # I don't feel bad about this trivial approach, as we are
-    # going to fold together execution plans and adventures,
-    # and this will be run through the solver at that time.
-    # so this is short-term throwaway.
-    if arg_hash['type'] == 'interface':
-        interface_name = arg_hash['name']
-        int_query = 'filter_type="interface" and name="%s"' % interface_name
-        iface = api._model_query('filters', int_query)
-
-        if len(iface) != 1:
-            LOG.error('bad interface: %s' % interface_name)
-            return None
-
-        iface_query = iface[0]['full_expr']
-        nodes = api._model_query('nodes', iface_query)
-
-        if len(nodes) == 0:
-            LOG.warn('no solution for interface %s' %
-                     interface_name)
-            return None
-
-        if len(iface) > 1:
-            LOG.warn('multiple solutions for interface %s' %
-                     interface_name)
-            return None
-
-        return nodes[0]
-    else:
-        LOG.error('no node meets requirement "%s"' %
-                  interface_name)
-        return None
-
-
-def solve_for_node(node_id, constraints, api=api):
+def solve_for_node(node_id, constraints, api=api, plan=None):
     """
     given a node id and a list of constraints, run a solver
     to try and find a solution path.
@@ -188,13 +130,17 @@ def solve_for_node(node_id, constraints, api=api):
     it returns (is_solvable, requires_input, solution_plan)
     """
 
-    task_solver = solver.Solver(api, node_id, constraints)
+    if plan is not None:
+        task_solver = solver.Solver.from_plan(api, node_id, [], plan)
+    else:
+        task_solver = solver.Solver(api, node_id, constraints)
+
     is_solvable, requires_input, solution_plan = task_solver.solve()
 
     return (is_solvable, requires_input, solution_plan)
 
 
-def solve_and_run(node_id, constraints, api=api):
+def solve_and_run(node_id, constraints, api=api, plan=None):
     is_solvable, requires_input, solution_plan = solve_for_node(
         node_id, constraints, api)
 
@@ -203,4 +149,4 @@ def solve_and_run(node_id, constraints, api=api):
     if is_solvable:
         task = run_adventure(adventure_dsl=solution_plan, nodes=[node_id])
 
-    return task
+    return task, solution_plan
