@@ -88,7 +88,11 @@ class Solver:
     # dummy this up in the model somehow?
     def _get_all_primitives(self):
         primitive_list = self.api._model_get_all('primitives')
-        primitive_list += self.task_primitives.values()
+        #
+        # we are not solving over tasks anymore - we need to rethink this
+        # plus, it's a stoopid generator.
+        #
+        # primitive_list += self.task_primitives.values()
         return primitive_list
 
     def _get_primitive_by_name(self, name):
