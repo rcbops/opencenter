@@ -49,7 +49,7 @@ class NodeBackend(backends.Backend):
                 return []
 
             if roush.backends.primitive_by_name(
-                '%s.add_backend' % ns['backend']) is None:
+                    '%s.add_backend' % ns['backend']) is None:
                 return []
             else:
                 return None
