@@ -133,10 +133,15 @@ def object_by_id(object_type, object_id):
 
 
 def http_solver_request(node_id, constraints, api=api, result=None, plan=None):
-    task, solution_plan = utility.solve_and_run(node_id,
-                                                constraints,
-                                                api=api,
-                                                plan=plan)
+    try:
+        task, solution_plan = utility.solve_and_run(node_id,
+                                                    constraints,
+                                                    api=api,
+                                                    plan=plan)
+    except ValueError as e:
+        # no adventurator, or the generated ast was broken somehow
+        return http_response(403, msg=e.message)
+
     if task is None:
         is_solvable, requires_input, solution_plan = utility.solve_for_node(
             node_id, constraints, api, plan=plan)
