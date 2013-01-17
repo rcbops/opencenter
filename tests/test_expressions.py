@@ -14,11 +14,11 @@ class ExpressionTestCase(RoushTestCase):
         self.nodes = {}
         self.interfaces = {}
 
-        self.nodes['node-1'] = self._model_create('node', name='node-1')
-        self.interfaces['chef'] = self._model_create('filter', name='chef',
+        self.nodes['node-1'] = self._model_create('nodes', name='node-1')
+        self.interfaces['chef'] = self._model_create('filters', name='chef',
                                                      filter_type='interface',
                                                      expr='facts.x = true')
-        self.nodes['container'] = self._model_create('node', name='container')
+        self.nodes['container'] = self._model_create('nodes', name='container')
 
     def tearDown(self):
         self._clean_all()
@@ -30,7 +30,7 @@ class ExpressionTestCase(RoushTestCase):
         return root_node.eval_node(node, symbol_table=ns)
 
     def _simple_expression(self, expression):
-        node = self._model_get_by_id('node', self.nodes['node-1']['id'])
+        node = self._model_get_by_id('nodes', self.nodes['node-1']['id'])
         return self._run_expression(node,
                                     'nodes: %s' % expression)
 
@@ -61,7 +61,7 @@ class ExpressionTestCase(RoushTestCase):
 
     def test_valid_ifcount(self):
         expression = "ifcount('chef') > 0"
-        self._model_create('fact', node_id=self.nodes['node-1']['id'],
+        self._model_create('facts', node_id=self.nodes['node-1']['id'],
                            key='x', value=True)
         result = self._run_expression(self.nodes['node-1'], expression)
         self.logger.debug('Got result: %s' % result)
@@ -144,13 +144,13 @@ class ExpressionTestCase(RoushTestCase):
     def test_apply_expression(self):
         expression = 'facts.test := union(facts.test, "test")'
 
-        node = self._model_get_by_id('node', self.nodes['node-1']['id'])
+        node = self._model_get_by_id('nodes', self.nodes['node-1']['id'])
 
         # make sure we are applying into an empty fact
         self.assertFalse('test' in node['facts'])
         ast.apply_expression(self.nodes['node-1']['id'], expression, api)
 
-        node = self._model_get_by_id('node', self.nodes['node-1']['id'])
+        node = self._model_get_by_id('nodes', self.nodes['node-1']['id'])
 
         self.assertTrue('test' in node['facts'])
         self.assertTrue(node['facts']['test'] == ['test'])
@@ -169,7 +169,7 @@ class ExpressionTestCase(RoushTestCase):
 
     # FIXME: when we get types
     def test_util_nth_index_out_of_range(self):
-        self._model_create('fact', node_id=self.nodes['node-1']['id'],
+        self._model_create('facts', node_id=self.nodes['node-1']['id'],
                            key='test', value=[1, 2, 3])
 
         self.assertTrue(self._simple_expression('nth(2, facts.test)') is 3)
@@ -180,11 +180,11 @@ class ExpressionTestCase(RoushTestCase):
         # this should fail, too, I think
         self.assertTrue(self._simple_expression('str(facts.test)') is None)
 
-        self._model_create('fact', node_id=self.nodes['node-1']['id'],
+        self._model_create('facts', node_id=self.nodes['node-1']['id'],
                            key='test', value=[1, 2, 3])
         self.assertTrue(
             self._simple_expression('str(facts.test)') == '[1, 2, 3]')
 
-        self._model_create('fact', node_id=self.nodes['node-1']['id'],
+        self._model_create('facts', node_id=self.nodes['node-1']['id'],
                            key='test', value=1)
         self.assertTrue(self._simple_expression('str(facts.test)') == '1')

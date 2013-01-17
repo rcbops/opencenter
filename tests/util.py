@@ -25,7 +25,7 @@ class RoushTestCase(unittest2.TestCase):
         super(RoushTestCase, self).__init__(*args, **kwargs)
 
     def _clean_all(self):
-        for what in ['task', 'node', 'fact', 'filter']:
+        for what in ['tasks', 'nodes', 'facts', 'filters']:
             self._clean_table(what)
 
     def _clean_table(self, what):
@@ -72,54 +72,55 @@ class RoushTestCase(unittest2.TestCase):
                   data=json.dumps(kwargs))
 
     def _model_create(self, model, **kwargs):
-        resp = self.client.post('/admin/%s/' % self._pluralize(model),
+        resp = self.client.post('/admin/%s/' % model,
                                 content_type='application/json',
                                 data=json.dumps(kwargs))
 
-        self.logger.debug('Create: got %s' % json.loads(resp.data)[model])
+        self.logger.debug('Create: got %s' % resp.data)
         self.assertEquals(resp.status_code, 201)
-        return json.loads(resp.data)[model]
+        self.logger.debug('Getting %s' % self._singularize(model))
+        return json.loads(resp.data)[self._singularize(model)]
 
     def _model_update(self, model, id, **kwargs):
-        resp = self.client.put('/admin/%s/%s' % (self._pluralize(model), id),
+        resp = self.client.put('/admin/%s/%s' % (model, id),
                                content_type='application/json',
                                data=json.dumps(kwargs))
         self.assertEquals(resp.status_code, 200)
-        return json.loads(resp.data)[model]
+        return json.loads(resp.data)[self._singularize(model)]
 
     def _model_delete(self, model, id):
         resp = self.client.delete('/admin/%s/%s' %
-                                  (self._pluralize(model), id))
+                                  (model, id))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.app.logger.debug('model_delete response: %s' % out)
         self.assertEquals(out['status'], 200)
         self.assertEquals(out['message'], '%s deleted' %
-                          model.capitalize())
+                          self._singularize(model).capitalize())
 
     def _model_get_by_id(self, model, id):
-        resp = self.client.get('/admin/%s/%s' % (self._pluralize(model), id))
+        resp = self.client.get('/admin/%s/%s' % (model, id))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.app.logger.debug('model_get_by_id response: %s' % out)
-        return out[model]
+        return out[self._singularize(model)]
 
     def _model_filter(self, model, filter_str):
-        resp = self.client.post('/admin/%s/filter' % self._pluralize(model),
+        resp = self.client.post('/admin/%s/filter' % model,
                                 content_type='application/json',
                                 data=json.dumps({'filter': filter_str}))
         self.app.logger.debug('response: %s' % resp)
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.app.logger.debug('model_get_by_filter response: %s' % out)
-        return out[self._pluralize(model)]
+        return out[model]
 
     def _model_get_all(self, model):
-        resp = self.client.get('/admin/%s/' % self._pluralize(model))
+        resp = self.client.get('/admin/%s/' % model)
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.app.logger.debug('get_all response: %s' % out)
-        return out[self._pluralize(model)]
+        return out[model]
 
     def _model_get_schema(self, model):
         resp = self.client.get('/admin/%s/schema' % self._pluralize(model))
@@ -153,13 +154,17 @@ def _test_missing_create_field(self, missing_field, expected_code):
 
     self.logger.debug('creating with data %s (missing %s)' %
                       (data, missing_field))
-    resp = self._client_request('post', '/admin/%s/' % bop, **data)
 
-    self.logger.debug('got status_code of %d, %s' % (resp.status_code,
-                                                     resp.data))
+    _test_request_returns(self, 'post', '/admin/%s/' % bop, data, expected_code)
+
+
+def _test_request_returns(self, method, url, data, expected_code):
+    self.logger.debug('sending %s to %s, with data: %s' % (method, url, data))
+    resp = self._client_request(method, url, **data)
+    self.logger.debug('got status_code %d, %s' % (resp.status_code,
+                                                  resp.data))
+
     self.assertEquals(resp.status_code, expected_code)
-    if expected_code == 400:
-        self.assertTrue('missing required' in json.loads(resp.data)['message'])
 
 
 def inject(cls):
@@ -202,5 +207,11 @@ def inject(cls):
                                 (model, field, 201))
 
             setattr(cls, test.__name__, test)
+
+    test = lambda self:  _test_request_returns(
+        self, 'get', '/admin/%s/999999' % self._pluralize(self.base_object),
+        {}, 404)
+    test.__name__ = str('test_request_bad_id_returns_404')
+    setattr(cls, test.__name__, test)
 
     return cls

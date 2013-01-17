@@ -18,8 +18,12 @@ class SolverTestCase(RoushTestCase):
         self.nodes = {}
         self.interfaces = {}
 
-        self.nodes['node-1'] = self._model_create('node', name='node-1')
-        self.interfaces['chef'] = self._model_create('filter', name='chef',
+        self.adv = self._model_create('nodes', name = 'adventurator')
+
+
+        self.nodes['node-1'] = self._model_create('nodes', name='node-1')
+
+        self.interfaces['chef'] = self._model_create('filters', name='chef',
                                                      filter_type='interface',
                                                      expr='facts.x = true')
 
@@ -27,7 +31,7 @@ class SolverTestCase(RoushTestCase):
         self._clean_all()
 
     def test_no_solution(self):
-        self._clean_table('primitive')
+        self._clean_table('primitives')
         test_solver = solver.Solver(api, self.nodes['node-1']['id'],
                                     ['facts.x = true'])
 
