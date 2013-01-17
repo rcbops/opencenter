@@ -7,7 +7,8 @@ import roush.backends
 
 class AstTests(RoushTestCase):
     def setUp(self):
-        roush.backends.load_specific_backend('tests.test', 'TestBackend')
+        if roush.backends.primitive_by_name('test.set_test_fact') is None:
+            roush.backends.load_specific_backend('tests.test', 'TestBackend')
 
         self.nodes = {}
 
