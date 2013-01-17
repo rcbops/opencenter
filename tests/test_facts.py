@@ -32,48 +32,48 @@ class FactsTests(RoushTestCase):
     def setUp(self):
         self._clean_all()
 
-        self.c2 = self._model_create('node',
+        self.c2 = self._model_create('nodes',
                                      name=self._random_str())
-        self.c1 = self._model_create('node',
+        self.c1 = self._model_create('nodes',
                                      name=self._random_str())
-        self._model_create('fact',
+        self._model_create('facts',
                            node_id=self.c1['id'],
                            key='parent_id',
                            value=self.c2['id'])
-        self.n1 = self._model_create('node',
+        self.n1 = self._model_create('nodes',
                                      name=self._random_str())
-        self._model_create('fact',
+        self._model_create('facts',
                            node_id=self.n1['id'],
                            key='parent_id',
                            value=self.c1['id'])
 
     def tearDown(self):
-        c2_facts = self._model_filter('fact',
+        c2_facts = self._model_filter('facts',
                                       'node_id=%s' % self.c2['id'])
 
-        c1_facts = self._model_filter('fact',
+        c1_facts = self._model_filter('facts',
                                       'node_id=%s' % self.c1['id'])
 
-        n1_facts = self._model_filter('fact',
+        n1_facts = self._model_filter('facts',
                                       'node_id=%s' % self.n1['id'])
 
         for fact_id in [x['id'] for x in c2_facts + c1_facts + n1_facts]:
             self.app.logger.debug('deleting fact %s' % fact_id)
-            self._model_delete('fact', fact_id)
+            self._model_delete('facts', fact_id)
 
-        self._model_delete('node', self.n1['id'])
-        self._model_delete('node', self.c2['id'])
-        self._model_delete('node', self.c1['id'])
+        self._model_delete('nodes', self.n1['id'])
+        self._model_delete('nodes', self.c2['id'])
+        self._model_delete('nodes', self.c1['id'])
 
-        all_facts = self._model_get_all('fact')
-        all_nodes = self._model_get_all('node')
+        all_facts = self._model_get_all('facts')
+        all_nodes = self._model_get_all('nodes')
 
     def test_001_add_fact(self):
-        self._model_create('fact', node_id=self.n1['id'],
+        self._model_create('facts', node_id=self.n1['id'],
                            key='node_data',
                            value='blah')
 
-        n1_facts = self._model_get_by_id('node', self.n1['id'])['facts']
+        n1_facts = self._model_get_by_id('nodes', self.n1['id'])['facts']
 
         self.assertEquals(n1_facts['node_data'], 'blah')
 
@@ -82,54 +82,54 @@ class FactsTests(RoushTestCase):
                            skip_parent, skip_child,
                            f=identity):
         # setup grandparent -> parent -> node with conflicting facts
-        f1 = self._model_create('fact', node_id=self.n1['id'],
+        f1 = self._model_create('facts', node_id=self.n1['id'],
                                 key=fact,
                                 value=f('n1'))
-        f2 = self._model_create('fact', node_id=self.c1['id'],
+        f2 = self._model_create('facts', node_id=self.c1['id'],
                                 key=fact,
                                 value=f('c1'))
-        f3 = self._model_create('fact', node_id=self.c2['id'],
+        f3 = self._model_create('facts', node_id=self.c2['id'],
                                 key=fact,
                                 value=f('c2'))
 
         #all attributes set, eldest should not be modified
-        c2 = self._model_get_by_id('node', self.c2['id'])
+        c2 = self._model_get_by_id('nodes', self.c2['id'])
         self.assertEquals(c2['facts'][fact], f('c2'))
 
         # test grandparent policy enforced
-        n1 = self._model_get_by_id('node', self.n1['id'])
+        n1 = self._model_get_by_id('nodes', self.n1['id'])
         self.assertEquals(n1['facts'][fact], grand_parent)
-        self._model_delete('fact', f3['id'])
+        self._model_delete('facts', f3['id'])
 
         # c1 is now the top parent, verify c1 fact is unchanged
-        c1 = self._model_get_by_id('node', self.c1['id'])
+        c1 = self._model_get_by_id('nodes', self.c1['id'])
         self.assertEquals(c1['facts'][fact], f('c1'))
 
         # test parent policy enforced
-        n1 = self._model_get_by_id('node', self.n1['id'])
+        n1 = self._model_get_by_id('nodes', self.n1['id'])
         self.assertEquals(n1['facts'][fact], parent)
-        self._model_delete('fact', f2['id'])
+        self._model_delete('facts', f2['id'])
 
         # test no parent behavior
-        n1 = self._model_get_by_id('node', self.n1['id'])
+        n1 = self._model_get_by_id('nodes', self.n1['id'])
         self.assertEquals(n1['facts'][fact], child_only)
 
         # test skipped parent (grandparent + node)
-        f3 = self._model_create('fact', node_id=self.c2['id'],
+        f3 = self._model_create('facts', node_id=self.c2['id'],
                                 key=fact,
                                 value=f('c2'))
-        n1 = self._model_get_by_id('node', self.n1['id'])
+        n1 = self._model_get_by_id('nodes', self.n1['id'])
         self.assertEquals(n1['facts'][fact], skip_parent)
-        self._model_delete('fact', f1['id'])
+        self._model_delete('facts', f1['id'])
 
         # test grandparent + parent (no child node attribute)
-        f2 = self._model_create('fact', node_id=self.c1['id'],
+        f2 = self._model_create('facts', node_id=self.c1['id'],
                                 key=fact,
                                 value=f('c1'))
-        n1 = self._model_get_by_id('node', self.n1['id'])
+        n1 = self._model_get_by_id('nodes', self.n1['id'])
         self.assertEquals(n1['facts'].get(fact, None), skip_child)
-        self._model_delete('fact', f2['id'])
-        self._model_delete('fact', f3['id'])
+        self._model_delete('facts', f2['id'])
+        self._model_delete('facts', f3['id'])
 
     def test_fact_inheritance_parent_clobber(self):
         # inheritance helper sets up a number of fact chains and checks
@@ -174,21 +174,21 @@ class FactsTests(RoushTestCase):
                                 f=to_list)
 
     def test_updating_facts(self):
-        self._model_create('fact', node_id=self.n1['id'],
+        self._model_create('facts', node_id=self.n1['id'],
                            key='test_fact',
                            value='test_value')
         # now, do a create...
-        self._model_create('fact', node_id=self.n1['id'],
+        self._model_create('facts', node_id=self.n1['id'],
                            key='test_fact',
                            value='test_value2')
-        n1 = self._model_get_by_id('node', self.n1['id'])
+        n1 = self._model_get_by_id('nodes', self.n1['id'])
         self.assertEquals(n1['facts']['test_fact'], 'test_value2')
 
     def test_list_all_facts(self):
-        self._model_create('fact', node_id=self.n1['id'],
+        self._model_create('facts', node_id=self.n1['id'],
                            key='test_fact',
                            value='test_value')
-        result = self._model_get_all('fact')
+        result = self._model_get_all('facts')
         # 2 facts are parent_ids from setup
         self.assertEquals(len(result), 3)
 
@@ -203,11 +203,11 @@ class FactsTests(RoushTestCase):
         self.assertEquals(resp.status_code, 404)
 
     def test_request_fact(self):
-        fact = self._model_create('fact', node_id=self.n1['id'],
+        fact = self._model_create('facts', node_id=self.n1['id'],
                                   key='test_fact',
                                   value='test_value')
         self.app.logger.debug('fact: %s' % fact)
-        self._model_get_by_id('fact', fact['id'])
+        self._model_get_by_id('facts', fact['id'])
 
 
 FactsTests = inject(FactsTests)

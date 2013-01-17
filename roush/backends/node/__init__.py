@@ -44,6 +44,16 @@ class NodeBackend(backends.Backend):
                     return ['"%s" in facts.backends' % name]
             return None
 
+        if action == 'add_backend':
+            if ns['backend'] == 'node':
+                return []
+
+            if roush.backends.primitive_by_name(
+                    '%s.add_backend' % ns['backend']) is None:
+                return []
+            else:
+                return None
+
         if action == 'set_parent':
             new_constraints = []
 
@@ -162,9 +172,10 @@ class NodeBackend(backends.Backend):
         return True
 
     def add_backend(self, api, node_id, **kwargs):
-        self.logger.debug('adding node backend')
+        self.logger.debug('adding backend %s', kwargs['backend'])
 
         roush.webapp.ast.apply_expression(
-            node_id, 'facts.backends := union(facts.backends, "node")', api)
+            node_id, 'facts.backends := union(facts.backends, "%s")' %
+            kwargs['backend'], api)
 
         return True

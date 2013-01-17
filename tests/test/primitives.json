@@ -1,2 +1,20 @@
 {
+    "set_test_fact": {
+        "args": {
+            "key": {
+                "type": "string",
+                "required": true
+            },
+            "value": {
+                "type": "string",
+                "required": true
+            },
+            "other_thing": {
+                "type": "string",
+                "required": true
+            }
+        },
+        "constraints": [],
+        "consequences": [ "facts.{key} := \"{value}\"" ]
+    }
 }

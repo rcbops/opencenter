@@ -1,8 +1,13 @@
 {
     "add_backend": {
-        "args": {},
+        "args": {
+            "backend": {
+                "type": "string",
+                "required": true
+            }
+        },
         "constraints": [],
-        "consequences": [ "facts.backends := union(facts.backends, 'node')" ]
+        "consequences": [ "facts.backends := union(facts.backends, \"{backend}\")" ]
     },
     "set_fact": {
         "args": {
