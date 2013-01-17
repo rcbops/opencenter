@@ -11,15 +11,7 @@ class AgentBackend(roush.backends.Backend):
 
     def additional_constraints(self, api, node_id, actions, ns):
         # this is probably a bit viscious.
-        return ['"agent" in facts.backends']
-
-    def add_backend(self, api, node_id, **kwargs):
-        self.logger.debug('adding agent backend')
-
-        roush.webapp.ast.apply_expression(
-            node_id, 'facts.backends := union(facts.backends, "agent")', api)
-
-        return True
+        return []
 
     def run_task(self, api, node_id, **kwargs):
         action = kwargs.pop('action')

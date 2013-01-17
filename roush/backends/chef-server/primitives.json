@@ -1,7 +1,2 @@
 {
-    "add_backend": {
-        "args": {},
-        "constraints": [],
-        "consequences": [ "facts.backends := union(facts.backends, 'chef-server')" ]
-    }
 }
