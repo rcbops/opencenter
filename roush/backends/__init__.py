@@ -91,7 +91,9 @@ def load_specific_backend(import_str, class_str):
         synthetic_id = hash(mangled_name) & 0xFFFFFFFF
 
         if synthetic_id in backend_primitives:
-            raise ValueError('duplicate primitive ID.  This should not happen')
+            raise ValueError('duplicate primitive ID (%s).  %s vs %s' %
+                             (synthetic_id, mangled_name,
+                              backend_primitives[synthetic_id]['name']))
 
         backend_primitives[synthetic_id] = {}
         backend_primitives[synthetic_id]['name'] = mangled_name
