@@ -160,5 +160,6 @@ def http_solver_request(node_id, constraints, api=api, result=None, plan=None):
         result = {}
 
     result['plan'] = solution_plan
+    result['task'] = task
 
     return http_response(202, 'executing change', **result)

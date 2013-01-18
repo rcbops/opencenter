@@ -142,7 +142,7 @@ def solve_for_node(node_id, constraints, api=api, plan=None):
 
 def solve_and_run(node_id, constraints, api=api, plan=None):
     is_solvable, requires_input, solution_plan = solve_for_node(
-        node_id, constraints, api)
+        node_id, constraints, api=api, plan=plan)
 
     task = None
 

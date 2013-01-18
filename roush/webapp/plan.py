@@ -24,6 +24,8 @@ def run_plan():
     if not 'plan' in data:
         return generic.http_badrequest(msg='no plan specified')
 
+    plan = data['plan']
+
     # this is more than a bit awkward
     for step in plan:
         if 'args' in step:
