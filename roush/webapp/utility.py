@@ -66,6 +66,10 @@ def expand_nodelist(nodelist, api=api):
     return final_nodelist
 
 
+def get_direct_children(node_id, api=api):
+    return api.nodes_query("facts.parent_id = %s" % node_id)
+
+
 def run_adventure(adventure_dsl=None, nodes=None):
     """
     run an arbitrary adventure on a set of nodes, either by ID or
