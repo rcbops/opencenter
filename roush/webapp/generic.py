@@ -82,13 +82,10 @@ def _notify(updated_object, object_type, object_id):
     if node_id is not None:
         # We're just going to notify every child when containers are updated
         node = api._model_get_by_id("nodes", node_id)
-        print "WILK: %s" % node
         if 'container' in node['facts']['backends']:
             children = utility.get_direct_children(node_id, api)
-            print "WILK: %s" % children
             for child in children:
                 semaphore = "nodes-id-%s" % child['id']
-                print "WILK: %s" % semaphore
                 utility.notify(semaphore)
 
 
