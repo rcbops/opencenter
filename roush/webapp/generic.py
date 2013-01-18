@@ -66,10 +66,27 @@ def _notify(updated_object, object_type, object_id):
     semaphore = '%s-id-%s' % (object_type, object_id)
     utility.notify(semaphore)
 
-    if updated_object is not None and object_type in related_notifications:
-        for field, entity in related_notifications[object_type].iteritems():
-            if field in updated_object and updated_object[field] is not None:
-                semaphore = '%s-id-%s' % (entity, updated_object[field])
+    # TODO: Generalize the block of code with a TODO below here.
+#    if updated_object is not None and object_type in related_notifications:
+#        for field, entity in related_notifications[object_type].iteritems():
+#            if field in updated_object and updated_object[field] is not None:
+#                semaphore = '%s-id-%s' % (entity, updated_object[field])
+#                utility.notify(semaphore)
+
+    # TODO (wilk or rpedde): Use specific notifications for inheritance
+    node_id = None
+    if object_type == 'facts':
+        node_id = updated_object['node_id']
+    if object_type == 'nodes':
+        node_id = updated_object['id']
+    if node_id is not None:
+        # We're just going to notify every child when containers are updated
+        node = api._model_get_by_id("nodes", node_id)
+        if node is not None and 'container' in node['facts'].get(
+                'backends', []):
+            children = utility.get_direct_children(node_id, api)
+            for child in children:
+                semaphore = "nodes-id-%s" % child['id']
                 utility.notify(semaphore)
 
 
