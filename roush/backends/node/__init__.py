@@ -11,6 +11,8 @@ class NodeBackend(backends.Backend):
 
     def additional_constraints(self, api, node_id, action, ns):
         if action == 'set_fact':
+            addl_constraints = []
+
             if not 'key' in ns:
                 raise ValueError('no key in ns')
             key = ns['key']
@@ -23,10 +25,13 @@ class NodeBackend(backends.Backend):
                     # a primitive to set this somewhere else.  Probably in
                     # the same backend.
                     fact_info = obj.facts[key]
-                    if fact_info['settable'] is True:
-                        return ['"%s" in facts.backends' % name]
-                    else:
+                    if fact_info['settable'] is not True:
                         return None
+
+                    addl_constraints.append('"%s" in facts.backends' % name)
+                    # if fact_info['converge']:
+                    #     addl_constraints.append('facts.converged = true')
+                    return addl_constraints
             return None
 
         if action == 'apply_fact':
@@ -34,6 +39,7 @@ class NodeBackend(backends.Backend):
                 raise ValueError('no key in ns')
             key = ns['key']
 
+            addl_constraints = []
             # see what backend this key is in...
             for name, obj in backends.backend_objects.iteritems():
                 if key in obj.facts:
@@ -41,7 +47,12 @@ class NodeBackend(backends.Backend):
                     # fact is not settable, then there is likely (HAS TO BE!)
                     # a primitive to set this somewhere else.  Probably in
                     # the same backend.
-                    return ['"%s" in facts.backends' % name]
+                    addl_constraints.append('"%s" in facts.backends' % name)
+                    fact_info = obj.facts[key]
+                    if fact_info['converge'] is True:
+                        addl_constraints.append('facts.converged = true')
+
+                    return addl_constraints
             return None
 
         if action == 'add_backend':
