@@ -1,2 +1,8 @@
 {
+    "converge_chef": {
+        "args": {},
+        "constraints": [],
+        "consequences": [ "facts.converged := true" ],
+        "weight": 25
+    }
 }

@@ -80,3 +80,6 @@ class ChefClientBackend(roush.backends.Backend):
 
             print "node: %s" % chef_node_attrs
             print "env : %s" % chef_env_attrs
+
+    def converge_chef(self, api, node_id, **kwargs):
+        self.logger.debug('****** DOING CHEF CONVERGANCE')
