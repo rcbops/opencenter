@@ -205,13 +205,14 @@ class Solver:
                                    constraint_node.rhs[0]))
             return False, {}
 
-        if constraint_node.op not in ['IDENTIFIER', 'STRING', 'NUMBER']:
-            self.logger.debug('Cannot coerce vars not ID, STRING, NUM:'
+        if constraint_node.op not in ['IDENTIFIER', 'STRING', 'NUMBER', 'BOOL']:
+            self.logger.debug('Cannot coerce vars not ID, STRING, NUM, BOOL:'
                               ' %s' % constraint_node.op)
             return False, {}
 
-        if consequence_node.op not in ['IDENTIFIER', 'STRING', 'NUMBER']:
-            self.logger.debug('Cannot coerce vars not ID, STRING, NUM:'
+        if consequence_node.op not in ['IDENTIFIER', 'STRING',
+                                       'NUMBER', 'BOOL']:
+            self.logger.debug('Cannot coerce vars not ID, STRING, NUM, BOOL:'
                               ' %s' % consequence_node.op)
             return False, {}
 
@@ -660,7 +661,8 @@ class Solver:
         current = []
         if self.prim:
             current.append({'primitive': self.prim['name'],
-                            'ns': self.ns})
+                            'ns': self.ns,
+                            'weight': self.prim['weight']})
 
         if len(self.children) > 1:
             raise ValueError('solution tree not pruned')
@@ -668,7 +670,13 @@ class Solver:
         if len(self.children) == 1:
             current += self.children[0].plan()
 
-        return current
+        current_sorted = sorted(current, key=lambda x: x['weight'],
+                                reverse=True)
+
+        if self.parent is None:
+            return [{'primitive': x['primitive'],
+                     'ns': x['ns']} for x in current_sorted]
+        return current_sorted
 
     def adventure(self, state_number=0):
         if self.prim:
