@@ -12,7 +12,8 @@ Build-Depends: debhelper (>= 7.0.50~),
  python-migrate,
  python-daemon,
  python-chef,
- python-gevent
+ python-gevent,
+ python-mako
 Standards-Version: 3.9.1
 XS-Python-Version: >= 2.6
 Homepage: https://github.com/galstrom21/roush
@@ -29,7 +30,8 @@ Depends: ${python:Depends}, ${misc:Depends},
  python-migrate,
  python-daemon,
  python-chef,
- python-gevent
+ python-gevent,
+ python-mako
 Provides: ${python:Provides}
 Description: roush web API
 
