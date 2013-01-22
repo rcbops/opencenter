@@ -1,0 +1,10 @@
+<%!
+def regularize(str):
+    return str.replace("nova_", "")
+%>
+
+{
+  "nova": {
+    "${regularize(key)}": "${value}"
+  }
+}
