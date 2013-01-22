@@ -15,7 +15,9 @@ class Backend(object):
         self.facts = []
         self.primitives = []
         classname = self.__class__.__name__.lower()
-        backend = classname[:len(classname) - len("backend")]
+
+        backend = os.path.basename(os.path.dirname(path))
+
         self.logger = logging.getLogger('%s.%s' % (__name__, classname))
         self.logger.setLevel(logging.DEBUG)
         self.logger.debug('Initializing')
@@ -23,6 +25,8 @@ class Backend(object):
         my_path = os.path.dirname(path)
         json_path = os.path.join(my_path, 'primitives.json')
         fact_path = os.path.join(my_path, 'facts.json')
+
+        self.base_path = my_path
 
         if os.path.exists(json_path):
             with open(json_path, 'r') as f:
@@ -36,6 +40,18 @@ class Backend(object):
     def additional_constraints(self, api, node_id, action, ns):
         return []
 
+    def fact_template(self, fact, converger):
+        paths = [
+            "%s/map/fact-%s-%s.templ" % (self.base_path, fact, converger),
+            "%s/map/default.%s.templ" % (self.base_path, converger)]
+
+        for path in paths:
+            if os.path.exists(path):
+                with open(path, 'r') as f:
+                    return f.read()
+
+        return None
+
 
 def additional_constraints(api, node_id, primitive_id, ns):
     if not primitive_id in backend_primitives:
@@ -47,6 +63,12 @@ def additional_constraints(api, node_id, primitive_id, ns):
     backend, primitive = fullname.split('.')
     backend_obj = backend_objects[backend]
     return backend_obj.additional_constraints(api, node_id, primitive, ns)
+
+
+def backend_by_name(backend_name):
+    if backend_name in backend_objects:
+        return backend_objects[backend_name]
+    return None
 
 
 def fact_by_name(fact_name):
@@ -81,9 +103,10 @@ def load_specific_backend(import_str, class_str):
 
     __import__(import_str)
 
+    friendly_name = import_str.split('.')[-1].lower()
+
     obj = getattr(sys.modules[import_str], class_str)()
 
-    friendly_name = import_str.split('.')[-1].lower()
     backend_objects[friendly_name] = obj
 
     for primitive, primdata in obj.primitives.items():
@@ -135,17 +158,19 @@ def normalize_fact(proposed, backend):
         fact = {proposed: {}}
         name = proposed
     elif not isinstance(proposed, dict) or len(proposed) > 1:
-        raise ValueError("Not a valid fact: %s" % proposed)
+        raise ValueError('Not a valid fact: %s' % proposed)
     else:
         #proposed is a dictionary
         name = proposed.keys()[0]
         fact = {name: {}}
         fact.update(proposed)
         if not isinstance(fact[name], dict):
-            raise ValueError("Not a valid fact %s" % proposed)
+            raise ValueError('Not a valid fact %s' % proposed)
 
-    fact[name]["inheritance"] = fact[name].get("inheritance", "parent_clobber")
-    fact[name]["type"] = fact[name].get("type", "untyped")
-    fact[name]["settable"] = fact[name].get("settable", True)
-    fact[name]["backend"] = backend
+    fact[name]['inheritance'] = fact[name].get('inheritance', 'parent_clobber')
+    fact[name]['type'] = fact[name].get('type', 'untyped')
+    fact[name]['settable'] = fact[name].get('settable', True)
+    fact[name]['backend'] = backend
+    fact[name]['converge'] = fact[name].get('converge', False)
+    fact[name]['cluster_wide'] = fact[name].get('cluster_wide', False)
     return fact

@@ -8,3 +8,4 @@ nose
 coverage
 pep8
 gevent
+mako
