@@ -205,7 +205,8 @@ class Solver:
                                    constraint_node.rhs[0]))
             return False, {}
 
-        if constraint_node.op not in ['IDENTIFIER', 'STRING', 'NUMBER', 'BOOL']:
+        if constraint_node.op not in ['IDENTIFIER', 'STRING',
+                                      'NUMBER', 'BOOL']:
             self.logger.debug('Cannot coerce vars not ID, STRING, NUM, BOOL:'
                               ' %s' % constraint_node.op)
             return False, {}
