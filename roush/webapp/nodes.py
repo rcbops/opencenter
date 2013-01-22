@@ -115,3 +115,52 @@ def tree_by_id(node_id):
         fill_children(node)
         resp = generic.http_response(children=node)
         return resp
+
+
+@bp.route('/whoami', methods=['POST'])
+def whoami():
+    body = flask.request.json
+    if body is None or (not 'hostname' in body):
+        return generic.http_badrequest(
+            msg="'hostname' not found in json object")
+    hostname = body['hostname']
+    nodes = api._model_query(
+        'nodes',
+        'name = "%s"' % hostname)
+    node = None
+    if len(nodes) == 0:
+        # register a new node
+        node = api._model_create('nodes', {"name": hostname})
+        api._model_create('facts',
+                          {"node_id": node['id'],
+                           "key": "backends",
+                           "value": ["node", "agent"]})
+        unprovisioned_id = unprovisioned_container()['id']
+        api._model_create('facts',
+                          {"node_id": node['id'],
+                           "key": "parent_id",
+                           "value": unprovisioned_id})
+        node = api._model_get_by_id('nodes', node['id'])
+    else:
+        node = nodes[0]
+    return generic.http_response(200, 'success',
+                                 **{"node": node})
+
+
+def unprovisioned_container():
+    unprovisioned = api._model_query(
+        'nodes',
+        'name = "unprovisioned" and "container" in facts.backends')
+    if len(unprovisioned) == 0:
+        #create unprovisioned node
+        unprovisioned = api._model_create(
+            'nodes',
+            {"name": "unprovisioned"})
+        api._model_create(
+            'facts',
+            {"node_id": unprovisioned['id'],
+             "key": "backends",
+             "value": ["node", "container"]})
+    else:
+        unprovisioned = unprovisioned[0]
+    return unprovisioned
