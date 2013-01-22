@@ -126,6 +126,9 @@ def load_specific_backend(import_str, class_str):
             backend_primitives[synthetic_id][key] = \
                 primdata[key]
 
+        if not 'weight' in backend_primitives[synthetic_id]:
+            backend_primitives[synthetic_id]['weight'] = 50
+
 
 def load():
     """
