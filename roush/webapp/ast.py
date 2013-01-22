@@ -533,7 +533,7 @@ class Node:
 
     def concrete(self, ns):
         if self.op in ['NUMBER', 'BOOL', 'NONE']:
-            return self.value_to_s(ns)
+            return self.value_to_s()
 
         if self.op in ['STRING', 'IDENTIFIER']:
             string = self.canonicalize_string(self.lhs, ns)
@@ -579,6 +579,9 @@ class Node:
     def value_to_s(self):
         if self.op == 'STRING':
             return "'%s'" % self.lhs.replace("\\'", "'").replace("'", "\\'")
+
+        if self.op == 'BOOL':
+            return str(self.lhs).lower()
 
         return str(self.lhs)
 
