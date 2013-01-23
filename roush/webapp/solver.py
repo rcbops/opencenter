@@ -104,9 +104,11 @@ class Solver:
             return primitives[0]
 
         # walk through the self.task_primitives
-        primitives = [x for x in self.task_primitives if x['name'] == name]
-        if len(primitives) > 0:
-            return primitives[0]
+        # primitives = [x for x in self.task_primitives if x['name'] == name]
+        # if len(primitives) > 0:
+        #     return primitives[0]
+
+        return None
 
     def _get_additional_constraints(self, primitive_id, ns):
         if primitive_id in self.task_primitives:

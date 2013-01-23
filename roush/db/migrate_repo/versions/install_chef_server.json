@@ -7,7 +7,7 @@
         }
     },
     {
-        "primitive": "chef-server.add_backend",
-        "ns": {}
+        "primitive": "node.add_backend",
+        "ns": {"backend": "chef-server"}
     }
 ]

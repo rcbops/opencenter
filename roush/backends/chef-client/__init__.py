@@ -78,8 +78,7 @@ class ChefClientBackend(roush.backends.Backend):
                 chef_env_attrs = self._dict_merge(chef_env_attrs,
                                                   cluster_attributes[snipper])
 
-            print "node: %s" % chef_node_attrs
-            print "env : %s" % chef_env_attrs
+            return (chef_node_attrs, chef_env_attrs)
 
     def converge_chef(self, api, node_id, **kwargs):
-        self.logger.debug('****** DOING CHEF CONVERGANCE')
+        self.logger.debug('****** DOING CHEF CONVERGENCE')
