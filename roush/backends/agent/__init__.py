@@ -30,30 +30,31 @@ class AgentBackend(roush.backends.Backend):
         # run through the rest of the args and typecast them
         # as appropriate.
         node = api._model_get_by_id('nodes', node_id)
-        # typed_args = {}
 
-        # if 'roush_agent_actions' in node['attrs']:
-        #     if action in node['attrs']['roush_agent_actions']:
-        #         action_info = node['attrs']['roush_agent_actions'][action]
-        #         typed_args = action_info['args']
+        typed_args = {}
 
-        # ns = copy.deepcopy(payload)
-        # ns.update(copy.deepcopy(adventure_globals))
+        if 'roush_agent_actions' in node['attrs']:
+            if action in node['attrs']['roush_agent_actions']:
+                action_info = node['attrs']['roush_agent_actions'][action]
+                typed_args = action_info['args']
 
-        # for k, v in kwargs.items():
-        #     # we'll type these, if we know them, and cast them
-        #     # appropriately.
-        #     if k in typed_args:
-        #         arg_info = typed_args[k]
-        #         if arg_info['type'] == 'interface':  # make full node
-        #             v = api._model_get_by_id('nodes', v)
-        #     ns[k] = v
-
-        # for k, v in payload.items():
-        #     payload[k] = roush.webapp.ast.apply_expression(ns, v, api)
+        ns = copy.deepcopy(payload)
+        ns.update(copy.deepcopy(adventure_globals))
 
         for k, v in kwargs.items():
-            payload[k] = v
+            # we'll type these, if we know them, and cast them
+            # appropriately.
+            if k in typed_args:
+                arg_info = typed_args[k]
+                if arg_info['type'] == 'interface':  # make full node
+                    v = api._model_get_by_id('nodes', v)
+            ns[k] = v
+
+        for k, v in payload.items():
+            payload[k] = roush.webapp.ast.apply_expression(ns, v, api)
+
+        # for k, v in kwargs.items():
+        #     payload[k] = v
 
         for k, v in adventure_globals.items():
             if not k in payload:

@@ -17,7 +17,7 @@
         }
     },
     {
-        "primitive": "chef-client.add_backend",
-        "ns": {}
+        "primitive": "node.add_backend",
+        "ns": {"backend": "chef-client"}
     }
 ]
