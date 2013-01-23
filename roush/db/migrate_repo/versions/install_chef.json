@@ -4,8 +4,8 @@
         "ns": {
             "action": "install_chef",
             "payload": {
-                "CHEF_URI": "chef_server.facts.chef_server_uri",
-                "CHEF_PEM": "chef_server.facts.chef_server_pem"
+                "CHEF_SERVER_URL": "chef_server.facts.chef_server_uri",
+                "CHEF_SERVER_PEM": "chef_server.facts.chef_server_pem"
             }
         }
     },
