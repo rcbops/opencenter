@@ -649,7 +649,7 @@ class Solver:
                         step['args'][arg]['message'] = msg
                     else:
                         plan_choosable = True
-                        if argv['required'] == True:
+                        if argv['required'] is True:
                             plan_solvable = False
 
                         if not 'args' in step:
