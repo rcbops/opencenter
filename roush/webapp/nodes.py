@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import copy
 import flask
 import generic
 
@@ -103,10 +104,12 @@ def tree_by_id(node_id):
                 if not 'children' in node_hash:
                     node_hash['children'] = []
 
+                child = copy.deepcopy(child)
+
                 node_hash['children'].append(child)
                 fill_children(child)
 
-    node = api.node_get_by_id(node_id)
+    node = copy.deepcopy(api._model_get_by_id('nodes', node_id))
     seen_nodes.append(node_id)
 
     if not node:
