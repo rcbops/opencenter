@@ -467,12 +467,14 @@ class CachedAbstraction(DbAbstraction):
         return self.base.get_schema()
 
     def create(self, data):
+        result = self.base.create(data)
         self.api.destroy_cache()
-        return self.base.create(data)
+        return result
 
     def delete(self, data):
+        result = self.base.delete(data)
         self.api.destroy_cache()
-        return self.base.delete(data)
+        return result
 
     def get(self, id):
         if self.cache is None:
@@ -485,8 +487,9 @@ class CachedAbstraction(DbAbstraction):
                 return self.cache[int(id)]
 
     def update(self, id, data):
+        result = self.base.update(int(id), data)
         self.api.destroy_cache()
-        return self.base.update(id, data)
+        return result
 
     def filter(self, filters):
         return self.base.filter(filters)

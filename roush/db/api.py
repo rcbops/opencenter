@@ -8,7 +8,7 @@ import abstraction
 
 
 _cached_apis = {}
-use_cached_api = False
+use_cached_api = True
 
 
 class RoushApi(object):
