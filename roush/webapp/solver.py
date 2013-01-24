@@ -104,9 +104,11 @@ class Solver:
             return primitives[0]
 
         # walk through the self.task_primitives
-        # primitives = [x for x in self.task_primitives if x['name'] == name]
-        # if len(primitives) > 0:
-        #     return primitives[0]
+        primitives = [self.task_primitives[x] for x in
+                      self.task_primitives if
+                      self.task_primitives[x]['name'] == name]
+        if len(primitives) > 0:
+            return primitives[0]
 
         return None
 
@@ -647,7 +649,9 @@ class Solver:
                         step['args'][arg]['message'] = msg
                     else:
                         plan_choosable = True
-                        plan_solvable = False
+                        if argv['required'] is True:
+                            plan_solvable = False
+
                         if not 'args' in step:
                             step['args'] = {}
                         step['args'][arg] = argv

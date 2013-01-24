@@ -6,7 +6,7 @@
             "parent_id": 1,
             "backends": [ "nova" ],
             "facts": {
-                "nova.network.public_interface": "public_if",
+                "nova.network.public_interface": "nova_public_if",
                 "keystone.users.admin.password": "admin_pw",
                 "nova.network.fixed_range": "vm_fixed_range",
                 "nova.networks.bridge_dev": "vm_fixed_if",
