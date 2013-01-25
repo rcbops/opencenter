@@ -1,5 +1,6 @@
 import copy
 import json
+import logging
 import time
 
 from sqlalchemy import Column, Integer, String, ForeignKey, Enum, event
@@ -55,6 +56,10 @@ class JsonRenderer(object):
     def __new__(cls, *args, **kwargs):
         obj = super(JsonRenderer, cls).__new__(cls, *args, **kwargs)
         obj.__dict__['api'] = db_api.api_from_models()
+        classname = obj.__class__.__name__.lower()
+
+        obj.__dict__['logger'] = logging.getLogger(
+            '%s.%s' % (__name__, classname))
         return obj
 
     def jsonify(self, api=None):
@@ -196,9 +201,11 @@ class Nodes(JsonRenderer, Base):
         def fact_union(fact, value, parent_value):
             if value is FactDoesNotExist:
                 value = []
+
             if not isinstance(parent_value, list):
-                raise ValueError("Union inheritance called on non-list fact:"
-                                 "%s" % fact)
+                self.logger.error('Union inheritance called on non-list fact: '
+                                  '%s' % fact)
+                return parent_value
 
             for item in parent_value:
                 if not item in value:
@@ -246,7 +253,9 @@ class Nodes(JsonRenderer, Base):
             for parent_k, parent_v in parent_facts.iteritems():
                 fact_def = roush.backends.fact_by_name(parent_k)
                 f = fact_none
-                if not fact_def is None:
+                if fact_def is None:
+                    self.logger.error('UNKNOWN FACT: %s' % parent_k)
+                else:
                     f = ns["fact_%s" % fact_def['inheritance']]
 
                 my_facts[parent_k] = f(
