@@ -394,6 +394,11 @@ class Solver:
         # could forward us to our goal.
         all_solutions = []
 
+        if len(primitives) == 0:
+            # we can't meet constraints of any primitives, or we specified
+            # a bogus primitive in a plan...
+            return None
+
         if proposed_plan:
             # plan_prim = primitives[0]
             plan_ns = proposed_plan['ns']

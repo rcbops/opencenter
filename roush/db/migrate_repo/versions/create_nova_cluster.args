@@ -1,4 +1,9 @@
 {
+    "cluster_name": {
+        "friendly": "name of nova cluster",
+        "type": "string",
+        "required": true
+    },
     "nova_public_if": {
         "friendly": "interface of the public network on compute nodes (eth0, etc)",
         "type": "string",
@@ -41,6 +46,11 @@
     },
     "osops_public": {
         "friendly": "cidr of network to run public stuff on (lb, etc)",
+        "type": "string",
+        "required": true
+    },
+    "nova_az": {
+        "friendly": "name of nova availability zone",
         "type": "string",
         "required": true
     }

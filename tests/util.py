@@ -77,6 +77,9 @@ class RoushTestCase(unittest2.TestCase):
         if not please:
             url_base = '/admin'
 
+        self.logger.debug('Creating %s with %s: ' %
+                          (model, kwargs))
+
         resp = self.client.post('%s/%s/' % (url_base, model),
                                 content_type='application/json',
                                 data=json.dumps(kwargs))

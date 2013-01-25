@@ -180,11 +180,11 @@ def ephemeral_api_from_api(backed_api):
                                                 name, backend)
         new_api.add_model(name, abst)
 
-    if use_cached_api:
-        cached_api = cached_api_from_api(new_api)
-        return cached_api
-    else:
-        return new_api
+    # if use_cached_api:
+    #     cached_api = cached_api_from_api(new_api)
+    #     return cached_api
+    # else:
+    return new_api
 
 
 def cached_api_from_api(backed_api):

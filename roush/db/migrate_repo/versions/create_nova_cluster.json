@@ -1,47 +1,6 @@
 [
     {
-        "primitive": "container.create_subcontainer",
-        "ns": {
-            "name": "Nova Cluster",
-            "parent_id": 1,
-            "backends": [ "nova" ],
-            "facts": {
-                "nova.network.public_interface": "nova_public_if",
-                "keystone.users.admin.password": "admin_pw",
-                "nova.network.fixed_range": "vm_fixed_range",
-                "nova.networks.bridge_dev": "vm_fixed_if",
-                "nova.networks.network_size": "256",
-                "nova.network.bridge": "vm_bridge",
-                "nova.networks.ipv4_cidr": "vm_fixed_range",
-                "osops.networks.managment": "osops_mgmt",
-                "osops.networks.nova": "osops_nova",
-                "osops.networks.public": "osops_public"
-            }
-        }
-    },
-    {
-        "primitive": "container.create_subcontainer",
-        "ns": {
-            "name": "Infrastructure",
-            "parent_name": "Nova Cluster",
-            "backends": [ "nova" ]
-        }
-    },
-    {
-        "primitive": "container.create_subcontainer",
-        "ns": {
-            "name": "Compute",
-            "parent_name": "Nova Cluster",
-            "backends": [ "nova" ]
-        }
-    },
-    {
-        "primitive": "container.create_subcontainer",
-        "ns": {
-            "name": "Nova AZ",
-            "parent_name": "Compute",
-            "backends": [ "nova" ],
-            "facts": { "nova_az": "nova" }
-        }
+        "primitive": "nova.create_cluster",
+        "ns": {}
     }
 ]
