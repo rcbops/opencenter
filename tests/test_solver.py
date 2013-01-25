@@ -36,7 +36,9 @@ class SolverTestCase(RoushTestCase):
         chef_expr = '(facts.chef_server_uri != None) and ' \
             '(facts.chef_server_pem != None)'
 
-        self.interfaces['chef'] = self._model_create('filters', name='chef',
+        # some of our current primitives require this
+        self.interfaces['chef'] = self._model_create('filters',
+                                                     name='chef-server',
                                                      filter_type='interface',
                                                      expr=chef_expr)
 

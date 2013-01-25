@@ -482,7 +482,7 @@ class CachedAbstraction(DbAbstraction):
         else:
             if not int(id) in self.cache:
                 raise exceptions.IdNotFound(
-                    message='id %d does not exist' % int(id))
+                    message='%s id %d does not exist' % (self.model, int(id)))
             else:
                 return self.cache[int(id)]
 
@@ -552,7 +552,6 @@ class EphemeralAbstraction(DbAbstraction):
         new_data = self._sanitize_for_create(data)
 
         if self.name == 'facts':
-
             existing = self.api._model_query(
                 'facts', 'node_id=%d and key="%s"' % (
                     int(new_data['node_id']), new_data['key']))
@@ -582,11 +581,13 @@ class EphemeralAbstraction(DbAbstraction):
         id = int(id)
 
         if id in self.del_obj:
-            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+            raise exceptions.IdNotFound(message='%s id %d does not exist' %
+                                        (self.model, id))
 
         obj = self.base.get(id)
         if obj is None:
-            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+            raise exceptions.IdNotFound(message='%s id %d does not exist' %
+                                        (self.model, id))
 
         new_obj = self._update_object(obj)
 
@@ -601,7 +602,8 @@ class EphemeralAbstraction(DbAbstraction):
         new_data = self._sanitize_for_update(data)
 
         if id in self.del_obj:
-            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+            raise exceptions.IdNotFound(message='%s id %d does not exist' %
+                                        (self.model, id))
 
         obj = self.base.get(id)
         existing_obj = self._update_object(obj)

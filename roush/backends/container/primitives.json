@@ -1,20 +1,2 @@
 {
-    "create_subcontainer": {
-        "args": {
-            "name": {
-                "type": "string",
-                "required": true
-            },
-            "parent_id": {
-                "type": "string",
-                "required": false
-            },
-            "parent_name": {
-                "type": "string",
-                "required": false
-            }
-        },
-        "constraints": [],
-        "consequences": []
-    }
 }
