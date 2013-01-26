@@ -533,15 +533,19 @@ class EphemeralAbstraction(DbAbstraction):
         return self.base.get_columns()
 
     def get_all(self):
+        result = []
+
         for obj in self.base.get_all():
             new_obj = self._update_object(obj)
-            if new_obj:
-                yield new_obj
+            if new_obj is not None:
+                result.append(new_obj)
 
         for id, obj in self.new_obj.items():
             new_obj = self._update_object(obj)
-            if new_obj:
-                yield new_obj
+            if new_obj is not None:
+                result.append(new_obj)
+
+        return result
 
     def get_schema(self):
         return self.base.get_schema()
@@ -580,16 +584,18 @@ class EphemeralAbstraction(DbAbstraction):
     def get(self, id):
         id = int(id)
 
-        if id in self.del_obj:
-            raise exceptions.IdNotFound(message='%s id %d does not exist' %
-                                        (self.model, id))
+        new_obj = None
 
         obj = self.base.get(id)
-        if obj is None:
-            raise exceptions.IdNotFound(message='%s id %d does not exist' %
-                                        (self.model, id))
+        if obj is not None:
+            new_obj = self._update_object(obj)
+        else:
+            # maybe newly created thing
+            if id in self.new_obj:
+                new_obj = self.new_obj[id]
 
-        new_obj = self._update_object(obj)
+        if new_obj is None:
+            raise exceptions.IdNotFound(message='id %d does not exist' % id)
 
         r = self.model(**(self._sanitize_for_create(new_obj)))
         r.id = id
@@ -605,7 +611,18 @@ class EphemeralAbstraction(DbAbstraction):
             raise exceptions.IdNotFound(message='%s id %d does not exist' %
                                         (self.model, id))
 
-        obj = self.base.get(id)
+        obj = None
+
+        try:
+            obj = self.base.get(id)
+        except exceptions.IdNotFound:
+            if id in self.new_obj:
+                obj = self.new_obj[id]
+
+        if not obj:
+            raise exceptions.IdNotFound(message='%s id %d does not exist' %
+                                        (self.model, id))
+
         existing_obj = self._update_object(obj)
 
         if not id in self.upd_obj:
