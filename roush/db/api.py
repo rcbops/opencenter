@@ -9,6 +9,7 @@ import abstraction
 
 _cached_apis = {}
 use_cached_api = True
+stupid_amount_of_logging = False
 
 
 class RoushApi(object):
@@ -50,7 +51,17 @@ class RoushApi(object):
         if not hasattr(self.model_list[model], function):
             raise ValueError('unknown model function %s' % function)
 
-        return getattr(self.model_list[model], function)(*args, **kwargs)
+        if stupid_amount_of_logging:
+            self.logger.debug('calling %s on model %s with %s, %s' %
+                              (function, model, args, kwargs))
+
+        result = getattr(self.model_list[model], function)(*args, **kwargs)
+
+        if stupid_amount_of_logging:
+            self.logger.debug('return from %s on model %s: %s' %
+                              (function, model, result))
+
+        return result
 
     def _model_get_all(self, model):
         return self._call_model('get_all', model)

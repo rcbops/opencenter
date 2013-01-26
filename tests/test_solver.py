@@ -20,7 +20,6 @@ class SolverTestCase(RoushTestCase):
 
         self._clean_all()
 
-        self.nodes = {}
         self.interfaces = {}
 
         self.adv = self._model_create('nodes', name='adventurator')
@@ -228,3 +227,23 @@ class SolverTestCase(RoushTestCase):
         self.assertTrue(len(entry['args']) == 1)
 
         # here, we should pump in another thing.
+
+    def test_nova_backend(self):
+        # make sure adding a nova backend pulls in chef-client
+        self._make_adventurator()
+
+        # pop in a nova fact, which should pull in both
+        # a nova backend and a chef-client backend
+        resp = self._model_create('facts', node_id=self.node['id'],
+                                  key='nova_az',
+                                  value='nova',
+                                  please=True,
+                                  raw=True, expect_code=202)
+
+        self.assertTrue('plan' in resp)
+        plan = resp['plan']
+
+        entry = self._plan_entry(plan, 'node.add_backend')
+        self.assertTrue('ns' in entry)
+        self.assertTrue('backend' in entry['ns'])
+        self.assertTrue('chef-client' == entry['ns']['backend'])
