@@ -37,5 +37,8 @@
                       "cluster_wide": true}},
     {"nova_az": {"type": "string",
                  "settable": true,
-                 "converge": true}}
+                 "converge": true}},
+    {"nova_role": {"type": "string",
+                   "settable": false,
+                   "convert": true}}
 ]

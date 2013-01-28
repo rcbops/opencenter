@@ -65,15 +65,15 @@ class NovaBackend(roush.backends.Backend):
             return False
 
         infra = self._make_subcontainer(
-            api, 'Infrasructure', cluster['id'],
-            {}, ['node', 'container', 'nova'])
+            api, 'Infrastructure', cluster['id'],
+            {'nova_role': 'nova-infra'}, ['node', 'container', 'nova'])
 
         if infra is None:
             return False
 
         comp = self._make_subcontainer(
             api, 'Compute', cluster['id'],
-            {}, ['node', 'container', 'nova'])
+            {'nova_role': 'nova-compute'}, ['node', 'container', 'nova'])
 
         if comp is None:
             return False
