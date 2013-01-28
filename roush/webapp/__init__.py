@@ -141,7 +141,7 @@ class Thing(Flask):
         self._logger = LOG
 
         AST_LOG = logging.getLogger('roush.webapp.ast')
-        if 'ast_logfile' in defaults['main']
+        if 'ast_logfile' in defaults['main']:
             for handler in AST_LOG.handlers:
                 AST_LOG.removeHandler(handler)
             AST_LOG.FileHandler(defaults['main']['ast_logfile'])
