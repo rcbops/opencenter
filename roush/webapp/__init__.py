@@ -138,13 +138,23 @@ class Thing(Flask):
 
             handler = logging.FileHandler(defaults['main']['logfile'])
             LOG.addHandler(handler)
+        self._logger = LOG
+
+        AST_LOG = logging.getLogger('roush.webapp.ast')
+        if 'ast_logfile' in defaults['main']
+            for handler in AST_LOG.handlers:
+                AST_LOG.removeHandler(handler)
+            AST_LOG.FileHandler(defaults['main']['ast_logfile'])
+            AST_LOG.addHandler(ast_handler)
+        if 'ast_loglevel' in defaults['main']:
+            AST_LOG.setLevel(defaults['main']['loglevel'])
+        self._ast_logger = AST_LOG
 
         # # load the backends
         # backends.load(defaults['main']['backend'], defaults)
 
         # set the notification dispatcher
         # self.dispatch = backends.notify
-        self._logger = LOG
 
         self.config.update(defaults['main'])
 
@@ -171,8 +181,8 @@ class Thing(Flask):
         self.register_blueprint(plan_bp, url_prefix='/admin/plan')
         self.testing = debug
 
-        ast_log = logging.getLogger('roush.webapp.ast')
-        ast_log.setLevel(logging.WARNING)
+        # ast_log = logging.getLogger('roush.webapp.ast')
+        # ast_log.setLevel(logging.WARNING)
 
         if debug:
             self.config['TESTING'] = True
