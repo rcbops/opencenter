@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from pprint import pprint
-
 import daemon
 import fcntl
 import getopt
