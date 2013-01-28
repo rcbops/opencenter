@@ -40,5 +40,5 @@
                  "converge": true}},
     {"nova_role": {"type": "string",
                    "settable": false,
-                   "convert": true}}
+                   "converge": true}}
 ]

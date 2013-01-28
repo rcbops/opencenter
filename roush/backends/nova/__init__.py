@@ -30,9 +30,11 @@ class NovaBackend(roush.backends.Backend):
                       'backends': backends})
 
         for k, v in facts.items():
-            api._model_create('facts', {'key': k,
-                                        'value': v,
-                                        'node_id': subcontainer['id']})
+            data = {'key': k,
+                    'value': v,
+                    'node_id': subcontainer['id']}
+
+            api._model_create('facts', data)
 
         return subcontainer
 
@@ -55,11 +57,13 @@ class NovaBackend(roush.backends.Backend):
             if k in cluster_facts:
                 environment_hash[k] = v
 
+        environment_hash['chef_server_consumed'] = kwargs['chef_server']
+
         # have the attribute map, let's make it an apply the
         # facts.
         cluster = self._make_subcontainer(
             api, kwargs['cluster_name'], node_id, environment_hash,
-            ['node', 'container', 'nova'])
+            ['node', 'container', 'nova', 'chef-environment'])
 
         if cluster is None:
             return False
