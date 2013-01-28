@@ -182,9 +182,6 @@ class Thing(Flask):
         self.register_blueprint(plan_bp, url_prefix='/admin/plan')
         self.testing = debug
 
-        # ast_log = logging.getLogger('roush.webapp.ast')
-        # ast_log.setLevel(logging.WARNING)
-
         if debug:
             self.config['TESTING'] = True
 
