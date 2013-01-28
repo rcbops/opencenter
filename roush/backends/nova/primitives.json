@@ -72,6 +72,12 @@
                 "default": "nova",
                 "type": "string",
                 "required": true
+            },
+            "chef_server": {
+                "friendly": "chef server to use",
+                "type": "interface",
+                "name": "chef-server",
+                "required": true
             }
         },
         "constraints": [ "ifcount('chef-server') > 0" ],

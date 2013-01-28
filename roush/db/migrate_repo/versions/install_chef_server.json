@@ -9,5 +9,10 @@
     {
         "primitive": "node.add_backend",
         "ns": {"backend": "chef-server"}
+    },
+    {
+        "primitive": "node.set_fact",
+        "ns": { "key": "parent_id",
+                "value": 3 }
     }
 ]
