@@ -93,18 +93,22 @@ class Thing(Flask):
 
             sys.argv = [sys.argv[0]] + args
 
-        defaults = {'main':
-                    {'bind_address': '0.0.0.0',
-                     'bind_port': 8080,
-                     'backend': '/dev/null',
-                     'loglevel': 'WARNING',
-                     'database_uri': 'sqlite:///',
-                     'daemonize': False,
-                     'pidfile': None},
-                    'ChefClientBackend':
-                    {'role_location': '/etc/roush/roles.d'},
-                    'ChefServerBackend': {},
-                    'UnprovisionedBackend': {}}
+        defaults = {
+            'logging': {},
+            'main': {
+                'bind_address': '0.0.0.0',
+                'bind_port': 8080,
+                'backend': '/dev/null',
+                'loglevel': 'WARNING',
+                'database_uri': 'sqlite:///',
+                'daemonize': False,
+                'pidfile': None
+            },
+            'ChefClientBackend': {
+                'role_location': '/etc/roush/roles.d'},
+            'ChefServerBackend': {},
+            'UnprovisionedBackend': {}
+        }
 
         if configfile:
             config = ConfigParser()
@@ -138,13 +142,20 @@ class Thing(Flask):
 
             handler = logging.FileHandler(defaults['main']['logfile'])
             LOG.addHandler(handler)
+        self._logger = LOG
+
+        # Allow for logging section to overload specific children LogLevels
+        if 'logging' in defaults:
+            overrides = defaults['logging'].keys()
+            for ns in overrides:
+                TMP_LOG = logging.getLogger(ns)
+                TMP_LOG.setLevel(defaults['logging'][ns].upper())
 
         # # load the backends
         # backends.load(defaults['main']['backend'], defaults)
 
         # set the notification dispatcher
         # self.dispatch = backends.notify
-        self._logger = LOG
 
         self.config.update(defaults['main'])
 
@@ -170,9 +181,6 @@ class Thing(Flask):
         self.register_blueprint(plan_bp, url_prefix='/plan')
         self.register_blueprint(plan_bp, url_prefix='/admin/plan')
         self.testing = debug
-
-        ast_log = logging.getLogger('roush.webapp.ast')
-        ast_log.setLevel(logging.WARNING)
 
         if debug:
             self.config['TESTING'] = True
