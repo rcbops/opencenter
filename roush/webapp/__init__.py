@@ -144,7 +144,7 @@ class Thing(Flask):
         if 'ast_logfile' in defaults['main']:
             for handler in AST_LOG.handlers:
                 AST_LOG.removeHandler(handler)
-            AST_LOG.FileHandler(defaults['main']['ast_logfile'])
+            ast_handler = logging.FileHandler(defaults['main']['ast_logfile'])
             AST_LOG.addHandler(ast_handler)
         if 'ast_loglevel' in defaults['main']:
             AST_LOG.setLevel(defaults['main']['loglevel'])
