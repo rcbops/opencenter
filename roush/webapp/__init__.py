@@ -150,21 +150,8 @@ class Thing(Flask):
         if 'logging' in defaults:
             overrides = defaults['logging'].keys()
             for ns in overrides:
-                TMP_LOG = logging.getLogger(overrides)
-                TMP_LOG.setLevel(defaults['logging'][ns].uppercase)
-
-
-        pprint(self._logger)
-
-        # AST_LOG = logging.getLogger('roush.webapp.ast')
-        # if 'ast_logfile' in defaults['main']:
-        #     for handler in AST_LOG.handlers:
-        #         AST_LOG.removeHandler(handler)
-        #     ast_handler = logging.FileHandler(defaults['main']['ast_logfile'])
-        #     AST_LOG.addHandler(ast_handler)
-        # if 'ast_loglevel' in defaults['main']:
-        #     AST_LOG.setLevel(defaults['main']['loglevel'])
-        # self._ast_logger = AST_LOG
+                TMP_LOG = logging.getLogger(ns)
+                TMP_LOG.setLevel(defaults['logging'][ns].upper())
 
         # # load the backends
         # backends.load(defaults['main']['backend'], defaults)
