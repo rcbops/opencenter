@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from pprint import pprint
+
 import daemon
 import fcntl
 import getopt
@@ -93,18 +95,22 @@ class Thing(Flask):
 
             sys.argv = [sys.argv[0]] + args
 
-        defaults = {'main':
-                    {'bind_address': '0.0.0.0',
-                     'bind_port': 8080,
-                     'backend': '/dev/null',
-                     'loglevel': 'WARNING',
-                     'database_uri': 'sqlite:///',
-                     'daemonize': False,
-                     'pidfile': None},
-                    'ChefClientBackend':
-                    {'role_location': '/etc/roush/roles.d'},
-                    'ChefServerBackend': {},
-                    'UnprovisionedBackend': {}}
+        defaults = {
+            'logging': {},
+            'main': {
+                'bind_address': '0.0.0.0',
+                'bind_port': 8080,
+                'backend': '/dev/null',
+                'loglevel': 'WARNING',
+                'database_uri': 'sqlite:///',
+                'daemonize': False,
+                'pidfile': None
+            },
+            'ChefClientBackend': {
+                'role_location': '/etc/roush/roles.d'},
+            'ChefServerBackend': {},
+            'UnprovisionedBackend': {}
+        }
 
         if configfile:
             config = ConfigParser()
@@ -140,15 +146,25 @@ class Thing(Flask):
             LOG.addHandler(handler)
         self._logger = LOG
 
-        AST_LOG = logging.getLogger('roush.webapp.ast')
-        if 'ast_logfile' in defaults['main']:
-            for handler in AST_LOG.handlers:
-                AST_LOG.removeHandler(handler)
-            ast_handler = logging.FileHandler(defaults['main']['ast_logfile'])
-            AST_LOG.addHandler(ast_handler)
-        if 'ast_loglevel' in defaults['main']:
-            AST_LOG.setLevel(defaults['main']['loglevel'])
-        self._ast_logger = AST_LOG
+        # Allow for logging section to overload specific children LogLevels
+        if 'logging' in defaults:
+            overrides = defaults['logging'].keys()
+            for ns in overrides:
+                TMP_LOG = logging.getLogger(overrides)
+                TMP_LOG.setLevel(defaults['logging'][ns].uppercase)
+
+
+        pprint(self._logger)
+
+        # AST_LOG = logging.getLogger('roush.webapp.ast')
+        # if 'ast_logfile' in defaults['main']:
+        #     for handler in AST_LOG.handlers:
+        #         AST_LOG.removeHandler(handler)
+        #     ast_handler = logging.FileHandler(defaults['main']['ast_logfile'])
+        #     AST_LOG.addHandler(ast_handler)
+        # if 'ast_loglevel' in defaults['main']:
+        #     AST_LOG.setLevel(defaults['main']['loglevel'])
+        # self._ast_logger = AST_LOG
 
         # # load the backends
         # backends.load(defaults['main']['backend'], defaults)
