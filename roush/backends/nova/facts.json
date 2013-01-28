@@ -6,7 +6,7 @@
     {"keystone_admin_pw": {"type": "string",
                            "settable": true,
                            "converge": true,
-                           "cluste_wide": true}},
+                           "cluster_wide": true}},
     {"nova_dmz_cidr": {"type": "string",
                        "settable": false,
                        "converge": true,
