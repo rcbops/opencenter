@@ -39,16 +39,19 @@ class ChefClientBackend(roush.backends.Backend):
             for fact in node['facts']:
                 fact_info = roush.backends.fact_by_name(fact)
 
-                if fact_info['cluster_wide'] is True:
-                    if fact in cluster_attributes:
-                        raise KeyError('fact already exists')
-
-                    cluster_attributes[fact] = node['facts'][fact]
+                if fact_info is None or 'cluster_wide' not in fact_info:
+                    self.logger.debug('Invalid fact: %s' % fact)
                 else:
-                    if fact in node_attributes:
-                        raise KeyError('fact already exists')
+                    if fact_info['cluster_wide'] is True:
+                        if fact in cluster_attributes:
+                            raise KeyError('fact already exists')
 
-                    node_attributes[fact] = node['facts'][fact]
+                        cluster_attributes[fact] = node['facts'][fact]
+                    else:
+                        if fact in node_attributes:
+                            raise KeyError('fact already exists')
+
+                        node_attributes[fact] = node['facts'][fact]
 
         # now generate the json from the facts
         environment_template = os.path.join(os.path.dirname(__file__),
