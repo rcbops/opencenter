@@ -462,7 +462,8 @@ class Solver:
 
             # pull in backends for primitives that can solve constraints
             be, _ = solution['primitive']['name'].split('.')
-            new_constraints.append('"%s" in facts.backends' % be)
+            if new_constraints is not None:
+                new_constraints.append('"%s" in facts.backends' % be)
 
             self.logger.info(' - New constraints from primitive: %s' %
                              new_constraints)
