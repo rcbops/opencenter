@@ -1,5 +1,5 @@
 .roush-venv
-roush.db
+*.db
 *.pyc
 *.swp
 run_tests.err.log
