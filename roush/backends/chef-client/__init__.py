@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 import json
+import os
+
+import chef
 import roush
 import roush.backends
 import mako.template
@@ -28,6 +31,7 @@ class ChefClientBackend(roush.backends.Backend):
         # walk through all the facts and determine which are
         # cluster facts and which are node facts.  Generate templates
         # for each.
+
         node_attributes = {}
         cluster_attributes = {}
 
@@ -35,50 +39,44 @@ class ChefClientBackend(roush.backends.Backend):
             for fact in node['facts']:
                 fact_info = roush.backends.fact_by_name(fact)
 
-                print "fact: %s => %s" % (fact, fact_info)
+                if fact_info['cluster_wide'] is True:
+                    if fact in cluster_attributes:
+                        raise KeyError('fact already exists')
 
-                # print fact_info
+                    cluster_attributes[fact] = node['facts'][fact]
+                else:
+                    if fact in node_attributes:
+                        raise KeyError('fact already exists')
 
-                fact_template = roush.backends.backend_by_name(
-                    fact_info['backend']).fact_template(fact, 'chef-client')
+                    node_attributes[fact] = node['facts'][fact]
 
-                # print "fact_template: %s" % fact_template
+        # now generate the json from the facts
+        environment_template = os.path.join(os.path.dirname(__file__),
+                                            'environment.tmpl')
+        node_template = os.path.join(os.path.dirname(__file__),
+                                     'node.tmpl')
 
-                if fact_template:
-                    snippet = mako.template.Template(
-                        fact_template).render(node=node,
-                                              key=fact,
-                                              value=node['facts'][fact])
+        chef_node_attrs = mako.template.Template(
+            filename=node_template).render(facts=node_attributes)
 
-                    json_snippet = json.loads(snippet)
+        chef_env_attrs = mako.template.Template(
+            filename=environment_template).render(facts=cluster_attributes)
 
-                    # print "fact: %s => %s" % (fact, snippet)
-                    if fact_info['cluster_wide'] is True:
-                        if fact in cluster_attributes:
-                            raise KeyError('fact already exists')
-
-                        cluster_attributes[fact] = json_snippet
-                    else:
-                        if fact in node_attributes:
-                            raise KeyError('fact already exists')
-
-                        node_attributes[fact] = json_snippet
-
-            # Now we have a list of cluster attributes and node
-            # attributes.  Let's merge them all together and
-            # push them to the chef server.
-            chef_node_attrs = {}
-            chef_env_attrs = {}
-
-            for snippet in node_attributes:
-                chef_node_attrs = self._dict_merge(chef_node_attrs,
-                                                   node_attributes[snippet])
-
-            for snipper in cluster_attributes:
-                chef_env_attrs = self._dict_merge(chef_env_attrs,
-                                                  cluster_attributes[snipper])
-
-            return (chef_node_attrs, chef_env_attrs)
+        return (chef_node_attrs, chef_env_attrs)
 
     def converge_chef(self, api, node_id, **kwargs):
-        self.logger.debug('****** DOING CHEF CONVERGENCE')
+        # we are converging a node.  If the node is a container,
+        # that probably implies converging all nodes under it.
+
+        node = api._model_get_by_id('nodes', node_id)
+
+        is_container = False
+
+        if 'container' in node['facts']['backends']:
+            is_container = True
+
+        # generate node and environment settings
+        node_attrs, env_attrs = self._represent_node_attributes(api, node_id)
+
+        self.logger.debug('node: %s' % node_attrs)
+        self.logger.debug('environment: %s' % env_attrs)
