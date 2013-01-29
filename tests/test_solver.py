@@ -247,3 +247,14 @@ class SolverTestCase(RoushTestCase):
         self.assertTrue('ns' in entry)
         self.assertTrue('backend' in entry['ns'])
         self.assertTrue('chef-client' == entry['ns']['backend'])
+
+    # after we get scaffolding by default
+    # def test_install_chef_server(self):
+    #     self._make_adventurator()
+
+    #     resp = self.client.post('/adventures/3/execute',
+    #                             content_type='application/json',
+    #                             data={'node': self.node['id']})
+
+
+    #     self.assertTrue(resp.status_code == 402)
