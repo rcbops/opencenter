@@ -43,7 +43,6 @@ class SolverTestCase(RoushTestCase):
 
         self.api = db_api.api_from_models()
 
-        # self.assertTrue(len(self._model_get_all('tasks')) == 0)
         self.assertEquals(len(self._model_get_all('tasks')), 0)
 
     def tearDown(self):

@@ -164,13 +164,13 @@ class ExpressionTestCase(RoushTestCase):
     def test_util_nth_with_none(self):
         expression = 'nth(0, facts.test)'  # nth of none?
         res = self._simple_expression(expression)
-        self.assertTrue(res is None)
+        self.assertIsNone(res)
 
     # FIXME: when we get types
     def test_util_nth_not_integer(self):
         expression = 'nth("a", facts.test)'  # raise with type error?
         res = self._simple_expression(expression)
-        self.assertTrue(res is None)
+        self.assertIsNone(res)
 
     # FIXME: when we get types
     def test_util_nth_index_out_of_range(self):
@@ -178,12 +178,12 @@ class ExpressionTestCase(RoushTestCase):
                            key='test', value=[1, 2, 3])
 
         self.assertTrue(self._simple_expression('nth(2, facts.test)') is 3)
-        self.assertTrue(self._simple_expression('nth(3, facts.test)') is None)
+        self.assertIsNone(self._simple_expression('nth(3, facts.test)'))
 
     # FIXME: when we get types
     def test_str_casting_none(self):
         # this should fail, too, I think
-        self.assertTrue(self._simple_expression('str(facts.test)') is None)
+        self.assertIsNone(self._simple_expression('str(facts.test)'))
 
         self._model_create('facts', node_id=self.nodes['node-1']['id'],
                            key='test', value=[1, 2, 3])
