@@ -1,4 +1,4 @@
-#
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 import copy
 import json
@@ -43,7 +43,7 @@ class SolverTestCase(RoushTestCase):
 
         self.api = db_api.api_from_models()
 
-        self.assertTrue(len(self._model_get_all('tasks')) == 0)
+        self.assertEquals(len(self._model_get_all('tasks')), 0)
 
     def tearDown(self):
         self._clean_all()
@@ -65,7 +65,7 @@ class SolverTestCase(RoushTestCase):
         self.assertTrue(len(tasks) > nth)
 
         task_plan = tasks[nth]['payload']['adventure_dsl']
-        self.assertTrue(plan == task_plan)
+        self.assertEquals(task_plan, plan)
 
     def _run_plan_safe(self, plan, node_id):
         # we'll run a plan, skipping those that are harmful
@@ -93,7 +93,7 @@ class SolverTestCase(RoushTestCase):
                                   raw=True, expect_code=403)
 
         # this is somewhat bogus... point is really that it should 403
-        self.assertTrue(resp['message'] == 'no adventurator')
+        self.assertEquals(resp['message'], 'no adventurator')
 
     def test_reparent(self):
         # make sure setting parent results in an unambiguous solve
@@ -112,8 +112,8 @@ class SolverTestCase(RoushTestCase):
 
         entry = self._plan_entry(resp['plan'], 'node.set_parent')
         self.assertTrue('ns' in entry)
-        self.assertTrue(str(entry['ns']['parent']) ==
-                        str(self.container['id']))
+        self.assertEquals(str(entry['ns']['parent']),
+                          str(self.container['id']))
 
         # we should have a task... make sure 0th task has same plan
         self._assert_task(resp['plan'], 0)
@@ -122,8 +122,8 @@ class SolverTestCase(RoushTestCase):
         self._run_plan_safe(resp['plan'], self.node['id'])
 
         node = self._model_get_by_id('nodes', self.node['id'])
-        self.assertTrue(str(node['facts']['parent_id']) ==
-                        str(self.container['id']))
+        self.assertEquals(str(node['facts']['parent_id']),
+                          str(self.container['id']))
 
     def test_bogusfact(self):
         # make sure that setting a fact not present in the backend
@@ -160,7 +160,7 @@ class SolverTestCase(RoushTestCase):
         self._run_plan_safe(resp['plan'], self.node['id'])
 
         node = self._model_get_by_id('nodes', self.node['id'])
-        self.assertTrue(node['facts']['solved_fact'] == 'test_value')
+        self.assertEquals(node['facts']['solved_fact'], 'test_value')
         self.assertTrue('test' in node['facts']['backends'])
 
     def test_implied_backend(self):
@@ -186,7 +186,7 @@ class SolverTestCase(RoushTestCase):
         self._run_plan_safe(resp['plan'], self.node['id'])
 
         node = self._model_get_by_id('nodes', self.node['id'])
-        self.assertTrue(node['facts']['solved_fact'] == 'test_value')
+        self.assertEquals(node['facts']['solved_fact'], 'test_value')
         self.assertTrue('test' in node['facts']['backends'])
 
         # try the same fact change and make sure we don't drag in
@@ -224,7 +224,7 @@ class SolverTestCase(RoushTestCase):
 
         self.assertTrue('args' in entry)
         self.assertTrue('other_thing' in entry['args'])
-        self.assertTrue(len(entry['args']) == 1)
+        self.assertEquals(len(entry['args']), 1)
 
         # here, we should pump in another thing.
 
@@ -246,7 +246,7 @@ class SolverTestCase(RoushTestCase):
         entry = self._plan_entry(plan, 'node.add_backend')
         self.assertTrue('ns' in entry)
         self.assertTrue('backend' in entry['ns'])
-        self.assertTrue('chef-client' == entry['ns']['backend'])
+        self.assertEquals(entry['ns']['backend'], 'chef-client')
 
     # after we get scaffolding by default
     # def test_install_chef_server(self):
@@ -256,5 +256,4 @@ class SolverTestCase(RoushTestCase):
     #                             content_type='application/json',
     #                             data={'node': self.node['id']})
 
-
-    #     self.assertTrue(resp.status_code == 402)
+    #     self.assertEquals(resp.status_code, 402)
