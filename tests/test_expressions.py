@@ -82,7 +82,7 @@ class ExpressionTestCase(RoushTestCase):
         expression = "'test' in facts.foo"
         result = self._invert_expression(expression)
         self.assertTrue("facts.foo := union(facts.foo, 'test')" in result)
-        self.assertTrue(len(result) == 1)
+        self.assertEquals(len(result), 1)
 
     def test_eval_assign(self):
         node_id = self.nodes['node-1']['id']
@@ -90,15 +90,15 @@ class ExpressionTestCase(RoushTestCase):
             self.nodes['container']['id'])
 
         node = self._eval_expression(expression, node_id)
-        self.assertTrue(node['facts'].get('parent_id', None)
-                        == self.nodes['container']['id'])
+        self.assertEquals(node['facts'].get('parent_id', None),
+                          self.nodes['container']['id'])
 
     def test_eval_union(self):
         node_id = self.nodes['node-1']['id']
         expression = "facts.woof := union(facts.woof, 3)"
 
         node = self._eval_expression(expression, node_id)
-        self.assertTrue(node['facts']['woof'] == [3])
+        self.assertEquals(node['facts']['woof'], [3])
 
     def test_eval_namespaces(self):
         node_id = self.nodes['node-1']['id']
@@ -106,8 +106,8 @@ class ExpressionTestCase(RoushTestCase):
         ns = {"value": self.nodes['container']['id']}
 
         node = self._eval_expression(expression, node_id, ns)
-        self.assertTrue(node['facts'].get('parent_id', None)
-                        == self.nodes['container']['id'])
+        self.assertEquals(node['facts'].get('parent_id', None),
+                          self.nodes['container']['id'])
 
     # test the inverter and regularizer functions
     def test_regularize_expression(self):
@@ -115,23 +115,23 @@ class ExpressionTestCase(RoushTestCase):
         regular = ast.regularize_expression(expression)
         self.logger.debug('Got regularized expression "%s" for "%s"' %
                           (regular, expression))
-        self.assertTrue('foo = value' == regular)
+        self.assertEquals(regular, 'foo = value')
 
     def test_inverted_expression(self):
         expression = 'foo=value'
         inverted = ast.invert_expression(expression)
         self.logger.debug('Got inverted expression "%s" for "%s"' %
                           (inverted, expression))
-        self.assertTrue(len(inverted) == 1)
-        self.assertTrue('foo := value' == inverted[0])
+        self.assertEquals(len(inverted), 1)
+        self.assertEquals(inverted[0], 'foo := value')
 
     def test_inverted_union(self):
         expression = 'facts.test := union(facts.test, test)'
         inverted = ast.invert_expression(expression)
         self.logger.debug('Got inverted expression "%s" for "%s"' %
                           (inverted, expression))
-        self.assertTrue(len(inverted) == 1)
-        self.assertTrue('test in facts.test' == inverted[0])
+        self.assertEquals(len(inverted), 1)
+        self.assertEquals(inverted[0], 'test in facts.test')
 
     def test_concrete_expression(self):
         expression = "foo = value"
@@ -139,7 +139,12 @@ class ExpressionTestCase(RoushTestCase):
         concrete = ast.concrete_expression(expression, ns)
         self.logger.debug('Got concrete expression "%s" for "%s"' %
                           (concrete, expression))
-        self.assertTrue('foo = 3', concrete)
+        # TODO(rpedde): This does not work like you think it does
+        # self.assertTrue('foo = 3', concrete)
+        # Using an assertEquals of the above fails
+        # self.assertEquals(concrete, 'foo = 3')
+        # But this works
+        self.assertEquals(concrete, 'foo = value')
 
     def test_apply_expression(self):
         expression = 'facts.test := union(facts.test, "test")'
@@ -153,7 +158,7 @@ class ExpressionTestCase(RoushTestCase):
         node = self._model_get_by_id('nodes', self.nodes['node-1']['id'])
 
         self.assertTrue('test' in node['facts'])
-        self.assertTrue(node['facts']['test'] == ['test'])
+        self.assertEquals(node['facts']['test'], ['test'])
 
     # FIXME: when we get types
     def test_util_nth_with_none(self):
@@ -182,9 +187,9 @@ class ExpressionTestCase(RoushTestCase):
 
         self._model_create('facts', node_id=self.nodes['node-1']['id'],
                            key='test', value=[1, 2, 3])
-        self.assertTrue(
-            self._simple_expression('str(facts.test)') == '[1, 2, 3]')
+        self.assertEquals(self._simple_expression('str(facts.test)'),
+                          '[1, 2, 3]')
 
         self._model_create('facts', node_id=self.nodes['node-1']['id'],
                            key='test', value=1)
-        self.assertTrue(self._simple_expression('str(facts.test)') == '1')
+        self.assertEquals(self._simple_expression('str(facts.test)'), '1')
