@@ -27,7 +27,7 @@ class Solver:
         self.adventures = []
         self.ns = ns
 
-        self.logger.debug('New solver for constraints %s' % constraints)
+        self.logger.info('New solver for constraints %s' % constraints)
 
         # roll the applied consequences forward in an ephemeral
         # api, and do our resolution from that.
@@ -48,17 +48,20 @@ class Solver:
                 'backends' in node['facts'] and \
                 'agent' in node['facts']['backends']:
             for task_name in node['attrs']['roush_agent_actions']:
-                mangled_name = 'wrapped:agent.run_task.%s' % task_name
+                mangled_name = task_name
                 task = node['attrs']['roush_agent_actions'][task_name]
 
-                id = hash(mangled_name) & 0xFFFFFFFF
-                # should verify this unique against backends
-                self.task_primitives[id] = {}
-                self.task_primitives[id]['name'] = mangled_name
-                self.task_primitives[id]['task_name'] = task_name
-                self.task_primitives[id]['constraints'] = task['constraints']
-                self.task_primitives[id]['consequences'] = task['consequences']
-                self.task_primitives[id]['args'] = task['args']
+                if task['consequences'] != []:
+                    id = hash(mangled_name) & 0xFFFFFFFF
+                    # should verify this unique against backends
+                    self.task_primitives[id] = {}
+                    self.task_primitives[id]['id'] = id
+                    self.task_primitives[id]['name'] = mangled_name
+                    self.task_primitives[id]['task_name'] = task_name
+                    self.task_primitives[id]['constraints'] = task['constraints']
+                    self.task_primitives[id]['consequences'] = task['consequences']
+                    self.task_primitives[id]['args'] = task['args']
+                    self.task_primitives[id]['weight'] = 50
 
         self.logger.debug('Node before applying consequences: %s' % pre_node)
         self.logger.debug('Applied consequences: %s' %
@@ -92,7 +95,7 @@ class Solver:
         # we are not solving over tasks anymore - we need to rethink this
         # plus, it's a stoopid generator.
         #
-        # primitive_list += self.task_primitives.values()
+        primitive_list += self.task_primitives.values()
         return primitive_list
 
     def _get_primitive_by_name(self, name):
@@ -454,19 +457,22 @@ class Solver:
                               (solution['primitive']['id'],
                                solution['ns']))
 
-            self.logger.debug("%s" % dir(roush.backends))
-
             new_constraints = self._get_additional_constraints(
                 solution['primitive']['id'],
                 solution['ns'])
 
+            # FIXME(rp)
             # pull in backends for primitives that can solve constraints
-            be, _ = solution['primitive']['name'].split('.')
-            if new_constraints is not None:
-                new_constraints.append('"%s" in facts.backends' % be)
+            # this should probably instead roll the consequence of the task
+            # forward and re-run through satisifes constaraints
+            if not solution['primitive']['id'] in self.task_primitives:
+                be, prim_name = solution['primitive']['name'].split('.')
+                if new_constraints is not None:
+                    if prim_name != "add_backend":
+                        new_constraints.append('"%s" in facts.backends' % be)
 
-            self.logger.info(' - New constraints from primitive: %s' %
-                             new_constraints)
+                        self.logger.info(' - New constraints from primitive: %s' %
+                                         new_constraints)
 
             new_solver = None
 

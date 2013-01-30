@@ -13,6 +13,11 @@ class ChefClientBackend(roush.backends.Backend):
     def __init__(self):
         super(ChefClientBackend, self).__init__(__file__)
 
+    def additional_constraints(self, api, node_id, action, ns):
+        if action == 'add_backend':
+            return None
+        return []
+
     def _dict_merge(self, merge_target, new_dict):
         for key, value in new_dict.items():
             if isinstance(value, dict):
@@ -83,3 +88,12 @@ class ChefClientBackend(roush.backends.Backend):
 
         self.logger.debug('node: %s' % node_attrs)
         self.logger.debug('environment: %s' % env_attrs)
+
+        return True
+
+    def add_backend(self, api, node_id, **kwargs):
+        # roush.webapp.ast.apply_expression(
+        #     node_id, 'facts.backends := union(facts.backends, "chef-client")',
+        #     api)
+
+        return False
