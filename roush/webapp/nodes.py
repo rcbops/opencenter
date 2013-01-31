@@ -43,14 +43,15 @@ def by_id(object_id):
 
 @bp.route('/<node_id>/tasks_blocking', methods=['GET'])
 def tasks_blocking_by_node_id(node_id):
-    task = api.task_get_first_by_filter({'node_id': node_id,
-                                         'state': 'pending'})
+    task = api.task_get_first_by_query("node_id=%d and state='pending'" %
+                                       int(node_id))
+
     while not task:
         semaphore = 'task-for-%s' % node_id
         flask.current_app.logger.debug('waiting on %s' % semaphore)
         utility.wait(semaphore)
-        task = api.task_get_first_by_filter({'node_id': node_id,
-                                             'state': 'pending'})
+        task = api.task_get_first_by_query("node_id=%d and state='pending'" %
+                                           int(node_id))
         if task:
             utility.clear(semaphore)
 
@@ -64,8 +65,8 @@ def tasks_blocking_by_node_id(node_id):
 @bp.route('/<node_id>/tasks', methods=['GET'])
 def tasks_by_node_id(node_id):
     # Display only tasks with state=pending
-    task = api.task_get_first_by_filter({'node_id': node_id,
-                                         'state': 'pending'})
+    task = api.task_get_first_by_query("node_id=%d and state='pending'" %
+                                       int(node_id))
     if not task:
         return generic.http_notfound()
     else:
