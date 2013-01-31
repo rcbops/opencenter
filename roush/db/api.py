@@ -104,6 +104,9 @@ class RoushApi(object):
     def _model_query(self, model, query):
         return self._call_model('query', model, query)
 
+    def _model_get_first_by_query(self, model, query):
+        return self._call_model('first_by_query', model, query)
+
     def _model_update_by_id(self, model, id, data):
         return self._call_model('update', model, id, data)
 
@@ -128,6 +131,8 @@ class RoushApi(object):
         setattr(self, '%s_update_by_id' % sing,
                 partial(self._model_update_by_id, model))
         setattr(self, '%s_query' % model,
+                partial(self._model_query, model))
+        setattr(self, '%s_first_by_query' % model,
                 partial(self._model_query, model))
 
 

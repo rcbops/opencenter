@@ -28,6 +28,11 @@ class ChefClientBackend(roush.backends.Backend):
     def __init__(self):
         super(ChefClientBackend, self).__init__(__file__)
 
+    def additional_constraints(self, api, node_id, action, ns):
+        if action == 'add_backend':
+            return None
+        return []
+
     def _dict_merge(self, merge_target, new_dict):
         for key, value in new_dict.items():
             if isinstance(value, dict):
@@ -54,16 +59,19 @@ class ChefClientBackend(roush.backends.Backend):
             for fact in node['facts']:
                 fact_info = roush.backends.fact_by_name(fact)
 
-                if fact_info['cluster_wide'] is True:
-                    if fact in cluster_attributes:
-                        raise KeyError('fact already exists')
-
-                    cluster_attributes[fact] = node['facts'][fact]
+                if fact_info is None or 'cluster_wide' not in fact_info:
+                    self.logger.debug('Invalid fact: %s' % fact)
                 else:
-                    if fact in node_attributes:
-                        raise KeyError('fact already exists')
+                    if fact_info['cluster_wide'] is True:
+                        if fact in cluster_attributes:
+                            raise KeyError('fact already exists')
 
-                    node_attributes[fact] = node['facts'][fact]
+                        cluster_attributes[fact] = node['facts'][fact]
+                    else:
+                        if fact in node_attributes:
+                            raise KeyError('fact already exists')
+
+                        node_attributes[fact] = node['facts'][fact]
 
         # now generate the json from the facts
         environment_template = os.path.join(os.path.dirname(__file__),
@@ -95,3 +103,8 @@ class ChefClientBackend(roush.backends.Backend):
 
         self.logger.debug('node: %s' % node_attrs)
         self.logger.debug('environment: %s' % env_attrs)
+
+        return True
+
+    def add_backend(self, api, node_id, **kwargs):
+        return False

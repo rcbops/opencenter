@@ -23,18 +23,7 @@ class NovaBackend(roush.backends.Backend):
         super(NovaBackend, self).__init__(__file__)
 
     def additional_constraints(self, api, node_id, action, ns):
-        if action == 'add_backend':
-            return ['"chef-client" in facts.backends']
-
         return []
-
-    def add_backend(self, api, node_id, **kwargs):
-        self.logger.debug('adding nova backend')
-
-        roush.webapp.ast.apply_expression(
-            node_id, 'facts.backends := union(facts.backends, "nova")', api)
-
-        return True
 
     def _make_subcontainer(self, api, name, parent_id, facts, backends):
         subcontainer = api._model_create('nodes', {'name': name})

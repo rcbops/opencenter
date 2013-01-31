@@ -45,9 +45,9 @@ def create():
     model_object = None
 
     if 'node_id' in data and 'key' in data:
-        old_fact = api._model_get_first_by_filter(object_type,
-                                                  {'node_id': data['node_id'],
-                                                   'key': data['key']})
+        old_fact = api._model_get_first_by_query(
+            object_type, 'node_id=%d and key="%s"' % (int(data['node_id']),
+                                                      data['key']))
 
     if old_fact:
         model_object = api._model_update_by_id(
