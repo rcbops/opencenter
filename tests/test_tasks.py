@@ -74,10 +74,10 @@ class TaskCreateTests(unittest2.TestCase):
         self.assertEquals(out['task']['payload'], self.payload)
         self.assertEquals(out['task']['state'], self.state)
         self.assertEquals(out['task']['result'], self.result)
-        self.assertTrue(isinstance(out['task']['submitted'], int))
-        self.assertNotEquals(out['task']['submitted'], None)
-        self.assertEquals(out['task']['completed'], None)
-        self.assertEquals(out['task']['expires'], None)
+        self.assertIsInstance(out['task']['submitted'], int)
+        self.assertIsNotNone(out['task']['submitted'])
+        self.assertIsNone(out['task']['completed'])
+        self.assertIsNone(out['task']['expires'])
 
         # Clean up the task we created
         self._delete_task(out['task']['id'])
@@ -131,10 +131,10 @@ class TaskUpdateTests(unittest2.TestCase):
         self.assertEquals(out['task']['payload'], self.payload)
         self.assertEquals(out['task']['state'], self.state)
         self.assertEquals(out['task']['result'], self.result)
-        self.assertTrue(isinstance(out['task']['submitted'], int))
-        self.assertNotEquals(out['task']['submitted'], None)
-        self.assertEquals(out['task']['completed'], None)
-        self.assertEquals(out['task']['expires'], None)
+        self.assertIsInstance(out['task']['submitted'], int)
+        self.assertIsNotNone(out['task']['submitted'])
+        self.assertIsNone(out['task']['completed'])
+        self.assertIsNone(out['task']['expires'])
 
     def test_update_task_attribute_action(self):
         tmp_action = _randomStr(10)
@@ -150,10 +150,10 @@ class TaskUpdateTests(unittest2.TestCase):
         self.assertEquals(out['task']['payload'], self.payload)
         self.assertEquals(out['task']['state'], self.state)
         self.assertEquals(out['task']['result'], self.result)
-        self.assertTrue(isinstance(out['task']['submitted'], int))
-        self.assertNotEquals(out['task']['submitted'], None)
-        self.assertEquals(out['task']['completed'], None)
-        self.assertEquals(out['task']['expires'], None)
+        self.assertIsInstance(out['task']['submitted'], int)
+        self.assertIsNotNone(out['task']['submitted'])
+        self.assertIsNone(out['task']['completed'])
+        self.assertIsNone(out['task']['expires'])
 
     def test_update_task_attribute_payload(self):
         tmp_payload = {_randomStr(5): _randomStr(10)}
@@ -169,10 +169,10 @@ class TaskUpdateTests(unittest2.TestCase):
         self.assertNotEquals(out['task']['payload'], self.payload)
         self.assertEquals(out['task']['state'], self.state)
         self.assertEquals(out['task']['result'], self.result)
-        self.assertTrue(isinstance(out['task']['submitted'], int))
-        self.assertNotEquals(out['task']['submitted'], None)
-        self.assertEquals(out['task']['completed'], None)
-        self.assertEquals(out['task']['expires'], None)
+        self.assertIsInstance(out['task']['submitted'], int)
+        self.assertIsNotNone(out['task']['submitted'])
+        self.assertIsNone(out['task']['completed'])
+        self.assertIsNone(out['task']['expires'])
 
     def test_update_task_attribute_state(self):
         tmp_state = 'running'
@@ -188,10 +188,10 @@ class TaskUpdateTests(unittest2.TestCase):
         self.assertEquals(out['task']['state'], tmp_state)
         self.assertNotEquals(out['task']['state'], self.state)
         self.assertEquals(out['task']['result'], self.result)
-        self.assertTrue(isinstance(out['task']['submitted'], int))
-        self.assertNotEquals(out['task']['submitted'], None)
-        self.assertEquals(out['task']['completed'], None)
-        self.assertEquals(out['task']['expires'], None)
+        self.assertIsInstance(out['task']['submitted'], int)
+        self.assertIsNotNone(out['task']['submitted'])
+        self.assertIsNone(out['task']['completed'])
+        self.assertIsNone(out['task']['expires'])
 
     def test_update_task_attribute_state_to_terminal_value(self):
         # Setting tasks:state to a terminal value, should auto-update
@@ -209,12 +209,12 @@ class TaskUpdateTests(unittest2.TestCase):
         self.assertEquals(out['task']['state'], tmp_state)
         self.assertNotEquals(out['task']['state'], self.state)
         self.assertEquals(out['task']['result'], self.result)
-        self.assertTrue(isinstance(out['task']['submitted'], int))
-        self.assertNotEquals(out['task']['submitted'], None)
+        self.assertIsInstance(out['task']['submitted'], int)
+        self.assertIsNotNone(out['task']['submitted'])
         # Make sure completed is now populated
-        self.assertTrue(isinstance(out['task']['completed'], int))
-        self.assertNotEquals(out['task']['completed'], None)
-        self.assertEquals(out['task']['expires'], None)
+        self.assertIsInstance(out['task']['completed'], int)
+        self.assertIsNotNone(out['task']['completed'])
+        self.assertIsNone(out['task']['expires'])
 
     def test_update_task_attribute_result(self):
         tmp_result = {_randomStr(5): _randomStr(10)}
@@ -230,10 +230,10 @@ class TaskUpdateTests(unittest2.TestCase):
         self.assertEquals(out['task']['state'], self.state)
         self.assertEquals(out['task']['result'], tmp_result)
         self.assertNotEquals(out['task']['result'], self.result)
-        self.assertTrue(isinstance(out['task']['submitted'], int))
-        self.assertNotEquals(out['task']['submitted'], None)
-        self.assertEquals(out['task']['completed'], None)
-        self.assertEquals(out['task']['expires'], None)
+        self.assertIsInstance(out['task']['submitted'], int)
+        self.assertIsNotNone(out['task']['submitted'])
+        self.assertIsNone(out['task']['completed'])
+        self.assertIsNone(out['task']['expires'])
 
     def test_update_task_attribute_submitted(self):
         # This test should complete successfully, but
@@ -252,10 +252,10 @@ class TaskUpdateTests(unittest2.TestCase):
         self.assertEquals(out['task']['result'], self.result)
         # Make sure the update did not change the value
         self.assertNotEquals(out['task']['submitted'], tmp_submitted)
-        self.assertTrue(isinstance(out['task']['submitted'], int))
-        self.assertNotEquals(out['task']['submitted'], None)
-        self.assertEquals(out['task']['completed'], None)
-        self.assertEquals(out['task']['expires'], None)
+        self.assertIsInstance(out['task']['submitted'], int)
+        self.assertIsNotNone(out['task']['submitted'])
+        self.assertIsNone(out['task']['completed'])
+        self.assertIsNone(out['task']['expires'])
 
     def test_update_task_attribute_completed_TODO(self):
         pass
