@@ -1,4 +1,4 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
+#! /usr/bin/env python
 #
 # Copyright 2012, Rackspace US, Inc.
 #
