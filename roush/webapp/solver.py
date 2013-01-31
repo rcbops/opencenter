@@ -61,8 +61,10 @@ class Solver:
                     self.task_primitives[id]['id'] = id
                     self.task_primitives[id]['name'] = mangled_name
                     self.task_primitives[id]['task_name'] = task_name
-                    self.task_primitives[id]['constraints'] = task['constraints']
-                    self.task_primitives[id]['consequences'] = task['consequences']
+                    self.task_primitives[id]['constraints'] = \
+                        task['constraints']
+                    self.task_primitives[id]['consequences'] = \
+                        task['consequences']
                     self.task_primitives[id]['args'] = task['args']
                     self.task_primitives[id]['weight'] = 50
 
@@ -480,8 +482,9 @@ class Solver:
                     if prim_name != "add_backend":
                         new_constraints.append('"%s" in facts.backends' % be)
 
-                        self.logger.info(' - New constraints from primitive: %s' %
-                                         new_constraints)
+                        self.logger.info(
+                            ' - New constraints from primitive: %s' %
+                            new_constraints)
 
             new_solver = None
 

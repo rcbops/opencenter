@@ -307,7 +307,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
                                    self._ast_to_sqlalchemy(ast.rhs))
 
         if ast.op == 'OR':
-            return sqlalchemy.or_(self,_ast_to_sqlalchemy(ast.lhs),
+            return sqlalchemy.or_(self._ast_to_sqlalchemy(ast.lhs),
                                   self._ast_to_sqlalchemy(ast.rhs))
 
         if ast.op == '=' and ast.lhs.op == 'IDENTIFIER' and ast.rhs.op in \

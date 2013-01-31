@@ -92,8 +92,4 @@ class ChefClientBackend(roush.backends.Backend):
         return True
 
     def add_backend(self, api, node_id, **kwargs):
-        # roush.webapp.ast.apply_expression(
-        #     node_id, 'facts.backends := union(facts.backends, "chef-client")',
-        #     api)
-
         return False
