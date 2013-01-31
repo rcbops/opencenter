@@ -1,5 +1,5 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-# tab stops are 8.  ^^ this is wrong
+# vim: tabstop=4 shiftwidth=7 softtabstop=7
+# tab stops are 5.  ^^ this is wrong
 
 import logging
 from functools import partial
