@@ -80,13 +80,18 @@ def _notify(updated_object, object_type, object_id):
     if object_type == 'nodes':
         node_id = updated_object['id']
     if node_id is not None:
+        node_id = int(node_id)
         # We're just going to notify every child when containers are updated
-        node = api._model_get_by_id("nodes", node_id)
+        try:
+            node = api._model_get_by_id('nodes', node_id)
+        except exceptions.IdNotFound:
+            return
+
         if node is not None and 'container' in node['facts'].get(
                 'backends', []):
             children = utility.get_direct_children(node_id, api)
             for child in children:
-                semaphore = "nodes-id-%s" % child['id']
+                semaphore = 'nodes-id-%s' % child['id']
                 utility.notify(semaphore)
 
 
@@ -139,12 +144,12 @@ def object_by_id(object_type, object_id):
             semaphore = '%s-id-%s' % (object_type, object_id)
             utility.wait(semaphore)
 
-        model_object = api._model_get_by_id(object_type, object_id)
-
-        if not model_object:
+        try:
+            model_object = api._model_get_by_id(object_type, object_id)
+        except exceptions.IdNotFound:
             return http_response(404, 'not found')
-        else:
-            return http_response(200, 'success', **{s_obj: model_object})
+
+        return http_response(200, 'success', **{s_obj: model_object})
     else:
         return http_notfound(msg='Unknown method %s' % flask.request.method)
 

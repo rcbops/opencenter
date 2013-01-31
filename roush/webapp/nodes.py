@@ -109,15 +109,16 @@ def tree_by_id(node_id):
                 node_hash['children'].append(child)
                 fill_children(child)
 
-    node = copy.deepcopy(api._model_get_by_id('nodes', node_id))
+    try:
+        node = copy.deepcopy(api._model_get_by_id('nodes', node_id))
+    except:
+        return generic.http_notfound()
+
     seen_nodes.append(node_id)
 
-    if not node:
-        return generic.http_notfound()
-    else:
-        fill_children(node)
-        resp = generic.http_response(children=node)
-        return resp
+    fill_children(node)
+    resp = generic.http_response(children=node)
+    return resp
 
 
 @bp.route('/whoami', methods=['POST'])

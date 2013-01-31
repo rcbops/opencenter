@@ -8,7 +8,8 @@ from roush.db.database import session
 from roush.db import exceptions
 from roush.db import inmemory
 
-from roush.webapp.ast import FilterBuilder, FilterTokenizer
+import roush.webapp.ast
+# from roush.webapp.ast import FilterBuilder, FilterTokenizer
 
 
 LOG = logging.getLogger(__name__)
@@ -49,9 +50,21 @@ class DbAbstraction(object):
 
     def query(self, query):
         """get data with filter language query"""
-        query = '%s: %s' % (self.name, query)
+        full_query = '%s: %s' % (self.name, query)
 
-        builder = FilterBuilder(FilterTokenizer(), query, api=self.api)
+        builder = roush.webapp.ast.FilterBuilder(
+            roush.webapp.ast.FilterTokenizer(),
+            full_query, api=self.api)
+
+        root = builder.build()
+
+        # trivial optimization for a get_by_id
+        if root.op == '=':
+            if root.lhs.op == 'IDENTIFIER' and root.lhs.lhs == 'id':
+                if root.rhs.op == 'NUMBER' or root.rhs.op == 'STRING':
+                    return [self.get(int(root.rhs.lhs))]
+
+        # not a straight get_by_id
         result = builder.filter()
         return result
 
@@ -59,7 +72,11 @@ class DbAbstraction(object):
         raise NotImplementedError
 
     def first_by_filter(self, filters):
-        result = self.filter(filters)
+        """get data by sql alchemy filters"""
+        raise NotImplementedError
+
+    def first_by_query(self, query):
+        result = self.query(query)
         if len(result):
             return result[0]
         return None
@@ -199,6 +216,14 @@ class SqlAlchemyAbstraction(DbAbstraction):
         """
 
         new_data = self._sanitize_for_create(data)
+
+        if self.name == 'facts':
+            existing = self.api._model_query(
+                'facts', 'node_id=%d and key="%s"' % (
+                    int(new_data['node_id']), new_data['key']))
+            if len(existing) != 0:
+                return self.update(existing[0]['id'], data)
+
         r = self.model(**new_data)
 
         session.add(r)
@@ -217,6 +242,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
             raise exceptions.CreateError(message=msg)
 
     def delete(self, id):
+        id = int(id)
         r = self.model.query.filter_by(id=id).first()
         # We need generate an object hash to pass to the backend notification
 
@@ -234,26 +260,29 @@ class SqlAlchemyAbstraction(DbAbstraction):
             raise RuntimeError(msg)
 
     def get(self, id):
-        result = self.filter({'id': id})
+        id = int(id)
+        r = self.model.query.filter_by(id=id).first()
 
-        if len(result) == 0:
-            return None
-
-        return result[0]
-
-    def filter(self, filters):
-        """get data by sql alchemy filters"""
-        filter_options = sqlalchemy.sql.and_(
-            * [self.model.__table__.columns[k] == v
-               for k, v in filters.iteritems()])
-        r = self.model.query.filter(filter_options)
         if not r:
-            result = None
-        else:
-            result = [x.jsonify(api=self.api) for x in r]
-        return result
+            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+
+        return r.jsonify(api=self.api)
+
+    # def filter(self, filters):
+    #     """get data by sql alchemy filters"""
+    #     filter_options = sqlalchemy.sql.and_(
+    #         * [self.model.__table__.columns[k] == v
+    #            for k, v in filters.iteritems()])
+    #     r = self.model.query.filter(filter_options)
+    #     if not r:
+    #         result = None
+    #     else:
+    #         result = [x.jsonify(api=self.api) for x in r]
+    #     return result
 
     def update(self, id, data):
+        id = int(id)
+
         new_data = self._sanitize_for_update(data)
         r = self.model.query.filter_by(id=id).first()
 
@@ -271,6 +300,50 @@ class SqlAlchemyAbstraction(DbAbstraction):
         except:
             session.rollback()
             raise
+
+    def _ast_to_sqlalchemy(self, ast):
+        if ast.op == 'AND':
+            return sqlalchemy.and_(self._ast_to_sqlalchemy(ast.lhs),
+                                   self._ast_to_sqlalchemy(ast.rhs))
+
+        if ast.op == 'OR':
+            return sqlalchemy.or_(self,_ast_to_sqlalchemy(ast.lhs),
+                                  self._ast_to_sqlalchemy(ast.rhs))
+
+        if ast.op == '=' and ast.lhs.op == 'IDENTIFIER' and ast.rhs.op in \
+                ['STRING', 'NUMBER']:
+            return self.model.__table__.columns[ast.lhs.lhs] == ast.rhs.lhs
+
+        raise ValueError('Cannot convert to sqlalchemy query')
+
+    def query(self, query):
+        """
+        try and optimize the ast query into a sql query, leveraging the
+        ast node sql() method
+        """
+
+        full_query = '%s: %s' % (self.name, query)
+        builder = roush.webapp.ast.FilterBuilder(
+            roush.webapp.ast.FilterTokenizer(),
+            full_query, api=self.api)
+
+        root = builder.build()
+
+        sql_filter = None
+
+        try:
+            sql_filter = self._ast_to_sqlalchemy(root)
+        except ValueError:
+            self.logger.error('could not convert %s to native sql' % (query))
+
+        if sql_filter is not None:
+            r = self.model.query.filter(sql_filter)
+            if not r:
+                return None
+            else:
+                return [x.jsonify(api=self.api) for x in r]
+
+        return builder.filter()
 
 
 class APIAbstraction(DbAbstraction):
@@ -449,6 +522,7 @@ class CachedAbstraction(DbAbstraction):
         super(CachedAbstraction, self).__init__(api, model, name)
 
     def destroy_cache(self):
+        self.base.destroy_cache()
         self.cache = None
 
     def get_columns(self):
@@ -477,22 +551,25 @@ class CachedAbstraction(DbAbstraction):
         return result
 
     def get(self, id):
+        id = int(id)
+
         if self.cache is None:
             return self.base.get(id)
         else:
-            if not int(id) in self.cache:
+            if not id in self.cache:
                 raise exceptions.IdNotFound(
                     message='%s id %d does not exist' % (self.model, int(id)))
             else:
                 return self.cache[int(id)]
 
     def update(self, id, data):
-        result = self.base.update(int(id), data)
+        id = int(id)
+        result = self.base.update(id, data)
         self.api.destroy_cache()
         return result
 
-    def filter(self, filters):
-        return self.base.filter(filters)
+    # def filter(self, filters):
+    #     return self.base.filter(filters)
 
 
 class EphemeralAbstraction(DbAbstraction):

@@ -2,6 +2,7 @@
 
 import logging
 import re
+import copy
 
 
 # some utility functions for inverting and
@@ -90,11 +91,12 @@ def util_union(context, listish1, listish2):
 
     if isinstance(listish1, list):
         if isinstance(listish2, list):
-            newlist = listish1 + [x for x in listish2 if x not in listish1]
+            newlist = copy.deepcopy(listish1)
+            newlist += [x for x in listish2 if x not in newlist]
         else:
-            newlist = listish1
+            newlist = copy.deepcopy(listish1)
             if not listish2 in newlist:
-                newlist.append(listish2)
+                newlist += [listish2]
 
     return newlist
 

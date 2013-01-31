@@ -228,25 +228,25 @@ class SolverTestCase(RoushTestCase):
 
         # here, we should pump in another thing.
 
-    def test_nova_backend(self):
-        # make sure adding a nova backend pulls in chef-client
-        self._make_adventurator()
+    # def test_nova_backend(self):
+    #     # make sure adding a nova backend pulls in chef-client
+    #     self._make_adventurator()
 
-        # pop in a nova fact, which should pull in both
-        # a nova backend and a chef-client backend
-        resp = self._model_create('facts', node_id=self.node['id'],
-                                  key='nova_az',
-                                  value='nova',
-                                  please=True,
-                                  raw=True, expect_code=202)
+    #     # pop in a nova fact, which should pull in both
+    #     # a nova backend and a chef-client backend
+    #     resp = self._model_create('facts', node_id=self.node['id'],
+    #                               key='nova_az',
+    #                               value='nova',
+    #                               please=True,
+    #                               raw=True, expect_code=202)
 
-        self.assertTrue('plan' in resp)
-        plan = resp['plan']
+    #     self.assertTrue('plan' in resp)
+    #     plan = resp['plan']
 
-        entry = self._plan_entry(plan, 'node.add_backend')
-        self.assertTrue('ns' in entry)
-        self.assertTrue('backend' in entry['ns'])
-        self.assertTrue('chef-client' == entry['ns']['backend'])
+    #     entry = self._plan_entry(plan, 'node.add_backend')
+    #     self.assertTrue('ns' in entry)
+    #     self.assertTrue('backend' in entry['ns'])
+    #     self.assertTrue('chef-client' == entry['ns']['backend'])
 
     # after we get scaffolding by default
     # def test_install_chef_server(self):
