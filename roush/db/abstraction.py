@@ -60,10 +60,6 @@ class DbAbstraction(object):
     def get(self, id):
         raise NotImplementedError
 
-    def filter(self, filters):
-        """get data by sql alchemy filters"""
-        raise NotImplementedError
-
     def query(self, query):
         """get data with filter language query"""
         full_query = '%s: %s' % (self.name, query)
@@ -85,10 +81,6 @@ class DbAbstraction(object):
         return result
 
     def update(self, id, data):
-        raise NotImplementedError
-
-    def first_by_filter(self, filters):
-        """get data by sql alchemy filters"""
         raise NotImplementedError
 
     def first_by_query(self, query):
@@ -283,18 +275,6 @@ class SqlAlchemyAbstraction(DbAbstraction):
             raise exceptions.IdNotFound(message='id %d does not exist' % id)
 
         return r.jsonify(api=self.api)
-
-    # def filter(self, filters):
-    #     """get data by sql alchemy filters"""
-    #     filter_options = sqlalchemy.sql.and_(
-    #         * [self.model.__table__.columns[k] == v
-    #            for k, v in filters.iteritems()])
-    #     r = self.model.query.filter(filter_options)
-    #     if not r:
-    #         result = None
-    #     else:
-    #         result = [x.jsonify(api=self.api) for x in r]
-    #     return result
 
     def update(self, id, data):
         id = int(id)

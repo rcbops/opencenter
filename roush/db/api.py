@@ -95,12 +95,6 @@ class RoushApi(object):
     def _model_delete_by_id(self, model, id):
         return self._call_model('delete', model, id)
 
-    def _model_get_by_filter(self, model, filters):
-        return self._call_model('filter', model, filters)
-
-    def _model_get_first_by_filter(self, model, filters):
-        return self._call_model('first_by_filter', model, filters)
-
     def _model_query(self, model, query):
         return self._call_model('query', model, query)
 
@@ -122,8 +116,6 @@ class RoushApi(object):
                 partial(self._model_delete_by_id, model))
         setattr(self, '%s_get_columns' % sing,
                 partial(self._model_get_columns, model))
-        setattr(self, '%s_get_first_by_filter' % sing,
-                partial(self._model_get_first_by_filter, model))
         setattr(self, '%s_get_by_id' % sing,
                 partial(self._model_get_by_id, model))
         setattr(self, '%s_create' % sing,
@@ -132,8 +124,8 @@ class RoushApi(object):
                 partial(self._model_update_by_id, model))
         setattr(self, '%s_query' % model,
                 partial(self._model_query, model))
-        setattr(self, '%s_first_by_query' % model,
-                partial(self._model_query, model))
+        setattr(self, '%s_get_first_by_query' % sing,
+                partial(self._model_get_first_by_query, model))
 
 
 def api_from_endpoint(endpoint):
