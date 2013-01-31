@@ -18,7 +18,7 @@ class Solver:
         self.base_api = api
         self.consequences = []
         self.applied_consequences = applied_consequences if \
-                applied_consequences is not None else []
+            applied_consequences is not None else []
 
         self.children = []
         classname = self.__class__.__name__.lower()
@@ -336,8 +336,9 @@ class Solver:
                        satisfied
         """
 
-        self.logger.debug('Can %s solve any constraints %s?' % (
-                primitive['name'], [x['constraint'] for x in constraints]))
+        self.logger.debug('Can %s solve any constraints %s?' %
+                          (primitive['name'],
+                           [x['constraint'] for x in constraints]))
 
         f_builder = ast.FilterBuilder(ast.FilterTokenizer())
         valid_solutions = []
