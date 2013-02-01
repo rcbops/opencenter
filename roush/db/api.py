@@ -19,7 +19,7 @@ import logging
 from functools import partial
 
 import abstraction
-
+import roush.webapp.ast
 
 _cached_apis = {}
 use_cached_api = True
@@ -54,7 +54,16 @@ class RoushApi(object):
         return result
 
     def apply_expression(self, node_id, expression):
-        roush.webapp.ast.apply_expression(node_id, expression, self)
+        # again, we should probably have a standard namespace for
+        # applying expressions
+        return roush.webapp.ast.apply_expression(node_id, expression, self)
+
+    def concrete_expression(self, expression, ns={}):
+        # I think there should be a standard default namespace, including
+        # nodes[<id>], self, and other things... this is here so we
+        # can determine a regular namespace for evaluating expressions.  Right
+        # now, there is no real reason for it to be here.
+        return roush.webapp.ast.concrete_expression(expression, ns)
 
     def _get_models(self):
         return self.model_list.keys()

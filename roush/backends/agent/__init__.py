@@ -89,10 +89,23 @@ class AgentBackend(roush.backends.Backend):
         if 'result_code' in task['result'] and \
                 task['result']['result_code'] == 0:
             # apply any consequences
-            conslist = task['result']['result_data'].get('consequences', {})
+            conslist = task['result']['result_data'].get('consequences', [])
+
+            # find out and register the consequences of the task that the
+            # agent is advertising.
+
+            node = api._model_get_by_id('nodes', node_id)
+            if 'roush_agent_actions' in node['attrs']:
+                if action in node['attrs']['roush_agent_actions']:
+                    action_info = node['attrs']['roush_agent_actions'][action]
+                    direct_cons = action_info.get('consequences', [])
+
+                    for dcon in direct_cons:
+                        concrete = api.concrete_expression(dcon, payload)
+                        conslist += [concrete]
 
             for cons in conslist:
-                api.apply_expression(cons)
+                api.apply_expression(node_id, cons)
 
             return True
 
