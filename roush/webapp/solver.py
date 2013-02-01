@@ -676,6 +676,9 @@ class Solver:
                 # strong type knowledge, but as we have no strong knowledge
                 # (or even weak type knowledge) we have to stuff this in
                 # manually.  FIXME(rp): revisit this when we have types
+                #
+                # this should probably go away.
+
                 addl_args = {}
 
                 if prim['name'] == 'agent.run_task':
@@ -689,7 +692,14 @@ class Solver:
 
                 addl_args.update(prim['args'])
 
-                for arg in addl_args:
+                self.logger.debug('total args: %s' % addl_args)
+
+                eval_args = dict([[x, addl_args[x]] for x in addl_args if
+                                  addl_args[x]['type'] == 'evaluated'])
+                other_args = dict([[x, addl_args[x]] for x in addl_args if
+                                   addl_args[x]['type'] != 'evaluated'])
+
+                for arg in other_args:
                     # walk through and see if we can solve this.
                     # man, this is stupid ugly
                     solvable, msg, choices = self.solve_arg(arg,
@@ -716,6 +726,32 @@ class Solver:
                             step['args'] = {}
                         step['args'][arg] = argv
                         step['args'][arg]['message'] = msg
+
+                if plan_solvable:
+                    # express the evaluated args
+                    eval_ns = {}
+                    for k, v in step['ns'].items():
+                        eval_ns[k] = v
+
+                    node = self.base_api._model_get_by_id('nodes',
+                                                          self.node_id)
+                    nodes = self.base_api._model_get_all('nodes')
+
+                    eval_ns['self'] = node
+                    eval_ns['nodes'] = dict([(str(x['id']), x) for x in nodes])
+
+                    # we've poked all the solved args into the ns,
+                    # now, let's express them
+                    for arg, val in eval_args.items():
+                        if arg not in step['ns']:
+                            self.logger.debug('expressing %s' %
+                                              val['expression'])
+
+                            # really, some of these should get bound at
+                            # adventureate time... this is kind of wrong
+                            step['ns'][arg] = \
+                                roush.webapp.ast.apply_expression(
+                                    eval_ns, val['expression'], self.base_api)
 
             self.logger.debug('returning (%s, %s, %s)' % (plan_solvable,
                                                           plan_choosable,
