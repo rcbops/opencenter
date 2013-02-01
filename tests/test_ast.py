@@ -10,6 +10,8 @@ class AstTests(RoushTestCase):
         if roush.backends.primitive_by_name('test.set_test_fact') is None:
             roush.backends.load_specific_backend('tests.test', 'TestBackend')
 
+        self._clean_all()
+
         self.nodes = {}
 
         for d in range(1, 9):
@@ -103,12 +105,18 @@ class AstTests(RoushTestCase):
         # self.assertEquals(len(result), 1)
 
     def test_011_nth(self):
+        self._model_create('facts', node_id=self.cluster['id'],
+                           key='array',
+                           value=[1, 2, 3])
         result = self._model_filter('nodes', 'nth(0, facts.array) = 1')
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), len(self.nodes) + 1)
         # self.assertEquals(len(result), 1)
 
     def test_012_max(self):
+        self._model_create('facts', node_id=self.cluster['id'],
+                           key='array',
+                           value=[1, 2, 3])
         result = self._model_filter('nodes', 'max(facts.array) = 3')
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), len(self.nodes) + 1)
@@ -133,6 +141,9 @@ class AstTests(RoushTestCase):
         # self.assertEquals(len(result), 1)
 
     def test_015_count(self):
+        self._model_create('facts', node_id=self.cluster['id'],
+                           key='array',
+                           value=[1, 2, 3])
         result = self._model_filter('nodes', 'count(facts.array) = 3')
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), len(self.nodes) + 1)
