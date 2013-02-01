@@ -254,7 +254,7 @@ def inject(cls):
     test.__name__ = 'test_get_primitive_schema'
     setattr(cls, test.__name__, test)
 
-    app = webapp.Thing('roush', configfile='test.conf', debug=True)
+    app = webapp.Thing('roush', configfile='tests/test.conf', debug=True)
     init_db(app.config['database_uri'])
     client = app.test_client()
     logger = app.logger
