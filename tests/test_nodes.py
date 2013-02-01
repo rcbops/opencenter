@@ -17,7 +17,7 @@ def _randomStr(size):
 class NodeCreateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        self.foo = webapp.Thing('roush', configfile='tests/test.conf', debug=True)
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
         self.name = _randomStr(10)
@@ -82,7 +82,7 @@ class NodeCreateTests(unittest2.TestCase):
 class NodeInvalidHTTPMethodTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        self.foo = webapp.Thing('roush', configfile='tests/test.conf', debug=True)
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
         self.content_type = 'application/json'

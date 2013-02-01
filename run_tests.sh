@@ -58,6 +58,10 @@ if [ $coverage -eq 1 ]; then
 fi
 
 function run_tests {
+  # cleanup the test database
+  if [[ -e test_suite.db ]]; then
+    rm -rf test_suite.db
+  fi
   # Cleanup *pyc
   ${wrapper} find . -type f -name "*.pyc" -delete
   # Just run the test suites in current environment
@@ -82,7 +86,6 @@ function run_pep8 {
   PEP8_INCLUDE="."
   ${wrapper} pep8 $PEP8_OPTIONS $PEP8_INCLUDE || exit 1
 }
-
 
 NOSETESTS="nosetests $noseopts $noseargs tests/*.py"
 

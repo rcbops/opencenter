@@ -28,7 +28,7 @@ def _gen_result_obj():
 class TaskCreateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        self.foo = webapp.Thing('roush', configfile='tests/test.conf', debug=True)
         self.app = self.foo.test_client()
         self.content_type = 'application/json'
 
@@ -86,7 +86,7 @@ class TaskCreateTests(unittest2.TestCase):
 class TaskUpdateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        self.foo = webapp.Thing('roush', configfile='tests/test.conf', debug=True)
         self.app = self.foo.test_client()
         self.content_type = 'application/json'
 
@@ -273,7 +273,7 @@ class TaskUpdateTests(unittest2.TestCase):
 class TaskInvalidHTTPMethodTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        self.foo = webapp.Thing('roush', configfile='tests/test.conf', debug=True)
         self.app = self.foo.test_client()
         self.content_type = 'application/json'
 
