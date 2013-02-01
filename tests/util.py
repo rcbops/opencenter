@@ -12,7 +12,9 @@ from roush.db.database import init_db
 class RoushTestCase(unittest2.TestCase):
     @classmethod
     def setUpClass(cls, *args, **kwargs):
-        cls.app = webapp.Thing('roush', configfile='test.conf', debug=True)
+        cls.app = webapp.Thing('roush',
+                               configfile='tests/test.conf',
+                               debug=True)
         init_db(cls.app.config['database_uri'])
         cls.client = cls.app.test_client()
         cls.logger = cls.app.logger
@@ -254,7 +256,7 @@ def inject(cls):
     test.__name__ = 'test_get_primitive_schema'
     setattr(cls, test.__name__, test)
 
-    app = webapp.Thing('roush', configfile='test.conf', debug=True)
+    app = webapp.Thing('roush', configfile='tests/test.conf', debug=True)
     init_db(app.config['database_uri'])
     client = app.test_client()
     logger = app.logger
