@@ -71,7 +71,11 @@ class JsonEntry(types.TypeDecorator):
 
 class JsonRenderer(object):
     def __new__(cls, *args, **kwargs):
-        obj = super(JsonRenderer, cls).__new__(cls, *args, **kwargs)
+        # README(shep): This line produces the following DeprecationWarning
+        #     DeprecationWarning: object.__new__() takes no parameters
+        # obj = super(JsonRenderer, cls).__new__(cls, *args, **kwargs)
+        # README(shep): This seems to work and does not throw the warning
+        obj = super(JsonRenderer, cls).__new__(cls)
         obj.__dict__['api'] = db_api.api_from_models()
         classname = obj.__class__.__name__.lower()
 
