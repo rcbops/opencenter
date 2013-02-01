@@ -12,7 +12,9 @@ from roush.db.database import init_db
 class RoushTestCase(unittest2.TestCase):
     @classmethod
     def setUpClass(cls, *args, **kwargs):
-        cls.app = webapp.Thing('roush', configfile='tests/test.conf', debug=True)
+        cls.app = webapp.Thing('roush',
+                               configfile='tests/test.conf',
+                               debug=True)
         init_db(cls.app.config['database_uri'])
         cls.client = cls.app.test_client()
         cls.logger = cls.app.logger
