@@ -69,19 +69,18 @@ class Solver:
                 mangled_name = task_name
                 task = node['attrs']['roush_agent_actions'][task_name]
 
-                if task['consequences'] != []:
-                    id = hash(mangled_name) & 0xFFFFFFFF
-                    # should verify this unique against backends
-                    self.task_primitives[id] = {}
-                    self.task_primitives[id]['id'] = id
-                    self.task_primitives[id]['name'] = mangled_name
-                    self.task_primitives[id]['task_name'] = task_name
-                    self.task_primitives[id]['constraints'] = \
-                        task['constraints']
-                    self.task_primitives[id]['consequences'] = \
-                        task['consequences']
-                    self.task_primitives[id]['args'] = task['args']
-                    self.task_primitives[id]['weight'] = 50
+                id = hash(mangled_name) & 0xFFFFFFFF
+                # should verify this unique against backends
+                self.task_primitives[id] = {}
+                self.task_primitives[id]['id'] = id
+                self.task_primitives[id]['name'] = mangled_name
+                self.task_primitives[id]['task_name'] = task_name
+                self.task_primitives[id]['constraints'] = \
+                    task['constraints']
+                self.task_primitives[id]['consequences'] = \
+                    task['consequences']
+                self.task_primitives[id]['args'] = task['args']
+                self.task_primitives[id]['weight'] = 50
 
         self.logger.debug('Node before applying consequences: %s' % pre_node)
         self.logger.debug('Applied consequences: %s' %
@@ -413,7 +412,10 @@ class Solver:
             #     'name="%s"' % proposed_plan['primitive'])
         else:
             primitives = self._get_all_primitives()
-            # primitives = self.api._model_get_all('primitives')
+
+            # strip out the primitives that won't solve anything
+            primitives = [x for x in primitives if
+                          x['consequences'] != []]
             primitives = [x for x in primitives
                           if self._can_meet_constraints(x)]
 
@@ -427,6 +429,7 @@ class Solver:
         if len(primitives) == 0:
             # we can't meet constraints of any primitives, or we specified
             # a bogus primitive in a plan...
+            self.logger.debug('no valid primitives')
             return None
 
         if proposed_plan:

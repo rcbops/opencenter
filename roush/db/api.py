@@ -53,6 +53,9 @@ class RoushApi(object):
 
         return result
 
+    def apply_expression(self, node_id, expression):
+        roush.webapp.ast.apply_expression(node_id, expression, self)
+
     def _get_models(self):
         return self.model_list.keys()
 
