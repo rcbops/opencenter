@@ -1,5 +1,4 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
-import unittest2
 from util import RoushTestCase
 
 import roush.backends
