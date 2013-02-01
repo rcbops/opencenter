@@ -25,6 +25,7 @@ from roush.webapp import ast
 from roush.webapp import utility
 from roush.webapp import errors
 from roush.webapp import auth
+from roush.webapp.utility import unprovisioned_container
 
 api = api_from_models()
 object_type = 'nodes'
@@ -165,22 +166,3 @@ def whoami():
         node = nodes[0]
     return generic.http_response(200, 'success',
                                  **{"node": node})
-
-
-def unprovisioned_container():
-    unprovisioned = api._model_query(
-        'nodes',
-        'name = "unprovisioned" and "container" in facts.backends')
-    if len(unprovisioned) == 0:
-        #create unprovisioned node
-        unprovisioned = api._model_create(
-            'nodes',
-            {"name": "unprovisioned"})
-        api._model_create(
-            'facts',
-            {"node_id": unprovisioned['id'],
-             "key": "backends",
-             "value": ["node", "container"]})
-    else:
-        unprovisioned = unprovisioned[0]
-    return unprovisioned
