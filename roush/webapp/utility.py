@@ -169,3 +169,22 @@ def solve_and_run(node_id, constraints, api=api, plan=None):
         task = run_adventure(adventure_dsl=solution_plan, nodes=[node_id])
 
     return task, solution_plan
+
+
+def unprovisioned_container():
+    unprovisioned = api._model_query(
+        'nodes',
+        'name = "unprovisioned" and "container" in facts.backends')
+    if len(unprovisioned) == 0:
+        #create unprovisioned node
+        unprovisioned = api._model_create(
+            'nodes',
+            {"name": "unprovisioned"})
+        api._model_create(
+            'facts',
+            {"node_id": unprovisioned['id'],
+             "key": "backends",
+             "value": ["node", "container"]})
+    else:
+        unprovisioned = unprovisioned[0]
+        return unprovisioned
