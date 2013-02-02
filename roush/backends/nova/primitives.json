@@ -1,7 +1,6 @@
 {
     "create_cluster": {
         "args": {
-
             "cluster_name": {
                 "friendly": "name of nova cluster",
                 "default": "Nova Cluster",
