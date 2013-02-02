@@ -88,9 +88,9 @@ class ChefClientBackend(roush.backends.Backend):
 
         return (chef_node_attrs, chef_env_attrs)
 
-
     def _entity_exists(self, entity_type, key, value, chef_api):
-        result = chef.Search(entity_type, '%s:%s' % (key, value), 1, 0, chef_api)
+        result = chef.Search(entity_type, '%s:%s' % (key, value),
+                             1, 0, chef_api)
         return len(result) == 1
 
     def _environment_exists(self, environment_name, chef_api):
@@ -132,7 +132,6 @@ class ChefClientBackend(roush.backends.Backend):
         # we are converging a node.  If the node is a container,
         # that probably implies converging all nodes under it.
         required_facts = ['chef_server_consumed', 'chef_environment']
-
 
                           # 'chef_server_uri', 'chef_server_client_name',
                           # 'chef_server_client_pem']
