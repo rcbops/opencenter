@@ -62,6 +62,7 @@ class NovaBackend(roush.backends.Backend):
                 environment_hash[k] = v
 
         environment_hash['chef_server_consumed'] = kwargs['chef_server']
+        environment_hash['chef_environment'] = kwargs['cluster_name']
 
         # have the attribute map, let's make it an apply the
         # facts.

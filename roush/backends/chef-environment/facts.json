@@ -3,5 +3,10 @@
         "chef_server_consumed": {
             "settable": false
         }
+    },
+    {
+        "chef_environment": {
+            "settable": false
+        }
     }
 ]
