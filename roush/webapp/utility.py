@@ -19,6 +19,8 @@ import logging
 import gevent.event
 
 import solver
+import copy
+
 from roush.db.api import api_from_models
 
 api = api_from_models()
@@ -53,36 +55,78 @@ def wait(what):
     event.clear()
 
 
+def is_container(node):
+    return 'backends' in node['facts'] and \
+        'container' in node['facts']['backends']
+
+
+def is_leaf(node):
+    return not(is_container(node))
+
+
+def true_f(_):
+    return True
+
+
+def _expand_nodes(nodelist, filter_f=true_f, api=api, depth=0, detailed=False):
+    final_nodes = []
+    nodes = copy.deepcopy(nodelist)
+    seen = {}
+    for node in nodes:
+        if isinstance(node, (int, long)):
+            node = api.node_get_by_id(node)
+        if not node['id'] in seen:
+            seen[node['id']] = {"inspect": False, "level": 0}
+        elif not seen[node['id']]['inspect']:
+            #We've already inspected this node, move on.
+            next
+        #We're about to inspect the node.  Don't do it if we see the node again
+        seen[node['id']]['inspect'] = False
+        if filter_f(node):
+            if detailed:
+                final_nodes.append(node)
+            elif node is not None:
+                final_nodes.append(node['id'])
+        #We'll add new children provided we're not out of depth
+        if is_container(node) and (depth == 0
+                                   or seen[node['id']]['level'] < depth):
+            new_nodes = api.nodes_query('facts.parent_id = %s' % node['id'])
+            for new_n in new_nodes:
+                if not new_n['id'] in seen:
+                    seen[new_n['id']] = {
+                        "inspect": True,
+                        "level": seen[node['id']]['level'] + 1}
+                    nodes.append(new_n)
+    return final_nodes
+
+
 def expand_nodelist(nodelist, api=api):
     """
     given a list of nodes (including containers),
     generate a fully expanded list of non-container-y
     nodes
     """
+    return _expand_nodes(nodelist, api=api, filter_f=is_leaf)
 
-    final_nodelist = []
 
-    for node_id in nodelist:
-        node = api.node_get_by_id(node_id)
-        is_container = False
-        if 'backends' in node['facts'] and \
-                'container' in node['facts']['backends']:
-            is_container = True
-
-        if not is_container:
-            final_nodelist.append(node_id)
-        else:
-            query = 'facts.parent_id = %s' % node_id
-            child_nodes = api.nodes_query(query)
-            child_node_ids = [x['id'] for x in child_nodes]
-
-            final_nodelist += expand_nodelist(child_node_ids)
-
-    return final_nodelist
+def fully_expand_nodelist(nodelist, api=api):
+    """
+    given a list of nodes (including containers),
+    generate a fully expanded list of all descendent
+    nodes
+    """
+    return _expand_nodes(nodelist, api=api)
 
 
 def get_direct_children(node_id, api=api):
-    return api.nodes_query("facts.parent_id = %s" % node_id)
+    return [x for x in _expand_nodes([node_id], api=api,
+                                     depth=1, detailed=True)
+            if x['id'] != node_id]
+
+
+def get_descendents(nodelist, api=api, depth=0):
+    return [x for x in _expand_nodes(nodelist, api=api)
+            if x not in nodelist]
 
 
 def run_adventure(adventure_dsl=None, nodes=None):
