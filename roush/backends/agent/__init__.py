@@ -1,4 +1,19 @@
 #!/usr/bin/env python
+#
+# Copyright 2012, Rackspace US, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 import copy
 import time
@@ -21,37 +36,35 @@ class AgentBackend(roush.backends.Backend):
 
         # payload = dict([(x, kwargs[x]) for x in kwargs if x != 'action'])
 
-        self.logger.debug('run_task: got kwargs %s' % kwargs)
-
         # push global variables
         if 'globals' in kwargs:
             adventure_globals = kwargs.pop('globals')
 
         # run through the rest of the args and typecast them
         # as appropriate.
-        node = api._model_get_by_id('nodes', node_id)
+        # node = api._model_get_by_id('nodes', node_id)
 
-        typed_args = {}
+        # typed_args = {}
 
-        if 'roush_agent_actions' in node['attrs']:
-            if action in node['attrs']['roush_agent_actions']:
-                action_info = node['attrs']['roush_agent_actions'][action]
-                typed_args = action_info['args']
+        # if 'roush_agent_actions' in node['attrs']:
+        #     if action in node['attrs']['roush_agent_actions']:
+        #         action_info = node['attrs']['roush_agent_actions'][action]
+        #         typed_args = action_info['args']
 
-        ns = copy.deepcopy(payload)
-        ns.update(copy.deepcopy(adventure_globals))
+        # ns = copy.deepcopy(payload)
+        # ns.update(copy.deepcopy(adventure_globals))
 
-        for k, v in kwargs.items():
-            # we'll type these, if we know them, and cast them
-            # appropriately.
-            if k in typed_args:
-                arg_info = typed_args[k]
-                if arg_info['type'] == 'interface':  # make full node
-                    v = api._model_get_by_id('nodes', v)
-            ns[k] = v
+        # for k, v in kwargs.items():
+        #     # we'll type these, if we know them, and cast them
+        #     # appropriately.
+        #     if k in typed_args:
+        #         arg_info = typed_args[k]
+        #         if arg_info['type'] == 'interface':  # make full node
+        #             v = api._model_get_by_id('nodes', v)
+        #     ns[k] = v
 
-        for k, v in payload.items():
-            payload[k] = roush.webapp.ast.apply_expression(ns, v, api)
+        # for k, v in payload.items():
+        #     payload[k] = roush.webapp.ast.apply_expression(ns, v, api)
 
         # for k, v in kwargs.items():
         #     payload[k] = v
@@ -75,19 +88,24 @@ class AgentBackend(roush.backends.Backend):
 
         if 'result_code' in task['result'] and \
                 task['result']['result_code'] == 0:
-            # see if there are facts or attrs to apply.
-            attrlist = task['result']['result_data'].get('attrs', {})
-            factlist = task['result']['result_data'].get('facts', {})
+            # apply any consequences
+            conslist = task['result']['result_data'].get('consequences', [])
 
-            for attr, value in attrlist.iteritems():
-                api._model_create('attrs', {'node_id': node_id,
-                                            'key': attr,
-                                            'value': value})
+            # find out and register the consequences of the task that the
+            # agent is advertising.
 
-            for fact, value in factlist.iteritems():
-                api._model_create('facts', {'node_id': node_id,
-                                            'key': fact,
-                                            'value': value})
+            node = api._model_get_by_id('nodes', node_id)
+            if 'roush_agent_actions' in node['attrs']:
+                if action in node['attrs']['roush_agent_actions']:
+                    action_info = node['attrs']['roush_agent_actions'][action]
+                    direct_cons = action_info.get('consequences', [])
+
+                    for dcon in direct_cons:
+                        concrete = api.concrete_expression(dcon, payload)
+                        conslist += [concrete]
+
+            for cons in conslist:
+                api.apply_expression(node_id, cons)
 
             return True
 

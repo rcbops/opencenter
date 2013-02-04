@@ -1,12 +1,6 @@
 {
-    "add_backend": {
-        "args": {},
-        "constraints": [],
-        "consequences": [ "facts.backends := union(facts.backends, 'nova')" ]
-    },
     "create_cluster": {
         "args": {
-
             "cluster_name": {
                 "friendly": "name of nova cluster",
                 "default": "Nova Cluster",

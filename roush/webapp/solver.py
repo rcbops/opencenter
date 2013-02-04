@@ -1,4 +1,19 @@
 #!/usr/bin/env python
+#
+# Copyright 2012, Rackspace US, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 import copy
 import logging
@@ -11,13 +26,15 @@ from roush.db import api as db_api
 
 class Solver:
     def __init__(self, api, node_id, constraints,
-                 parent=None, prim=None, ns={}, applied_consequences=[]):
+                 parent=None, prim=None, ns=None, applied_consequences=None):
 
         self.constraints = constraints
         self.node_id = node_id
         self.base_api = api
         self.consequences = []
-        self.applied_consequences = applied_consequences
+        self.applied_consequences = applied_consequences if \
+            applied_consequences is not None else []
+
         self.children = []
         classname = self.__class__.__name__.lower()
         self.logger = logging.getLogger('%s.%s' % (__name__, classname))
@@ -25,9 +42,10 @@ class Solver:
         self.prim = prim
         self.task_primitives = {}
         self.adventures = []
-        self.ns = ns
+        self.ns = ns if ns is not None else {}
 
-        self.logger.debug('New solver for constraints %s' % constraints)
+        self.logger.info('New solver for constraints %s' % constraints)
+        self.logger.info('With applied constraints %s' % applied_consequences)
 
         # roll the applied consequences forward in an ephemeral
         # api, and do our resolution from that.
@@ -48,17 +66,21 @@ class Solver:
                 'backends' in node['facts'] and \
                 'agent' in node['facts']['backends']:
             for task_name in node['attrs']['roush_agent_actions']:
-                mangled_name = 'wrapped:agent.run_task.%s' % task_name
+                mangled_name = task_name
                 task = node['attrs']['roush_agent_actions'][task_name]
 
                 id = hash(mangled_name) & 0xFFFFFFFF
                 # should verify this unique against backends
                 self.task_primitives[id] = {}
+                self.task_primitives[id]['id'] = id
                 self.task_primitives[id]['name'] = mangled_name
                 self.task_primitives[id]['task_name'] = task_name
-                self.task_primitives[id]['constraints'] = task['constraints']
-                self.task_primitives[id]['consequences'] = task['consequences']
+                self.task_primitives[id]['constraints'] = \
+                    task['constraints']
+                self.task_primitives[id]['consequences'] = \
+                    task['consequences']
                 self.task_primitives[id]['args'] = task['args']
+                self.task_primitives[id]['weight'] = 50
 
         self.logger.debug('Node before applying consequences: %s' % pre_node)
         self.logger.debug('Applied consequences: %s' %
@@ -92,7 +114,7 @@ class Solver:
         # we are not solving over tasks anymore - we need to rethink this
         # plus, it's a stoopid generator.
         #
-        # primitive_list += self.task_primitives.values()
+        primitive_list += self.task_primitives.values()
         return primitive_list
 
     def _get_primitive_by_name(self, name):
@@ -306,7 +328,13 @@ class Solver:
         testing)
         """
 
+        if ns is None:
+            ns = {}
+
         potential = self._potential_solutions(primitive, constraints)
+        if len(potential) == 1:
+            return potential[0]
+
         for solution in potential:
             if ns == solution['ns']:
                 return solution
@@ -322,8 +350,9 @@ class Solver:
                        satisfied
         """
 
-        self.logger.debug('Can %s solve any constraints %s?' % (primitive,
-                                                                constraints))
+        self.logger.debug('Can %s solve any constraints %s?' %
+                          (primitive['name'],
+                           [x['constraint'] for x in constraints]))
 
         f_builder = ast.FilterBuilder(ast.FilterTokenizer())
         valid_solutions = []
@@ -383,7 +412,10 @@ class Solver:
             #     'name="%s"' % proposed_plan['primitive'])
         else:
             primitives = self._get_all_primitives()
-            # primitives = self.api._model_get_all('primitives')
+
+            # strip out the primitives that won't solve anything
+            primitives = [x for x in primitives if
+                          x['consequences'] != []]
             primitives = [x for x in primitives
                           if self._can_meet_constraints(x)]
 
@@ -397,6 +429,7 @@ class Solver:
         if len(primitives) == 0:
             # we can't meet constraints of any primitives, or we specified
             # a bogus primitive in a plan...
+            self.logger.debug('no valid primitives')
             return None
 
         if proposed_plan:
@@ -451,17 +484,26 @@ class Solver:
 
             # get additional constraints from the primitive itself.
             self.logger.debug("finding addl constraints for %s using ns %s" %
-                              (solution['primitive']['id'],
+                              (solution['primitive']['name'],
                                solution['ns']))
-
-            self.logger.debug("%s" % dir(roush.backends))
 
             new_constraints = self._get_additional_constraints(
                 solution['primitive']['id'],
                 solution['ns'])
 
-            self.logger.info(' - New constraints from primitive: %s' %
-                             new_constraints)
+            # FIXME(rp)
+            # pull in backends for primitives that can solve constraints
+            # this should probably instead roll the consequence of the task
+            # forward and re-run through satisifes constaraints
+            if not solution['primitive']['id'] in self.task_primitives:
+                be, prim_name = solution['primitive']['name'].split('.')
+                if new_constraints is not None:
+                    if prim_name != "add_backend":
+                        new_constraints.append('"%s" in facts.backends' % be)
+
+                        self.logger.info(
+                            ' - New constraints from primitive: %s' %
+                            new_constraints)
 
             new_solver = None
 
@@ -476,12 +518,12 @@ class Solver:
 
                 subsolve = Solver(
                     self.base_api, self.node_id, new_constraints,
-                    applied_consequences=self.applied_consequences)
+                    applied_consequences=applied_consequences)
 
                 sub_success, _, sub_plan = subsolve.solve()
                 if sub_success:
                     sub_solver = Solver.from_plan(
-                        self.api, self.node_id,
+                        self.base_api, self.node_id,
                         new_constraints + constraints,
                         sub_plan)
                     new_solver = sub_solver.children[0]
@@ -556,6 +598,7 @@ class Solver:
                 '  ' * level, self.applied_consequences))
         else:
             self.logger.info('ROOT NODE')
+            self.logger.info('Constraints: %s' % self.constraints)
 
         self.logger.info('%s (with %d children)' % (
             '  ' * level, len(self.children)))
@@ -564,7 +607,14 @@ class Solver:
             child.print_tree(level + 1)
 
     def found_solution(self):
-        return len(self.constraints) == 0
+        if len(self.constraints) == 0:
+            return True
+
+        # for child in self.children:
+        #     if child.found_solution():
+        #         return True
+
+        return False
 
     def solve(self):
         top_level = self
@@ -585,9 +635,14 @@ class Solver:
                 # we'll have a bunch of single-level leaves,
                 # or a single-path solution
                 for child in leaf.children:
-                    while len(child.children) > 0:
-                        child = child.children[0]
-                    new_leaves.append(child)
+                    new_child = child
+
+                    while len(new_child.children) > 0:
+                        new_child = new_child.children[0]
+
+                    new_leaves.append(new_child)
+                    if new_child.found_solution():
+                        solution_node = new_child
 
                 # new_leaves = new_leaves + leaf.children
 
@@ -596,6 +651,9 @@ class Solver:
                 top_level.print_tree()
 
         if solution_node:
+            self.logger.debug('BEFORE BACKPRUNING')
+            top_level.print_tree()
+
             while solution_node.parent:
                 # backprune the solution
                 solution_node.parent.children = [solution_node]
@@ -621,6 +679,9 @@ class Solver:
                 # strong type knowledge, but as we have no strong knowledge
                 # (or even weak type knowledge) we have to stuff this in
                 # manually.  FIXME(rp): revisit this when we have types
+                #
+                # this should probably go away.
+
                 addl_args = {}
 
                 if prim['name'] == 'agent.run_task':
@@ -634,7 +695,14 @@ class Solver:
 
                 addl_args.update(prim['args'])
 
-                for arg in addl_args:
+                self.logger.debug('total args: %s' % addl_args)
+
+                eval_args = dict([[x, addl_args[x]] for x in addl_args if
+                                  addl_args[x]['type'] == 'evaluated'])
+                other_args = dict([[x, addl_args[x]] for x in addl_args if
+                                   addl_args[x]['type'] != 'evaluated'])
+
+                for arg in other_args:
                     # walk through and see if we can solve this.
                     # man, this is stupid ugly
                     solvable, msg, choices = self.solve_arg(arg,
@@ -661,6 +729,32 @@ class Solver:
                             step['args'] = {}
                         step['args'][arg] = argv
                         step['args'][arg]['message'] = msg
+
+                if plan_solvable:
+                    # express the evaluated args
+                    eval_ns = {}
+                    for k, v in step['ns'].items():
+                        eval_ns[k] = v
+
+                    node = self.base_api._model_get_by_id('nodes',
+                                                          self.node_id)
+                    nodes = self.base_api._model_get_all('nodes')
+
+                    eval_ns['self'] = node
+                    eval_ns['nodes'] = dict([(str(x['id']), x) for x in nodes])
+
+                    # we've poked all the solved args into the ns,
+                    # now, let's express them
+                    for arg, val in eval_args.items():
+                        if arg not in step['ns']:
+                            self.logger.debug('expressing %s' %
+                                              val['expression'])
+
+                            # really, some of these should get bound at
+                            # adventureate time... this is kind of wrong
+                            step['ns'][arg] = \
+                                roush.webapp.ast.apply_expression(
+                                    eval_ns, val['expression'], self.base_api)
 
             self.logger.debug('returning (%s, %s, %s)' % (plan_solvable,
                                                           plan_choosable,

@@ -1,4 +1,19 @@
 #!/usr/bin/env python
+#
+# Copyright 2012, Rackspace US, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 import copy
 import flask
@@ -28,14 +43,15 @@ def by_id(object_id):
 
 @bp.route('/<node_id>/tasks_blocking', methods=['GET'])
 def tasks_blocking_by_node_id(node_id):
-    task = api.task_get_first_by_filter({'node_id': node_id,
-                                         'state': 'pending'})
+    task = api.task_get_first_by_query("node_id=%d and state='pending'" %
+                                       int(node_id))
+
     while not task:
         semaphore = 'task-for-%s' % node_id
         flask.current_app.logger.debug('waiting on %s' % semaphore)
         utility.wait(semaphore)
-        task = api.task_get_first_by_filter({'node_id': node_id,
-                                             'state': 'pending'})
+        task = api.task_get_first_by_query("node_id=%d and state='pending'" %
+                                           int(node_id))
         if task:
             utility.clear(semaphore)
 
@@ -49,8 +65,8 @@ def tasks_blocking_by_node_id(node_id):
 @bp.route('/<node_id>/tasks', methods=['GET'])
 def tasks_by_node_id(node_id):
     # Display only tasks with state=pending
-    task = api.task_get_first_by_filter({'node_id': node_id,
-                                         'state': 'pending'})
+    task = api.task_get_first_by_query("node_id=%d and state='pending'" %
+                                       int(node_id))
     if not task:
         return generic.http_notfound()
     else:
@@ -109,15 +125,40 @@ def tree_by_id(node_id):
                 node_hash['children'].append(child)
                 fill_children(child)
 
-    node = copy.deepcopy(api._model_get_by_id('nodes', node_id))
+    try:
+        node = copy.deepcopy(api._model_get_by_id('nodes', node_id))
+    except:
+        return generic.http_notfound()
+
     seen_nodes.append(node_id)
 
-    if not node:
-        return generic.http_notfound()
+    fill_children(node)
+    resp = generic.http_response(children=node)
+    return resp
+
+
+@bp.route('/updates/<trx_id>', methods=['GET'])
+def updates_by_trxid(trx_id):
+    latest = flask.current_app.trans['latest']
+    updates = flask.current_app.trans['updates']
+    sess_key = flask.current_app.trans['session_key']
+    if int(trx_id) in updates:
+        node_list = []
+        for i in xrange(int(trx_id), latest):
+            node_list.extend(updates[i]['nodes'])
+        ret = []
+        ret.extend(x for x in node_list if x not in ret)
+        # TODO(shep): this still needs to run through util.expand_nodes
+        return generic.http_response(
+            200, 'Updated Nodes',
+            session_key=sess_key, nodes=ret)
     else:
-        fill_children(node)
-        resp = generic.http_response(children=node)
-        return resp
+        # Need to check if the trx_id is < lowest, if so call for a refetch
+        # TODO(shep): need to figure out code for a refetch
+        if trx_id < flask.current_app.trans['lowest']:
+            return generic.http_notfound()
+        else:
+            return generic.http_notfound()
 
 
 @bp.route('/whoami', methods=['POST'])

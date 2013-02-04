@@ -1,11 +1,25 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-# tab stops are 8.  ^^ this is wrong
+#! /usr/bin/env python
+#
+# Copyright 2012, Rackspace US, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 import logging
 from functools import partial
 
 import abstraction
-
+import roush.webapp.ast
 
 _cached_apis = {}
 use_cached_api = True
@@ -38,6 +52,18 @@ class RoushApi(object):
                     result[model] = trans
 
         return result
+
+    def apply_expression(self, node_id, expression):
+        # again, we should probably have a standard namespace for
+        # applying expressions
+        return roush.webapp.ast.apply_expression(node_id, expression, self)
+
+    def concrete_expression(self, expression, ns={}):
+        # I think there should be a standard default namespace, including
+        # nodes[<id>], self, and other things... this is here so we
+        # can determine a regular namespace for evaluating expressions.  Right
+        # now, there is no real reason for it to be here.
+        return roush.webapp.ast.concrete_expression(expression, ns)
 
     def _get_models(self):
         return self.model_list.keys()
@@ -81,14 +107,11 @@ class RoushApi(object):
     def _model_delete_by_id(self, model, id):
         return self._call_model('delete', model, id)
 
-    def _model_get_by_filter(self, model, filters):
-        return self._call_model('filter', model, filters)
-
-    def _model_get_first_by_filter(self, model, filters):
-        return self._call_model('first_by_filter', model, filters)
-
     def _model_query(self, model, query):
         return self._call_model('query', model, query)
+
+    def _model_get_first_by_query(self, model, query):
+        return self._call_model('first_by_query', model, query)
 
     def _model_update_by_id(self, model, id, data):
         return self._call_model('update', model, id, data)
@@ -105,8 +128,6 @@ class RoushApi(object):
                 partial(self._model_delete_by_id, model))
         setattr(self, '%s_get_columns' % sing,
                 partial(self._model_get_columns, model))
-        setattr(self, '%s_get_first_by_filter' % sing,
-                partial(self._model_get_first_by_filter, model))
         setattr(self, '%s_get_by_id' % sing,
                 partial(self._model_get_by_id, model))
         setattr(self, '%s_create' % sing,
@@ -115,6 +136,8 @@ class RoushApi(object):
                 partial(self._model_update_by_id, model))
         setattr(self, '%s_query' % model,
                 partial(self._model_query, model))
+        setattr(self, '%s_get_first_by_query' % sing,
+                partial(self._model_get_first_by_query, model))
 
 
 def api_from_endpoint(endpoint):

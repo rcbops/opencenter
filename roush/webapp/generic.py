@@ -1,4 +1,19 @@
 #!/usr/bin/env python
+#
+# Copyright 2012, Rackspace US, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 import flask
 
@@ -80,13 +95,18 @@ def _notify(updated_object, object_type, object_id):
     if object_type == 'nodes':
         node_id = updated_object['id']
     if node_id is not None:
+        node_id = int(node_id)
         # We're just going to notify every child when containers are updated
-        node = api._model_get_by_id("nodes", node_id)
+        try:
+            node = api._model_get_by_id('nodes', node_id)
+        except exceptions.IdNotFound:
+            return
+
         if node is not None and 'container' in node['facts'].get(
                 'backends', []):
             children = utility.get_direct_children(node_id, api)
             for child in children:
-                semaphore = "nodes-id-%s" % child['id']
+                semaphore = 'nodes-id-%s' % child['id']
                 utility.notify(semaphore)
 
 
@@ -139,12 +159,12 @@ def object_by_id(object_type, object_id):
             semaphore = '%s-id-%s' % (object_type, object_id)
             utility.wait(semaphore)
 
-        model_object = api._model_get_by_id(object_type, object_id)
-
-        if not model_object:
+        try:
+            model_object = api._model_get_by_id(object_type, object_id)
+        except exceptions.IdNotFound:
             return http_response(404, 'not found')
-        else:
-            return http_response(200, 'success', **{s_obj: model_object})
+
+        return http_response(200, 'success', **{s_obj: model_object})
     else:
         return http_notfound(msg='Unknown method %s' % flask.request.method)
 
