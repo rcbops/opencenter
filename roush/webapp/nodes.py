@@ -137,6 +137,16 @@ def tree_by_id(node_id):
     return resp
 
 
+@bp.route('/updates/<trx_id>', methods=['GET'])
+def updates_by_trxid(trx_id):
+    return generic.http_response(200, 'trans_hash', **{'data': flask.current_app.trans})
+    #if trx_id in flask.current_app.trans['nodes']:
+    #    return generic.http_response(200, '%s exists' % trx_id)
+    #else:
+    #    # Not a valid transaction_id
+    #    return generic.http_notfound()
+
+
 @bp.route('/whoami', methods=['POST'])
 def whoami():
     body = flask.request.json
