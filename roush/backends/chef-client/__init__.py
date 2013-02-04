@@ -86,7 +86,7 @@ class ChefClientBackend(roush.backends.Backend):
         chef_env_attrs = mako.template.Template(
             filename=environment_template).render(facts=cluster_attributes)
 
-        return (chef_node_attrs, chef_env_attrs)
+        return (json.loads(chef_node_attrs), json.loads(chef_env_attrs))
 
     def _entity_exists(self, entity_type, key, value, chef_api):
         result = chef.Search(entity_type, '%s:%s' % (key, value),
@@ -101,6 +101,13 @@ class ChefClientBackend(roush.backends.Backend):
         return self._entity_exists('node', 'name',
                                    node_name, chef_api)
 
+    def _map_roles(self, role):
+        if role == 'nova-compute':
+            return ['role[single-compute]']
+        elif role == 'nova-infra':
+            return ['role[single-controller]']
+        return []
+
     def _expand_nodelist(nodelist, api):
         """
         given a list of nodes (including containers),
@@ -109,6 +116,8 @@ class ChefClientBackend(roush.backends.Backend):
         """
 
         final_nodelist = []
+
+        self.logger.debug('nodelist: %s' % nodelist)
 
         for node_id in nodelist:
             node = api.node_get_by_id(node_id)
@@ -128,10 +137,22 @@ class ChefClientBackend(roush.backends.Backend):
 
         return final_nodelist
 
+    def _serialize_node_blob(self, blob):
+        result = {}
+        for key, value in blob.items():
+            if isinstance(value, chef.node.NodeAttributes):
+                result[key] = self._serialize_node_blob(value)
+            else:
+                result[key] = value
+        return result
+
     def converge_chef(self, api, node_id, **kwargs):
         # we are converging a node.  If the node is a container,
         # that probably implies converging all nodes under it.
-        required_facts = ['chef_server_consumed', 'chef_environment']
+        self.logger.debug('Converging chef')
+
+        required_facts = ['chef_server_consumed', 'chef_environment',
+                          'nova_role']
 
                           # 'chef_server_uri', 'chef_server_client_name',
                           # 'chef_server_client_pem']
@@ -156,6 +177,7 @@ class ChefClientBackend(roush.backends.Backend):
                 return False
             # locals()[required_fact] = node['facts'][required_fact]
 
+        nova_role = node['facts']['nova_role']
         chef_server_consumed = node['facts']['chef_server_consumed']
         chef_environment = node['facts']['chef_environment'].replace(' ', '_')
 
@@ -164,6 +186,8 @@ class ChefClientBackend(roush.backends.Backend):
         chef_server_uri = csn['facts']['chef_server_uri']
         chef_server_client_name = csn['facts']['chef_server_client_name']
         chef_server_client_pem = csn['facts']['chef_server_client_pem']
+
+        self.logger.debug('Creating connection to chef server')
 
         # make a chef api object
         pem = StringIO.StringIO(chef_server_client_pem)
@@ -178,6 +202,8 @@ class ChefClientBackend(roush.backends.Backend):
         env = None
 
         if not self._environment_exists(chef_environment, chef_api):
+            self.logger.debug('Creating non-existent environment: %s' %
+                              chef_environment)
 
             env = chef.Environment.create(chef_environment,
                                           api=chef_api)
@@ -191,6 +217,8 @@ class ChefClientBackend(roush.backends.Backend):
 
         old_env_overrides = env.override_attributes
 
+        self.logger.debug('Old environment overrides: %s' % old_env_overrides)
+
         # Find the node
         if not self._node_exists(node['name'], chef_api):
             self.logger.error('Node "%s" is not registered to chef' %
@@ -198,24 +226,32 @@ class ChefClientBackend(roush.backends.Backend):
             return False
 
         chef_node = chef.Node(node['name'], chef_api)
-        chef_node.save()
+        old_node_overrides = self._serialize_node_blob(chef_node.override)
 
-        old_node_overrides = chef_node.override
+        self.logger.debug('Old node overrides: %s' % old_node_overrides)
 
         need_node_converge = False
-        need_cluster_converge = False
+        need_env_converge = False
 
+        query = '"adventurator" in attrs.roush_agent_output_modules'
         adventurator = api._model_get_first_by_query('nodes', query)
         if not adventurator:
             self.logger.error('Could not find adventurator')
             return False
 
-        if old_node_overrides != node_attrs:
+        if old_node_overrides != node_attrs or \
+                chef_node.chef_environment != chef_environment or\
+                chef_node.run_list != self._map_roles(nova_role):
+            self.logger.debug('Updating chef node')
             need_node_converge = True
-            chef_node.overrides = node_attrs
+            self.logger.debug('Setting environment to %s' % chef_environment)
+            chef_node.chef_environment = chef_environment
+            chef_node.override = node_attrs
+            chef_node.run_list = self._map_roles(nova_role)
             chef_node.save()
 
         if old_env_overrides != env_attrs:
+            self.logger.debug('Updating environment')
             need_env_converge = True
             env.override_attributes = env_attrs
             env.save()
@@ -224,11 +260,13 @@ class ChefClientBackend(roush.backends.Backend):
 
         if need_env_converge:
             nodelist = self._expand_nodelist([node_id])
-        elif need_node_coverage:
+        elif need_node_converge:
             nodelist = [node_id]
 
+        self.logger.debug('chef updating nodelist: %s' % nodelist)
+
         if nodelist:
-            dsl = '[{"primitive": "run_chef", "ns": {}}]'
+            dsl = [{'primitive': 'run_chef', 'ns': {}}]
             api._model_create('tasks', {'action': 'adventurate',
                                         'node_id': adventurator['id'],
                                         'payload': {'nodes': nodelist,

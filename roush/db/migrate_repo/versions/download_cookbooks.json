@@ -1,8 +1,6 @@
 [
     {
-        "primitive": "agent.run_task",
-        "ns": {
-            "action": "download_cookbooks"
-        }
+        "primitive": "download_cookbooks",
+        "ns": {}
     }
 ]
