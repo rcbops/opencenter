@@ -20,6 +20,8 @@ import fcntl
 import getopt
 import logging
 import os
+import random
+import string
 import sys
 import traceback
 
@@ -82,6 +84,12 @@ class Thing(Flask):
                  confighash=None, debug=False):
         daemonize = False
         self.registered_models = []
+        self.trans = {
+            'session_key': "".join([random.choice(string.hexdigits)
+                                   for n in xrange(30)]),
+            'latest': 0,
+            'lowest': 0,
+            'updates': {0: {'nodes': []}}}
 
         super(Thing, self).__init__(name)
 
