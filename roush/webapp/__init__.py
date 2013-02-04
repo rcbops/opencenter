@@ -84,7 +84,6 @@ class Thing(Flask):
                  confighash=None, debug=False):
         daemonize = False
         self.registered_models = []
-        # Define a global transaction_id
         self.trans = {
             'session_key': "".join([random.choice(string.hexdigits)
                                    for n in xrange(30)]),
