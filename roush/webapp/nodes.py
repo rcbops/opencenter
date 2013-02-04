@@ -139,12 +139,24 @@ def tree_by_id(node_id):
 
 @bp.route('/updates/<trx_id>', methods=['GET'])
 def updates_by_trxid(trx_id):
-    return generic.http_response(200, 'trans_hash', **{'data': flask.current_app.trans})
-    #if trx_id in flask.current_app.trans['nodes']:
-    #    return generic.http_response(200, '%s exists' % trx_id)
-    #else:
-    #    # Not a valid transaction_id
-    #    return generic.http_notfound()
+    latest = flask.current_app.trans['latest']
+    updates = flask.current_app.trans['updates']
+    if int(trx_id) in updates:
+        node_list = []
+        for i in xrange(int(trx_id), latest):
+            node_list.extend(updates[i]['nodes'])
+        ret = []
+        ret.extend(x for x in node_list if x not in ret)
+        return generic.http_response(
+            200,
+            'Updated Nodes',
+            nodes=ret)
+    else:
+        # Need to check if the trx_id is < lowest, if so call for a refetch
+        if trx_id < flask.current_app.trans['lowest']:
+            return generic.http_notfound()
+        else:
+            return generic.http_notfound()
 
 
 @bp.route('/whoami', methods=['POST'])
