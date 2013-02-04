@@ -90,7 +90,7 @@ class Thing(Flask):
                                    for n in xrange(30)]),
             'latest': 0,
             'lowest': 0,
-            'updates': {'nodes': []}}
+            'updates': {0: {'nodes': []}}}
 
         super(Thing, self).__init__(name)
 
