@@ -1,70 +1,56 @@
 {
-  "name": "rpcs",
-  "description": "",
-  "cookbook_versions": {
-  },
-  "json_class": "Chef::Environment",
-  "chef_type": "environment",
-  "default_attributes": {
-    "mysql": {
-      "allow_remote_root": true,
-      "root_network_acl": "%"
-    },
-    "nova": {
-      "network": {
-          "public_interface": "${facts['nova_public_if']}"
-      }
-    }
-  },
-  "override_attributes": {
     "developer_mode": false,
     "monitoring" : {
-      "procmon_provider" : "monit",
-      "metric_provider" : "collectd"
+        "procmon_provider" : "monit",
+        "metric_provider" : "collectd"
     },
     "keystone" : {
-      "tenants" : [ "admin", "service" ],
-      "admin_user" : "admin",
-      "users" : {
-        "admin" : {
-          "password" : "${facts['keystone_admin_pw']}",
-          "roles" : {
-            "admin" : [ "admin" ]
-          }
+        "tenants" : [ "admin", "service" ],
+        "admin_user" : "admin",
+        "users" : {
+            "admin" : {
+                "password" : "${facts['keystone_admin_pw']}",
+                "roles" : {
+                    "admin" : [ "admin" ]
+                }
+            }
         }
-      }
     },
     "glance": {
-      "image" : {
-      },
-      "images": [
-      ],
-      "image_upload": false
+        "image" : {
+        },
+        "images": [
+        ],
+        "image_upload": false
+    },
+    "mysql": {
+        "allow_remote_root": true,
+        "root_network_acl": "%"
     },
     "nova": {
-      "network": {
-          "fixed_range": "${facts['nova_vm_fixed_range']}",
-          "dmz_cidr": "${facts['nova_dmz_cidr']}"
-      },
-      "apply_patches": true,
-      "networks": [
-        {
-          "bridge_dev": "${facts['nova_vm_fixed_if']}",
-          "num_networks": "1",
-          "network_size": "256",
-          "bridge": "${facts['nova_vm_bridge']}",
-          "ipv4_cidr": "${facts['nova_vm_fixed_range']}",
-          "label": "public",
-          "dns1": "8.8.8.8",
-          "dns2": "8.8.4.4"
-        }
-      ]
+        "network": {
+            "fixed_range": "${facts['nova_vm_fixed_range']}",
+            "dmz_cidr": "${facts['nova_dmz_cidr']}",
+            "public_interface": "${facts['nova_public_if']}"
+        },
+        "apply_patches": true,
+        "networks": [
+            {
+                "bridge_dev": "${facts['nova_vm_fixed_if']}",
+                "num_networks": "1",
+                "network_size": "256",
+                "bridge": "${facts['nova_vm_bridge']}",
+                "ipv4_cidr": "${facts['nova_vm_fixed_range']}",
+                "label": "public",
+                "dns1": "8.8.8.8",
+                "dns2": "8.8.4.4"
+            }
+        ]
     },
     "osops_networks": {
-      "management": "${facts['osops_mgmt']}",
-      "nova": "${facts['osops_nova']}",
-      "public": "${facts['osops_public']}"
+        "management": "${facts['osops_mgmt']}",
+        "nova": "${facts['osops_nova']}",
+        "public": "${facts['osops_public']}"
     },
     "package_component": "folsom"
-  }
 }

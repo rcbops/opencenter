@@ -1,6 +1,5 @@
 {
-  "override_attributes": {
-      "nova": {
-          "availability_zone": "${facts['nova_az']}"
-      }
+    "nova": {
+        "availability_zone": "${facts['nova_az'] if 'nova_az' in facts else 'nova'}"
+    }
 }
