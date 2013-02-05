@@ -84,12 +84,9 @@ class Thing(Flask):
                  confighash=None, debug=False):
         daemonize = False
         self.registered_models = []
-        self.trans = {
+        self.transactions = {
             'session_key': "".join([random.choice(string.hexdigits)
-                                   for n in xrange(30)]),
-            'latest': 0,
-            'lowest': 0,
-            'updates': {0: {'nodes': []}}}
+                                   for n in xrange(30)])}
 
         super(Thing, self).__init__(name)
 
@@ -204,6 +201,12 @@ class Thing(Flask):
         self.register_blueprint(plan_bp, url_prefix='/plan')
         self.register_blueprint(plan_bp, url_prefix='/admin/plan')
         self.testing = debug
+
+        # Define transaction dict for all models
+        for model in self.registered_models:
+            self.transactions[model] = {
+                'latest': 0, 'lowest': 0,
+                'updates': {0: {model: []}}}
 
         if debug:
             self.config['TESTING'] = True
