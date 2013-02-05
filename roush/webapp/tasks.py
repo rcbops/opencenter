@@ -16,6 +16,7 @@
 #
 
 import flask
+import socket
 
 from roush.db.api import api_from_models
 from roush.webapp import generic
@@ -55,3 +56,27 @@ def task_by_id(object_id):
             utility.notify(task_semaphore)
 
     return result
+
+@bp.route('/<object_id>/logs', methods['GET'])
+def task_log(task_id):
+    try:
+        task = api._model_get_by_id('tasks', task_id)
+    except exceptions.IdNotFound:
+        return http_response(404, 'not found')
+
+    node_id = task['node_id']
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('',0))
+    s.listen(1)
+
+    family, socktype, proto, canonname, sockaddr = s.getsockname()
+
+    conn, addr = s.accept()
+    data = conn.recv(1024)
+
+    conn.close()
+    s.shutdown(2)
+    s.close()
+
+    return http_response(200, log=data)
