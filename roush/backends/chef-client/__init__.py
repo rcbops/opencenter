@@ -133,7 +133,7 @@ class ChefClientBackend(roush.backends.Backend):
                 child_nodes = api.nodes_query(query)
                 child_node_ids = [x['id'] for x in child_nodes]
 
-                final_nodelist += expand_nodelist(child_node_ids)
+                final_nodelist += self._expand_nodelist(child_node_ids, api)
 
         return final_nodelist
 
@@ -259,7 +259,7 @@ class ChefClientBackend(roush.backends.Backend):
         nodelist = None
 
         if need_env_converge:
-            nodelist = self._expand_nodelist([node_id])
+            nodelist = self._expand_nodelist([node_id], api)
         elif need_node_converge:
             nodelist = [node_id]
 
