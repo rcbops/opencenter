@@ -16,6 +16,8 @@
 #
 
 import flask
+import socket
+import netifaces
 
 from roush.db.api import api_from_models
 from roush.webapp import generic
@@ -55,3 +57,87 @@ def task_by_id(object_id):
             utility.notify(task_semaphore)
 
     return result
+
+
+@bp.route('/<task_id>/logs', methods=['GET'])
+def task_log(task_id):
+    try:
+        task = api._model_get_by_id('tasks', task_id)
+    except exceptions.IdNotFound:
+        return generic.http_response(404, 'not found')
+
+    node_id = task['node_id']
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('', 0))
+    s.listen(1)
+
+    addr, port = s.getsockname()
+    if addr == '0.0.0.0':
+        # we need something more specific.  This is
+        # pretty naive, but works.  If we could get the
+        # flask fd, we could getsockname on that side
+        # and see what we requested on.  that would
+        # likely be a better guess.
+        interface_list = netifaces.interfaces()
+        iface = 'eth0'
+        if not iface in interface_list:
+            iface = 'en0'
+
+        try:
+            addr = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
+        except Exception:
+            # we don't have an eth0, or ipv4 or something else.  Enough that
+            # we aren't going to come up with a simple way to do this, so
+            # we'll punt
+            #
+            # randomly find an ip address that isn't loopback...
+            addr_list = []
+
+            addr = None
+
+            for iface in interface_list:
+                if netifaces.AF_INET in netifaces.ifaddresses(iface):
+                    someaddrs = netifaces.ifaddresses(iface)[netifaces.AF_INET]
+                    for paddr in someaddrs:
+                        if 'addr' in paddr:
+                            addr_list.append(paddr['addr'])
+
+            for paddr in addr_list:
+                if not paddr.startswith('127'):
+                    addr = paddr
+
+            if not addr:
+                s.close()
+                return generic.http_response(500, 'cannot determine bind')
+
+    new_task = api._model_create('tasks', {'node_id': task['node_id'],
+                                           'action': 'logfile.tail',
+                                           'payload': {'task_id': task['id'],
+                                                       'dest_ip': addr,
+                                                       'dest_port': port}})
+
+    task_semaphore = 'task-for-%s' % task['node_id']
+    flask.current_app.logger.debug('notifying event %s' %
+                                   task_semaphore)
+    utility.notify(task_semaphore)
+
+    # force the wake
+    utility.sleep(0.1)
+
+    # now wait for a few seconds to see if we get the
+    # connection
+    s.settimeout(10)
+
+    try:
+        conn, addr = s.accept()
+    except socket.timeout:
+        s.close()
+        return generic.http_response(404, 'cannot fetch logs')
+
+    data = conn.recv(1024)
+
+    conn.close()
+    s.close()
+
+    return generic.http_response(200, log=data)
