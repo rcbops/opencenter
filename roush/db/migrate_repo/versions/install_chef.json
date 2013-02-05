@@ -1,23 +1,10 @@
 [
     {
-        "primitive": "agent.run_task",
-        "ns": {
-            "action": "install_chef",
-            "payload": {
-                "CHEF_SERVER_URL": "chef_server.facts.chef_server_uri",
-                "CHEF_SERVER_PEM": "chef_server.facts.chef_server_pem"
-            }
-        }
+        "primitive": "install_chef",
+        "ns": {}
     },
     {
-        "primitive": "agent.run_task",
-        "ns": {
-            "action": "run_chef",
-            "payload": {}
-        }
-    },
-    {
-        "primitive": "node.add_backend",
-        "ns": {"backend": "chef-client"}
+        "primitive": "run_chef",
+        "ns": {}
     }
 ]
