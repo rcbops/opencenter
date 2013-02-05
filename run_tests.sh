@@ -54,7 +54,7 @@ done
 
 # If enabled, tell nose to collect coverage data
 if [ $coverage -eq 1 ]; then
-    noseopts="$noseopts --with-xunit --with-coverage --cover-package=roush"
+    noseopts="$noseopts --with-coverage --cover-package=roush"
 fi
 
 function run_tests {
@@ -87,7 +87,7 @@ function run_pep8 {
   ${wrapper} pep8 $PEP8_OPTIONS $PEP8_INCLUDE || exit 1
 }
 
-NOSETESTS="nosetests $noseopts $noseargs tests/*.py"
+NOSETESTS="nosetests --with-xunit $noseopts $noseargs tests/*.py"
 
 if [ $never_venv -eq 0 ]
 then
