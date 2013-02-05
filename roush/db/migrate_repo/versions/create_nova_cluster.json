@@ -1,5 +1,11 @@
 [
     {
+        "primitive": "node.add_backend",
+        "ns": {
+            "backend": "nova"
+        }
+    },
+    {
         "primitive": "nova.create_cluster",
         "ns": {}
     }
