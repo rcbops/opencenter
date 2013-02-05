@@ -231,7 +231,7 @@ class ChefClientBackend(roush.backends.Backend):
         self.logger.debug('Old node overrides: %s' % old_node_overrides)
 
         # we'll always converge node, just to be sure
-        need_node_converge = True
+        need_node_converge = False
         need_env_converge = False
 
         query = '"adventurator" in attrs.roush_agent_output_modules'
@@ -240,16 +240,18 @@ class ChefClientBackend(roush.backends.Backend):
             self.logger.error('Could not find adventurator')
             return False
 
-        if old_node_overrides != node_attrs or \
-                chef_node.chef_environment != chef_environment or\
-                chef_node.run_list != self._map_roles(nova_role):
-            self.logger.debug('Updating chef node')
-            need_node_converge = True
-            self.logger.debug('Setting environment to %s' % chef_environment)
-            chef_node.chef_environment = chef_environment
-            chef_node.override = node_attrs
-            chef_node.run_list = self._map_roles(nova_role)
-            chef_node.save()
+        # we'll always stomp this stuff..
+
+        # if old_node_overrides != node_attrs or \
+        #         chef_node.chef_environment != chef_environment or\
+        #         chef_node.run_list != self._map_roles(nova_role):
+        self.logger.debug('Updating chef node')
+        need_node_converge = True
+        self.logger.debug('Setting environment to %s' % chef_environment)
+        chef_node.chef_environment = chef_environment
+        chef_node.override = node_attrs
+        chef_node.run_list = self._map_roles(nova_role)
+        chef_node.save()
 
         if old_env_overrides != env_attrs:
             self.logger.debug('Updating environment')
@@ -257,9 +259,10 @@ class ChefClientBackend(roush.backends.Backend):
             env.override_attributes = env_attrs
             env.save()
 
-        nodelist = None
+        nodelist = [node_id]
 
         if need_env_converge:
+            # FIXME: this should be the top-level environment container... d'oh!
             nodelist = self._expand_nodelist([node_id], api)
         elif need_node_converge:
             nodelist = [node_id]
