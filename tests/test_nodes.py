@@ -272,6 +272,29 @@ class NodeTransactionTests(util.RoushTestCase):
         self.assertEquals(data['nodes'], test_id_list)
         self._cleanup_nodes([node_a, node_b, node_c, test_container])
 
+    def test_verify_node_list_returns_transaction_information(self):
+        """test_verify_node_list_returns_transaction_information
+
+        Verify node_list returns a transaction payload
+
+        Expected Result:
+
+        'transaction': {
+            'session_key': <random_string>,
+            'latest': {
+                'id': <trx_id>
+            }
+        }
+        """
+        resp = self._client_request('get', '/nodes/')
+        self.assertEquals(resp.status_code, 200)
+        data = json.loads(resp.data)
+        data = json.loads(resp.data)['transaction']
+        self.assertIsNotNone(data['session_key'])
+        self.assertIsInstance(data['latest'], dict)
+        self.assertTrue('id' in data['latest'])
+        self.assertIsInstance(data['latest']['id'], int)
+
 
 class NodeOtherTests(util.RoushTestCase):
     def setUp(self):
