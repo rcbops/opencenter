@@ -149,11 +149,13 @@ def return_latest_update():
     Returns:
     json object containing: the unique session key, the latest transaction id
     """
-    trans = flask.current_app.trans
+    session_key = flask.current_app.transactions['session_key']
+    trans = flask.current_app.transactions[object_type]
+    transaction_hash = {'session_key': session_key,
+                        'latest': {'id': trans['latest']}}
     return generic.http_response(
-        200, 'Latest update',
-        session_key=trans['session_key'],
-        latest={'id': trans['latest']})
+        200, 'Transaction information',
+        transaction=transaction_hash)
 
 
 @bp.route('/updates/<trx_id>', methods=['GET'])
@@ -169,31 +171,27 @@ def updates_by_trxid(trx_id):
     session_key -- unique session key
     nodes -- list of updated node_ids from trx_id to latest transaction id
     """
-    # return generic.http_response(200, 'foo', data=flask.current_app.trans)
-    print "TRANS: %s" % flask.current_app.trans
-    latest = flask.current_app.trans['latest']
-    updates = flask.current_app.trans['updates']
-    sess_key = flask.current_app.trans['session_key']
+    session_key = flask.current_app.transactions['session_key']
+    trans = flask.current_app.transactions[object_type]
+    latest = trans['latest']
+    lowest = trans['lowest']
+    updates = trans['updates']
     if int(trx_id) in updates:
         node_list, ret = [], []
         if int(trx_id) < latest:
             stop = latest + 1
         else:
             stop = latest
-        print "STOP: %s" % stop
         for i in xrange(int(trx_id) + 1, stop):
-            print "I: %s" % i
-            print "%s" % updates[i]['nodes']
             node_list.extend(updates[i]['nodes'])
         ret.extend(x for x in node_list if x not in ret)
-        # TODO(shep): this still needs to run through util.expand_nodes
         return generic.http_response(
             200, 'Updated Nodes',
-            session_key=sess_key, nodes=ret)
+            session_key=session_key, nodes=ret)
     else:
         # Need to check if the trx_id is < lowest, if so call for a refetch
         # TODO(shep): need to figure out code for a refetch
-        if trx_id < flask.current_app.trans['lowest']:
+        if trx_id < lowest:
             return generic.http_notfound()
         else:
             return generic.http_notfound()
