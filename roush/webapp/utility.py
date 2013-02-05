@@ -112,21 +112,19 @@ def expand_nodelist(nodelist, api=api):
 def fully_expand_nodelist(nodelist, api=api):
     """
     given a list of nodes (including containers),
-    generate a fully expanded list of all descendent
-    nodes
+    generate a fully expanded list of all node_ids in node_list
+    as well as their descendant nodes
     """
     return _expand_nodes(nodelist, api=api)
 
 
 def get_direct_children(node_id, api=api):
+    """
+    given a node_id, return a list of all direct child nodes
+    """
     return [x for x in _expand_nodes([node_id], api=api,
                                      depth=1, detailed=True)
             if x['id'] != node_id]
-
-
-def get_descendents(nodelist, api=api, depth=0):
-    return [x for x in _expand_nodes(nodelist, api=api)
-            if x not in nodelist]
 
 
 def run_adventure(adventure_dsl=None, nodes=None):
