@@ -227,6 +227,7 @@ def unprovisioned_container():
             {"node_id": unprovisioned['id'],
              "key": "backends",
              "value": ["node", "container"]})
+        return unprovisioned
     else:
         unprovisioned = unprovisioned[0]
         return unprovisioned

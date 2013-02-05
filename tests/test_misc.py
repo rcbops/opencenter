@@ -193,3 +193,11 @@ class MiscTests(RoushTestCase):
 
         self._clean_table('nodes')
         self._clean_table('facts')
+
+    def test_unprovisioned_container(self):
+        n = roush.webapp.utility.unprovisioned_container()
+        self.assertTrue(n is not None)
+        n2 = roush.webapp.utility.unprovisioned_container()
+        self.assertTrue(n['id'] == n2['id'])
+        self._clean_table('nodes')
+        self._clean_table('facts')
