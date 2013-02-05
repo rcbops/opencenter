@@ -55,6 +55,10 @@ def wait(what):
     event.clear()
 
 
+def sleep(how_long):
+    gevent.sleep(how_long)
+
+
 def is_container(node):
     return 'backends' in node['facts'] and \
         'container' in node['facts']['backends']
