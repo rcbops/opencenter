@@ -9,3 +9,4 @@ coverage
 pep8
 gevent
 mako
+netifaces

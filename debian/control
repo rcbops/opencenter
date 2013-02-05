@@ -13,7 +13,8 @@ Build-Depends: debhelper (>= 7.0.50~),
  python-daemon,
  python-chef,
  python-gevent,
- python-mako
+ python-mako,
+ python-netifaces
 Standards-Version: 3.9.1
 XS-Python-Version: >= 2.6
 Homepage: https://github.com/galstrom21/roush
@@ -31,7 +32,8 @@ Depends: ${python:Depends}, ${misc:Depends},
  python-daemon,
  python-chef,
  python-gevent,
- python-mako
+ python-mako,
+ python-netifaces
 Provides: ${python:Provides}
 Description: roush web API
 
