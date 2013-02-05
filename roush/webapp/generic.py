@@ -159,8 +159,9 @@ def list(object_type):
         model_objects = api._model_get_all(object_type)
         args_hash = {object_type: model_objects}
         if object_type in ['nodes']:
-            session_key = flask.current_app.trans['session_key']
-            latest = flask.current_app.trans['latest']
+            session_key = flask.current_app.transactions['session_key']
+            trans = flask.current_app.transactions[object_type]
+            latest = trans['latest']
             args_hash['transaction'] = {
                 'session_key': session_key,
                 'latest': {'id': latest}}
