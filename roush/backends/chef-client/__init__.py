@@ -230,7 +230,8 @@ class ChefClientBackend(roush.backends.Backend):
 
         self.logger.debug('Old node overrides: %s' % old_node_overrides)
 
-        need_node_converge = False
+        # we'll always converge node, just to be sure
+        need_node_converge = True
         need_env_converge = False
 
         query = '"adventurator" in attrs.roush_agent_output_modules'
