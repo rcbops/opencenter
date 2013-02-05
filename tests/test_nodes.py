@@ -124,6 +124,155 @@ class NodeInvalidHTTPMethodTests(unittest2.TestCase):
         self._execute_method('patch', '/nodes/1', 405)
 
 
+class NodeTransactionTests(util.RoushTestCase):
+    def setUp(self):
+        self.container = self._model_create('nodes', name='test_container')
+        self._model_create('facts', node_id=self.container['id'],
+                           key='backends',
+                           value='["container", "node"]')
+        self.node = self._model_create('nodes', name='test-node-1')
+
+    def tearDown(self):
+        self._model_delete('nodes', self.container['id'])
+        self._model_delete('nodes', self.node['id'])
+
+    def _cleanup_nodes(self, node_list):
+        """Cleans up nodes from the db
+
+        node_list -- list of node objects to delete
+        """
+        for node in node_list:
+            self._model_delete('nodes', node['id'])
+
+    def _reparent_nodes(self, node_list, container_id):
+        """Reparents a list of nodes under a container node
+
+        node_list -- list of node objects
+        container_id -- id to reparent nodes to
+        """
+        for node in node_list:
+            self._model_create('facts', node_id=node['id'],
+                               key='parent_id',
+                               value=container_id)
+
+    def test_query_latest_transaction(self):
+        """test_query_latest_transaction
+
+        Verify latest transaction payload
+
+        Expected Result:
+
+        'transaction': {
+            'session_key': <random_string>,
+            'latest': {
+                'id': <trx_id>
+            }
+        }
+        """
+        resp = self._client_request('get', '/nodes/updates/')
+        self.assertEquals(resp.status_code, 200)
+        data = json.loads(resp.data)['transaction']
+        self.assertIsNotNone(data['session_key'])
+        self.assertIsInstance(data['latest'], dict)
+        self.assertTrue('id' in data['latest'])
+        self.assertIsInstance(data['latest']['id'], int)
+        # self.assertEquals(data['latest'], '{"id": 2}')
+
+    def test_verify_transaction_info_after_attr_update(self):
+        """test_verify_transaction_info_after_attr_update
+
+        Verify trans info after creating an attr on a node
+
+        Expected Result: 'nodes' list containing only the single node_id
+        """
+        resp = self._client_request('get', '/nodes/updates/')
+        self.assertEquals(resp.status_code, 200)
+        data = json.loads(resp.data)['transaction']
+        old_trans_id = data['latest']['id']
+        session_key = data['session_key']
+        # Add a new attr to node
+        self._model_create('attrs', node_id=self.node['id'],
+                           key=_randomStr(5),
+                           value=_randomStr(10))
+        resp = self._client_request('get', '/nodes/updates/')
+        self.assertEquals(resp.status_code, 200)
+        data = json.loads(resp.data)['transaction']
+        self.assertTrue(data['latest']['id'] > old_trans_id)
+        self.assertEquals(data['session_key'], session_key)
+        # Now lets look at updates from old_trans_id to latest
+        resp = self._client_request('get', '/nodes/updates/%s' % old_trans_id)
+        self.assertEquals(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEquals(data['session_key'], session_key)
+        self.assertEquals(data['nodes'], [self.node['id']])
+
+    def test_verify_trans_info_after_reparenting_three_nodes(self):
+        """test_verify_trans_info_after_reparenting_three_nodes
+
+        Verify transaction information after reparenting three nodes
+        under a container
+
+        Expected Result: 'nodes' list containing the three node_ids
+        """
+        test_container = self._model_create('nodes', name=_randomStr(15))
+        self._model_create('facts', node_id=test_container['id'],
+                           key='backends',
+                           value='["node", "container"]')
+        node_a = self._model_create('nodes', name='test-node-A')
+        node_b = self._model_create('nodes', name='test-node-B')
+        node_c = self._model_create('nodes', name='test-node-C')
+        # Grab starting point info
+        resp = self._client_request('get', '/nodes/updates/')
+        self.assertEquals(resp.status_code, 200)
+        data = json.loads(resp.data)['transaction']
+        old_trans_id = data['latest']['id']
+        session_key = data['session_key']
+        # Reparent nodes under container
+        self._reparent_nodes([node_a, node_b, node_c], test_container['id'])
+        # Now lets look at updates from old_trans_id to latest
+        resp = self._client_request('get', '/nodes/updates/%s' % old_trans_id)
+        self.assertEquals(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEquals(data['session_key'], session_key)
+        test_id_list = [node_a['id'],
+                        node_b['id'],
+                        node_c['id']]
+        self.assertEquals(data['nodes'], test_id_list)
+        self._cleanup_nodes([node_a, node_b, node_c, test_container])
+
+    def test_trans_info_inheritance(self):
+        test_container = self._model_create('nodes', name=_randomStr(15))
+        self._model_create('facts', node_id=test_container['id'],
+                           key='backends',
+                           value='["node", "container"]')
+        node_a = self._model_create('nodes', name='test-node-A')
+        node_b = self._model_create('nodes', name='test-node-B')
+        node_c = self._model_create('nodes', name='test-node-C')
+        # Reparent nodes under container
+        self._reparent_nodes([node_a, node_b, node_c], test_container['id'])
+        # Grab starting point info
+        resp = self._client_request('get', '/nodes/updates/')
+        self.assertEquals(resp.status_code, 200)
+        data = json.loads(resp.data)['transaction']
+        old_trans_id = data['latest']['id']
+        session_key = data['session_key']
+        # Lets set a fact on the container
+        self._model_create('facts', node_id=test_container['id'],
+                           key='backends',
+                           value='["node", "container", "agent"]')
+        # Now lets look at updates from old_trans_id to latest
+        resp = self._client_request('get', '/nodes/updates/%s' % old_trans_id)
+        self.assertEquals(resp.status_code, 200)
+        data = json.loads(resp.data)
+        self.assertEquals(data['session_key'], session_key)
+        test_id_list = [test_container['id'],
+                        node_a['id'],
+                        node_b['id'],
+                        node_c['id']]
+        self.assertEquals(data['nodes'], test_id_list)
+        self._cleanup_nodes([node_a, node_b, node_c, test_container])
+
+
 class NodeOtherTests(util.RoushTestCase):
     def setUp(self):
         self.cluster = self._model_create('nodes', name='cluster-1')
