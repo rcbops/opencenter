@@ -138,16 +138,53 @@ def tree_by_id(node_id):
     return resp
 
 
+@bp.route('/updates/', methods=['GET'])
+def return_latest_update():
+    """Returns the latest transaction information from the in-memory
+    transaction dict.
+
+    Arguments:
+    None
+
+    Returns:
+    json object containing: the unique session key, the latest transaction id
+    """
+    trans = flask.current_app.trans
+    return generic.http_response(
+        200, 'Latest update',
+        session_key=trans['session_key'],
+        latest={'id': trans['latest']})
+
+
 @bp.route('/updates/<trx_id>', methods=['GET'])
 def updates_by_trxid(trx_id):
+    """Accepts a transaction id, and returns a list of updated nodes from
+    input transaction_id to latest transaction_id.
+    transaction dict.
+
+    Arguments:
+    trx_id -- transaction id (Integer)
+
+    Returns:
+    session_key -- unique session key
+    nodes -- list of updated node_ids from trx_id to latest transaction id
+    """
+    # return generic.http_response(200, 'foo', data=flask.current_app.trans)
+    print "TRANS: %s" % flask.current_app.trans
     latest = flask.current_app.trans['latest']
     updates = flask.current_app.trans['updates']
     sess_key = flask.current_app.trans['session_key']
     if int(trx_id) in updates:
-        node_list = []
-        for i in xrange(int(trx_id), latest):
+        node_list, ret = [], []
+        if int(trx_id) < latest:
+            stop = latest + 1
+        else:
+            stop = latest
+        print "STOP: %s" % stop
+        for i in xrange(int(trx_id) + 1, stop):
+            print "I: %s" % i
+            print "%s" % updates[i]['nodes']
             node_list.extend(updates[i]['nodes'])
-        ret = []
         ret.extend(x for x in node_list if x not in ret)
         # TODO(shep): this still needs to run through util.expand_nodes
         return generic.http_response(

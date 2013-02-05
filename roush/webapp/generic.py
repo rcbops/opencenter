@@ -108,6 +108,31 @@ def _notify(updated_object, object_type, object_id):
             for child in children:
                 semaphore = 'nodes-id-%s' % child['id']
                 utility.notify(semaphore)
+        # Update transaction for node and children
+        _update_transaction_id(utility.fully_expand_nodelist([node_id], api))
+    # Need a codepath to update transaction for attr modifications
+    if object_type == "attrs":
+        node_id = updated_object['node_id']
+        _update_transaction_id([node_id])
+
+
+def _update_transaction_id(node_list=None):
+    """
+    Updates the in-memory transaction dict when nodes are updated.
+
+    Arguments:
+    node_list -- A list of node_ids
+
+    Returns:
+    None
+    """
+    if node_list is not None:
+        trans = flask.current_app.trans
+        latest, lowest = trans['latest'], trans['lowest']
+        next_int = latest + 1
+        # TODO(shep): Probably need to prune the hash here
+        trans['updates'][next_int] = {'nodes': node_list}
+        trans['latest'] = next_int
 
 
 def list(object_type):
