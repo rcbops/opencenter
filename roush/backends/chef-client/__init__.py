@@ -108,7 +108,7 @@ class ChefClientBackend(roush.backends.Backend):
             return ['role[single-controller]']
         return []
 
-    def _expand_nodelist(nodelist, api):
+    def _expand_nodelist(self, nodelist, api):
         """
         given a list of nodes (including containers),
         generate a fully expanded list of non-container-y
