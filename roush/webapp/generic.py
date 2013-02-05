@@ -108,6 +108,34 @@ def _notify(updated_object, object_type, object_id):
             for child in children:
                 semaphore = 'nodes-id-%s' % child['id']
                 utility.notify(semaphore)
+        # Update transaction for node and children
+        id_list = utility.fully_expand_nodelist([node_id], api)
+        # TODO(shep): this needs to be better abstracted
+        _update_transaction_id('nodes', id_list)
+    # Need a codepath to update transaction for attr modifications
+    if object_type == "attrs":
+        node_id = updated_object['node_id']
+        # TODO(shep): this needs to be better abstracted
+        _update_transaction_id('nodes', [node_id])
+
+
+def _update_transaction_id(object_model, id_list=None):
+    """
+    Updates the in-memory transaction dict when object_models are updated.
+
+    Arguments:
+    id_list -- A list of <object_model>_ids
+
+    Returns:
+    None
+    """
+    if id_list is not None:
+        trans = flask.current_app.transactions[object_model]
+        latest, lowest = trans['latest'], trans['lowest']
+        next_int = latest + 1
+        # TODO(shep): Probably need to prune the hash here
+        trans['updates'][next_int] = {object_model: id_list}
+        trans['latest'] = next_int
 
 
 def list(object_type):
@@ -129,7 +157,16 @@ def list(object_type):
                              ref=href, **{s_obj: model_object})
     elif flask.request.method == 'GET':
         model_objects = api._model_get_all(object_type)
-        return http_response(200, 'success', **{object_type: model_objects})
+        args_hash = {object_type: model_objects}
+        if object_type in ['nodes']:
+            session_key = flask.current_app.transactions['session_key']
+            trans = flask.current_app.transactions[object_type]
+            latest = trans['latest']
+            args_hash['transaction'] = {
+                'session_key': session_key,
+                'latest': {'id': latest}}
+        # return http_response(200, 'success', **{object_type: model_objects})
+        return http_response(200, 'success', **args_hash)
     else:
         return http_notfound(msg='Unknown method %s' % flask.request.method)
 

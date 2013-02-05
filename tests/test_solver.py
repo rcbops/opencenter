@@ -131,11 +131,11 @@ class SolverTestCase(RoushTestCase):
 
         self._make_adventurator()
 
-        resp = self._model_create('facts', node_id=self.node['id'],
-                                  key='bogus_value',
-                                  value=self.container['id'],
-                                  please=True,
-                                  raw=True, expect_code=403)
+        self._model_create('facts', node_id=self.node['id'],
+                           key='bogus_value',
+                           value=self.container['id'],
+                           please=True,
+                           raw=True, expect_code=403)
 
     def test_implied_backend(self):
         self._make_adventurator()

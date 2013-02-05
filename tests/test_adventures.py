@@ -15,7 +15,9 @@ def _randomStr(size):
 class AdventureCreateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        self.foo = webapp.Thing('roush',
+                                configfile='tests/test.conf',
+                                debug=True)
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
         self.name = _randomStr(10)
@@ -146,7 +148,9 @@ class AdventureCreateTests(unittest2.TestCase):
 class AdventureUpdateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        self.foo = webapp.Thing('roush',
+                                configfile='tests/test.conf',
+                                debug=True)
         self.app = self.foo.test_client()
         self.content_type = 'application/json'
 
@@ -296,7 +300,9 @@ class AdventureUpdateTests(unittest2.TestCase):
 #class AdventureReadTests(unittest2.TestCase):
 #    @classmethod
 #    def setUpClass(self):
-#        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+#        self.foo = webapp.Thing('roush',
+#                                configfile='tests/test.conf',
+#                                debug=True)
 #        self.app = self.foo.test_client()
 #        self.content_type = 'application/json'
 #        self.name = _randomStr(10)
@@ -370,7 +376,9 @@ class AdventureUpdateTests(unittest2.TestCase):
 #class AdventureUpdateAttributeTests(unittest2.TestCase):
 #    @classmethod
 #    def setUpClass(self):
-#        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+#        self.foo = webapp.Thing('roush',
+#                                configfile='tests/test.conf',
+#                                debug=True)
 #        init_db(self.foo.config['database_uri'])
 #        self.app = self.foo.test_client()
 #
@@ -445,7 +453,9 @@ class AdventureUpdateTests(unittest2.TestCase):
 class AdventureInvalidHTTPMethodTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.Thing('roush', configfile='test.conf', debug=True)
+        self.foo = webapp.Thing('roush',
+                                configfile='tests/test.conf',
+                                debug=True)
         init_db(self.foo.config['database_uri'])
         self.app = self.foo.test_client()
         self.content_type = 'application/json'
