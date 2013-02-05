@@ -19,7 +19,7 @@ class MiscTests(RoushTestCase):
         container1 = self._model_create('nodes', name='container1')
         container2a = self._model_create('nodes', name='container2a')
         container2b = self._model_create('nodes', name='container2b')
-        container3a =  self._model_create('nodes', name='container3a')
+        container3a = self._model_create('nodes', name='container3a')
         self._model_create('facts', node_id=container2a['id'],
                            key='parent_id',
                            value=container1['id'])
@@ -76,7 +76,7 @@ class MiscTests(RoushTestCase):
         container1 = self._model_create('nodes', name='container1')
         container2a = self._model_create('nodes', name='container2a')
         container2b = self._model_create('nodes', name='container2b')
-        container3a =  self._model_create('nodes', name='container3a')
+        container3a = self._model_create('nodes', name='container3a')
         self._model_create('facts', node_id=container2a['id'],
                            key='parent_id',
                            value=container1['id'])
@@ -137,7 +137,7 @@ class MiscTests(RoushTestCase):
         container1 = self._model_create('nodes', name='container1')
         container2a = self._model_create('nodes', name='container2a')
         container2b = self._model_create('nodes', name='container2b')
-        container3a =  self._model_create('nodes', name='container3a')
+        container3a = self._model_create('nodes', name='container3a')
         self._model_create('facts', node_id=container2a['id'],
                            key='parent_id',
                            value=container1['id'])
