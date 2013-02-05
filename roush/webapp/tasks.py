@@ -57,7 +57,7 @@ def task_by_id(object_id):
 
     return result
 
-@bp.route('/<object_id>/logs', methods['GET'])
+@bp.route('/<object_id>/logs', methods=['GET'])
 def task_log(task_id):
     try:
         task = api._model_get_by_id('tasks', task_id)
