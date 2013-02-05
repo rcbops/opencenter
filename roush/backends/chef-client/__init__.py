@@ -262,7 +262,7 @@ class ChefClientBackend(roush.backends.Backend):
         nodelist = [node_id]
 
         if need_env_converge:
-            # FIXME: this should be the top-level environment container... d'oh!
+            # FIXME: this should be the top-level environment container...
             nodelist = self._expand_nodelist([node_id], api)
         elif need_node_converge:
             nodelist = [node_id]
