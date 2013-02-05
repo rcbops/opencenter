@@ -133,6 +133,9 @@ def task_log(task_id):
         conn, addr = s.accept()
     except socket.timeout:
         s.close()
+        api._model_update('tasks', new_task['id'],
+                          {'state': 'cancelled'})
+
         return generic.http_response(404, 'cannot fetch logs')
 
     data = conn.recv(1024)
