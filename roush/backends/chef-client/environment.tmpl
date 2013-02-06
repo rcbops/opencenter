@@ -37,6 +37,7 @@
             "public_interface": "${facts['nova_public_if']}"
         },
         "apply_patches": true,
+        "libvirt": {"virt_type": "qemu"},
         "networks": [
             {
                 "bridge_dev": "${facts['nova_vm_fixed_if']}",
