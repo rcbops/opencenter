@@ -259,3 +259,13 @@ class NodeTransactionTests(util.RoushTestCase):
                         self.node_b['id'],
                         self.node_c['id']]
         self.assertEquals(set(changed_nodes), set(test_id_list))
+
+    def test_bad_session_key(self):
+        trans = self._get_txid()
+        _ = self._model_get_updates('nodes', 'xxx', trans['txid'],
+                                    expect_code=410, raw=True)
+
+    def test_bad_txid(self):
+        trans = self._get_txid()
+        _, _ = self._model_get_updates('nodes', trans['session_key'],
+                                       0, expect_code=410, raw=True)

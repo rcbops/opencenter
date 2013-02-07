@@ -153,6 +153,9 @@ def _update_transaction_id(object_model, id_list=None):
         for k in [x for x in trans.keys() if x < trans_time_past]:
             del trans[k]
 
+        semaphore_name = '%s-changes' % object_model
+        utility.notify(semaphore_name)
+
 
 def list(object_type):
     s_obj = singularize(object_type)

@@ -298,12 +298,18 @@ class Thing(Flask):
                 current_txid = time.time()
 
                 if session_key != self.transactions['session_key']:
-                    return generic.http_notfound()
+                    return generic.http_response(410, 'Invalid session_key')
 
                 txid = float(txid)
 
+                if 'poll' in request.args:
+                    # we'll poll if we have no changes
+                    if txid >= max(trans.keys()):
+                        semaphore = '%s-changes' % (what)
+                        utility.wait(semaphore)
+
                 if txid < min(trans.keys()):
-                    return generic.http_notfound()
+                    return generic.http_response(410, 'Expired transaction id')
 
                 retval = set([])
                 for x in [trans[tx] for tx in trans.keys() if tx > txid]:
