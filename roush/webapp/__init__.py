@@ -302,6 +302,12 @@ class Thing(Flask):
 
                 txid = float(txid)
 
+                if 'poll' in request.args:
+                    # we'll poll if we have no changes
+                    if txid >= max(trans.keys()):
+                        semaphore = '%s-changes' % (what)
+                        utility.wait(semaphore)
+
                 if txid < min(trans.keys()):
                     return generic.http_response(410, 'Expired transaction id')
 
