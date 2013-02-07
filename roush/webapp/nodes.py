@@ -105,42 +105,6 @@ def adventures_by_node_id(node_id):
     return resp
 
 
-@bp.route('/<node_id>/tree', methods=['GET'])
-def tree_by_id(node_id):
-    seen_nodes = []
-
-    def fill_children(node_hash):
-        node_id = node_hash['id']
-
-        children = api._model_query(
-            'nodes', 'facts.parent_id = %s' % node_id)
-
-        for child in children:
-            if child['id'] in seen_nodes:
-                flask.current_app.logger.error("Loop detected in data model")
-            else:
-                seen_nodes.append(child['id'])
-
-                if not 'children' in node_hash:
-                    node_hash['children'] = []
-
-                child = copy.deepcopy(child)
-
-                node_hash['children'].append(child)
-                fill_children(child)
-
-    try:
-        node = copy.deepcopy(api._model_get_by_id('nodes', node_id))
-    except:
-        return generic.http_notfound()
-
-    seen_nodes.append(node_id)
-
-    fill_children(node)
-    resp = generic.http_response(children=node)
-    return resp
-
-
 @bp.route('/whoami', methods=['POST'])
 def whoami():
     body = flask.request.json
