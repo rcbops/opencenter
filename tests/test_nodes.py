@@ -263,7 +263,7 @@ class NodeTransactionTests(util.RoushTestCase):
     def test_bad_session_key(self):
         trans = self._get_txid()
         _ = self._model_get_updates('nodes', 'xxx', trans['txid'],
-                                       expect_code=410, raw=True)
+                                    expect_code=410, raw=True)
 
     def test_bad_txid(self):
         trans = self._get_txid()
