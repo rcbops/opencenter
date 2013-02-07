@@ -21,7 +21,7 @@ import time
 import utility
 from roush.db import exceptions
 from roush.db.api import api_from_models
-
+from roush.webapp.auth import requires_auth
 
 api = api_from_models()
 
@@ -154,6 +154,7 @@ def _update_transaction_id(object_model, id_list=None):
             del trans[k]
 
 
+@requires_auth
 def list(object_type):
     s_obj = singularize(object_type)
 
@@ -178,6 +179,7 @@ def list(object_type):
         return http_notfound(msg='Unknown method %s' % flask.request.method)
 
 
+@requires_auth
 def object_by_id(object_type, object_id):
     s_obj = singularize(object_type)
 
