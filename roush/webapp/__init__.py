@@ -24,6 +24,7 @@ import random
 import string
 import sys
 import traceback
+import time
 
 from ConfigParser import ConfigParser
 from flask import Flask, jsonify, request
@@ -204,9 +205,7 @@ class Thing(Flask):
 
         # Define transaction dict for all models
         for model in self.registered_models:
-            self.transactions[model] = {
-                'latest': 0, 'lowest': 0,
-                'updates': {0: {model: []}}}
+            self.transactions[model] = {time.time(): set([])}
 
         if debug:
             self.config['TESTING'] = True
@@ -269,9 +268,77 @@ class Thing(Flask):
 
             return f
 
+        def updates_by_txid(what):
+            def f(session_key, txid):
+                """
+                Accepts a transaction id, and returns a list of
+                updated nodes from input transaction_id to latest
+                transaction_id.  transaction dict.
+
+                FIXME: As an optimization, the changes could be
+                accumulated in a single set up until the point
+                that someone got a new txid.  Then we could avoid
+                having a long list of one-element transactions, and
+                instead only create db version intervals on the intervals
+                that we know people could possibly refer from.  If that
+                makes sense.
+
+                Arguments:
+                txid -- transaction id (opaque)
+
+                Returns:
+
+                session_key -- unique session key
+
+                nodes -- list of updated node_ids from trx_id to
+                latest transaction id
+                """
+
+                trans = self.transactions[what]
+                current_txid = time.time()
+
+                if session_key != self.transactions['session_key']:
+                    return generic.http_notfound()
+
+                txid = float(txid)
+
+                if txid < min(trans.keys()):
+                    return generic.http_notfound()
+
+                retval = set([])
+                for x in [trans[tx] for tx in trans.keys() if tx > txid]:
+                    retval = retval.union(x)
+
+                return generic.http_response(
+                    200, 'Updated %s' % what.title(),
+                    **{"transaction": {'session_key': session_key,
+                                       'txid': '%.6f' % current_txid},
+                       what: list(retval)})
+            return f
+
         def root_schema():
             schema = {'schema': {'objects': self.registered_models}}
             return jsonify(schema)
+
+        def root_updates():
+            """Returns the latest transaction information from the
+            in-memory transaction dict.  Realize that this is only
+            accurate at the time of the request.  So clearly, one
+            should call this BEFORE serializing stuffs.
+
+            Arguments:
+            None
+
+            Returns:
+            json object containing: the unique session key,
+                                    the latest transaction id
+            """
+            session_key = self.transactions['session_key']
+            txid = time.time()
+
+            return generic.http_response(
+                transaction={'session_key': session_key,
+                             'txid': '%.6f' % txid})
 
         bpname = blueprint.name
         if bpname.endswith('_please'):
@@ -299,12 +366,23 @@ class Thing(Flask):
                               filter_object_by_id(bpname),
                               methods=['GET'])
 
+            txid_url = '%s/updates/<session_key>/<txid>' % (url_prefix,)
+            self.add_url_rule(txid_url, '%s.txid' % blueprint.name,
+                              updates_by_txid(bpname),
+                              methods=['GET'])
+
         elif url_prefix == '/':
             self.add_url_rule('/schema', 'root.schema',
                               root_schema,
                               methods=['GET'])
             self.add_url_rule('/admin/schema', 'admin.schema',
                               root_schema,
+                              methods=['GET'])
+            self.add_url_rule('/updates', 'root.updates',
+                              root_updates,
+                              methods=['GET'])
+            self.add_url_rule('/admin/updates', 'admin.updates',
+                              root_updates,
                               methods=['GET'])
 
     def run(self):

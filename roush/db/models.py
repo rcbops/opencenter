@@ -298,8 +298,8 @@ class Nodes(JsonRenderer, Base):
 class Adventures(JsonRenderer, Base):
     __tablename__ = 'adventures'
     id = Column(Integer, primary_key=True)
-    name = Column(String(30))
-    dsl = Column(JsonBlob, default={})
+    name = Column(String(30), nullable=False)
+    dsl = Column(JsonBlob, default={}, nullable=False)
     criteria = Column(String(255))
     args = Column(JsonBlob, default={})
 

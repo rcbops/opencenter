@@ -16,7 +16,10 @@
 #
 
 import copy
+import time
+
 import flask
+
 import generic
 
 from roush.db.api import api_from_models
@@ -33,7 +36,7 @@ bp = flask.Blueprint(object_type,  __name__)
 
 
 @bp.route('/', methods=['GET', 'POST'])
-def list():
+def root():
     return generic.list(object_type)
 
 
@@ -136,65 +139,6 @@ def tree_by_id(node_id):
     fill_children(node)
     resp = generic.http_response(children=node)
     return resp
-
-
-@bp.route('/updates/', methods=['GET'])
-def return_latest_update():
-    """Returns the latest transaction information from the in-memory
-    transaction dict.
-
-    Arguments:
-    None
-
-    Returns:
-    json object containing: the unique session key, the latest transaction id
-    """
-    session_key = flask.current_app.transactions['session_key']
-    trans = flask.current_app.transactions[object_type]
-    transaction_hash = {'session_key': session_key,
-                        'latest': {'id': trans['latest']}}
-    return generic.http_response(
-        200, 'Transaction information',
-        transaction=transaction_hash)
-
-
-@bp.route('/updates/<trx_id>', methods=['GET'])
-def updates_by_trxid(trx_id):
-    """Accepts a transaction id, and returns a list of updated nodes from
-    input transaction_id to latest transaction_id.
-    transaction dict.
-
-    Arguments:
-    trx_id -- transaction id (Integer)
-
-    Returns:
-    session_key -- unique session key
-    nodes -- list of updated node_ids from trx_id to latest transaction id
-    """
-    session_key = flask.current_app.transactions['session_key']
-    trans = flask.current_app.transactions[object_type]
-    latest = trans['latest']
-    lowest = trans['lowest']
-    updates = trans['updates']
-    if int(trx_id) in updates:
-        node_list, ret = [], []
-        if int(trx_id) < latest:
-            stop = latest + 1
-        else:
-            stop = latest
-        for i in xrange(int(trx_id) + 1, stop):
-            node_list.extend(updates[i]['nodes'])
-        ret.extend(x for x in node_list if x not in ret)
-        return generic.http_response(
-            200, 'Updated Nodes',
-            session_key=session_key, nodes=ret)
-    else:
-        # Need to check if the trx_id is < lowest, if so call for a refetch
-        # TODO(shep): need to figure out code for a refetch
-        if trx_id < lowest:
-            return generic.http_notfound()
-        else:
-            return generic.http_notfound()
 
 
 @bp.route('/whoami', methods=['POST'])

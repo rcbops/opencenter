@@ -238,16 +238,16 @@ class SqlAlchemyAbstraction(DbAbstraction):
         try:
             session.commit()
             return r.jsonify(api=self.api)
+        except sqlalchemy.exc.IntegrityError as e:
+            session.rollback()
+            msg = "Unable to create %s, duplicate entry" % (self.name.title())
+            raise exceptions.CreateError(msg)
         except sqlalchemy.exc.StatementError as e:
             session.rollback()
             # msg = e.message
             msg = "JSON object must be either type(dict) or type(list) " \
-                  "not %s" % (e.message)
+                  "not %s" % str(e)
             raise exceptions.CreateError(msg)
-        except sqlalchemy.exc.IntegrityError as e:
-            session.rollback()
-            msg = "Unable to create %s, duplicate entry" % (self.name.title())
-            raise exceptions.CreateError(message=msg)
 
     def delete(self, id):
         id = int(id)
