@@ -3,19 +3,22 @@ import json
 import random
 import string
 import unittest2
-
+import logging
 
 from roush import webapp
-from roush.db.database import init_db
+from roush.db.database import init_db, _memorydb_migrate_db, engine
 
 
 class RoushTestCase(unittest2.TestCase):
     @classmethod
     def setUpClass(cls, *args, **kwargs):
+        ast_logger = logging.getLogger('roush.webapp.ast')
+        ast_logger.setLevel(logging.INFO)
+
         cls.app = webapp.Thing('roush',
                                configfile='tests/test.conf',
                                debug=True)
-        init_db(cls.app.config['database_uri'])
+        init_db(cls.app.config['database_uri'], migrate=False)
         cls.client = cls.app.test_client()
         cls.logger = cls.app.logger
 
@@ -67,11 +70,43 @@ class RoushTestCase(unittest2.TestCase):
     def _singularize(self, what):
         return what[:-1]
 
+    def _get_txid(self, expect_code=200, raw=False):
+        resp = self.client.get('/updates')
+
+        self.logger.debug('Got txid: %s' % resp.data)
+
+        if expect_code is not None:
+            self.assertEquals(resp.status_code, expect_code)
+
+        out = json.loads(resp.data)
+
+        if raw:
+            return out
+
+        return out['transaction']
+
     def _client_request(self, method, uri, **kwargs):
         fn = getattr(self.client, method)
         self.assertIsNotNone(fn)
         return fn(uri, content_type='application/json',
                   data=json.dumps(kwargs))
+
+    def _model_get_updates(self, model, session, txid,
+                           expect_code=200, raw=False):
+        resp = self.client.get('/%s/updates/%s/%s' %
+                               (model, session, txid))
+
+        self.logger.debug('Got updates: %s' % resp.data)
+
+        if expect_code is not None:
+            self.assertEquals(resp.status_code, expect_code)
+
+        out = json.loads(resp.data)
+
+        if raw:
+            return out
+
+        return out['transaction'], out['nodes']
 
     def _model_create(self, model, please=False,
                       expect_code=201, raw=False, **kwargs):
@@ -208,6 +243,21 @@ class RoushTestCase(unittest2.TestCase):
         return out['schema']
 
 
+class ScaffoldedTestCase(RoushTestCase):
+    @classmethod
+    def setUpClass(cls, *args, **kwargs):
+        cls.app = webapp.Thing('roush',
+                               configfile='tests/test.conf',
+                               migrate=False,
+                               debug=True)
+        init_db(cls.app.config['database_uri'], migrate=False)
+        # run the memory migrator
+        _memorydb_migrage_db(engine)
+
+        cls.client = cls.app.test_client()
+        cls.logger = cls.app.logger
+
+
 def _test_fail(self):
     self.assertTrue(False)
 
@@ -257,7 +307,8 @@ def inject(cls):
     setattr(cls, test.__name__, test)
 
     app = webapp.Thing('roush', configfile='tests/test.conf', debug=True)
-    init_db(app.config['database_uri'])
+
+    init_db(app.config['database_uri'], migrate=False)
     client = app.test_client()
     logger = app.logger
 

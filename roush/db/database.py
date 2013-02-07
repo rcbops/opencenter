@@ -35,11 +35,40 @@ Base = declarative_base()
 Base.query = session.query_property()
 
 
-def init_db(uri, **kwargs):
+def init_db(uri, migrate=True, **kwargs):
     global engine
     engine = create_engine(uri, **kwargs)
     Base.metadata.create_all(bind=engine)
 
+    if migrate:
+        migrate_db(uri, **kwargs)
+
+
+def _memorydb_migrate_db(engine, **kwargs):
+    """
+    This is crazy crackheaded, and abusive to sqlalchemy.
+
+    We'll take out dispose so the migrate stuff doesn't kill it,
+    and push through the migrate.  This makes a bunch of assumptions
+    that are likely stupid, but since this is done on a memory-backed
+    db for testing, it's probably okay.
+
+    Just don't run this on a real db.
+    """
+    def dispose_patch(*args, **kwargs):
+        pass
+
+    old_dispose = engine.dispose
+    engine.dispose = dispose_patch
+
+    repo_path = repo.Repository(
+        os.path.abspath(os.path.dirname(roush_repo.__file__)))
+    migrate_api.version_control(engine, repo_path)
+    migrate_api.upgrade(engine, repo_path)
+    ending.dispose = old_dispoase
+
+
+def migrate_db(uri, **kwargs):
     # Need to apply migrate-versions
     repo_path = repo.Repository(
         os.path.abspath(os.path.dirname(roush_repo.__file__)))
@@ -50,5 +79,6 @@ def init_db(uri, **kwargs):
         db_ver = migrate_api.db_version(uri, repo_path)
     # Find the current version in the repo
     latest = migrate_api.version(str(repo_path))
+
     if db_ver < latest:
         migrate_api.upgrade(uri, repo_path)

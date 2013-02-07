@@ -20,7 +20,7 @@ class NodeCreateTests(unittest2.TestCase):
         self.foo = webapp.Thing('roush',
                                 configfile='tests/test.conf',
                                 debug=True)
-        init_db(self.foo.config['database_uri'])
+        init_db(self.foo.config['database_uri'], migrate=False)
         self.app = self.foo.test_client()
         self.name = _randomStr(10)
         self.desc = _randomStr(30)
@@ -87,7 +87,7 @@ class NodeInvalidHTTPMethodTests(unittest2.TestCase):
         self.foo = webapp.Thing('roush',
                                 configfile='tests/test.conf',
                                 debug=True)
-        init_db(self.foo.config['database_uri'])
+        init_db(self.foo.config['database_uri'], migrate=False)
         self.app = self.foo.test_client()
         self.content_type = 'application/json'
 
@@ -132,9 +132,16 @@ class NodeTransactionTests(util.RoushTestCase):
                            value='["container", "node"]')
         self.node = self._model_create('nodes', name='test-node-1')
 
+        self.node_a = self._model_create('nodes', name='test-node-A')
+        self.node_b = self._model_create('nodes', name='test-node-B')
+        self.node_c = self._model_create('nodes', name='test-node-C')
+
     def tearDown(self):
         self._model_delete('nodes', self.container['id'])
         self._model_delete('nodes', self.node['id'])
+        self._model_delete('nodes', self.node_a['id'])
+        self._model_delete('nodes', self.node_b['id'])
+        self._model_delete('nodes', self.node_c['id'])
 
     def _cleanup_nodes(self, node_list):
         """Cleans up nodes from the db
@@ -164,19 +171,12 @@ class NodeTransactionTests(util.RoushTestCase):
 
         'transaction': {
             'session_key': <random_string>,
-            'latest': {
-                'id': <trx_id>
-            }
+            'txid': <trx_id>
         }
         """
-        resp = self._client_request('get', '/nodes/updates/')
-        self.assertEquals(resp.status_code, 200)
-        data = json.loads(resp.data)['transaction']
-        self.assertIsNotNone(data['session_key'])
-        self.assertIsInstance(data['latest'], dict)
-        self.assertTrue('id' in data['latest'])
-        self.assertIsInstance(data['latest']['id'], int)
-        # self.assertEquals(data['latest'], '{"id": 2}')
+        trans = self._get_txid()
+        self.assertIsNotNone(trans['session_key'])
+        self.assertTrue('txid' in trans)
 
     def test_verify_transaction_info_after_attr_update(self):
         """test_verify_transaction_info_after_attr_update
@@ -185,26 +185,20 @@ class NodeTransactionTests(util.RoushTestCase):
 
         Expected Result: 'nodes' list containing only the single node_id
         """
-        resp = self._client_request('get', '/nodes/updates/')
-        self.assertEquals(resp.status_code, 200)
-        data = json.loads(resp.data)['transaction']
-        old_trans_id = data['latest']['id']
-        session_key = data['session_key']
+        trans = self._get_txid()
+        old_trans_id = trans['txid']
+        session_key = trans['session_key']
+
         # Add a new attr to node
         self._model_create('attrs', node_id=self.node['id'],
                            key=_randomStr(5),
                            value=_randomStr(10))
-        resp = self._client_request('get', '/nodes/updates/')
-        self.assertEquals(resp.status_code, 200)
-        data = json.loads(resp.data)['transaction']
-        self.assertTrue(data['latest']['id'] > old_trans_id)
-        self.assertEquals(data['session_key'], session_key)
-        # Now lets look at updates from old_trans_id to latest
-        resp = self._client_request('get', '/nodes/updates/%s' % old_trans_id)
-        self.assertEquals(resp.status_code, 200)
-        data = json.loads(resp.data)
-        self.assertEquals(data['session_key'], session_key)
-        self.assertEquals(data['nodes'], [self.node['id']])
+
+        txinfo, changed_nodes = self._model_get_updates('nodes', session_key,
+                                                        old_trans_id)
+        self.assertTrue(txinfo['txid'] != old_trans_id)
+        self.assertEquals(txinfo['session_key'], session_key)
+        self.assertEquals(changed_nodes, [self.node['id']])
 
     def test_verify_trans_info_after_reparenting_three_nodes(self):
         """test_verify_trans_info_after_reparenting_three_nodes
@@ -218,82 +212,53 @@ class NodeTransactionTests(util.RoushTestCase):
         self._model_create('facts', node_id=test_container['id'],
                            key='backends',
                            value='["node", "container"]')
-        node_a = self._model_create('nodes', name='test-node-A')
-        node_b = self._model_create('nodes', name='test-node-B')
-        node_c = self._model_create('nodes', name='test-node-C')
+
         # Grab starting point info
-        resp = self._client_request('get', '/nodes/updates/')
-        self.assertEquals(resp.status_code, 200)
-        data = json.loads(resp.data)['transaction']
-        old_trans_id = data['latest']['id']
-        session_key = data['session_key']
+        trans = self._get_txid()
+        old_trans_id = trans['txid']
+        session_key = trans['session_key']
+
         # Reparent nodes under container
-        self._reparent_nodes([node_a, node_b, node_c], test_container['id'])
+        self._reparent_nodes(
+            [self.node_a, self.node_b, self.node_c], test_container['id'])
+
         # Now lets look at updates from old_trans_id to latest
-        resp = self._client_request('get', '/nodes/updates/%s' % old_trans_id)
-        self.assertEquals(resp.status_code, 200)
-        data = json.loads(resp.data)
-        self.assertEquals(data['session_key'], session_key)
-        test_id_list = [node_a['id'],
-                        node_b['id'],
-                        node_c['id']]
-        self.assertEquals(data['nodes'], test_id_list)
-        self._cleanup_nodes([node_a, node_b, node_c, test_container])
+        trans, changed_nodes = self._model_get_updates('nodes', session_key,
+                                                       old_trans_id)
+
+        self.assertEquals(trans['session_key'], session_key)
+        self.assertNotEquals(trans['txid'], old_trans_id)
+        self.assertEquals(set(changed_nodes), set([self.node_a['id'],
+                                                   self.node_b['id'],
+                                                   self.node_c['id']]))
 
     def test_trans_info_inheritance(self):
         test_container = self._model_create('nodes', name=_randomStr(15))
-        self._model_create('facts', node_id=test_container['id'],
-                           key='backends',
-                           value='["node", "container"]')
-        node_a = self._model_create('nodes', name='test-node-A')
-        node_b = self._model_create('nodes', name='test-node-B')
-        node_c = self._model_create('nodes', name='test-node-C')
+
         # Reparent nodes under container
-        self._reparent_nodes([node_a, node_b, node_c], test_container['id'])
+        self._reparent_nodes(
+            [self.node_a, self.node_b, self.node_c], test_container['id'])
+
         # Grab starting point info
-        resp = self._client_request('get', '/nodes/updates/')
-        self.assertEquals(resp.status_code, 200)
-        data = json.loads(resp.data)['transaction']
-        old_trans_id = data['latest']['id']
-        session_key = data['session_key']
+        trans = self._get_txid()
+        old_trans_id = trans['txid']
+        session_key = trans['session_key']
+
         # Lets set a fact on the container
         self._model_create('facts', node_id=test_container['id'],
                            key='backends',
                            value='["node", "container", "agent"]')
+
         # Now lets look at updates from old_trans_id to latest
-        resp = self._client_request('get', '/nodes/updates/%s' % old_trans_id)
-        self.assertEquals(resp.status_code, 200)
-        data = json.loads(resp.data)
-        self.assertEquals(data['session_key'], session_key)
+        trans, changed_nodes = self._model_get_updates('nodes', session_key,
+                                                       old_trans_id)
+
+        self.assertEquals(trans['session_key'], session_key)
         test_id_list = [test_container['id'],
-                        node_a['id'],
-                        node_b['id'],
-                        node_c['id']]
-        self.assertEquals(data['nodes'], test_id_list)
-        self._cleanup_nodes([node_a, node_b, node_c, test_container])
-
-    def test_verify_node_list_returns_transaction_information(self):
-        """test_verify_node_list_returns_transaction_information
-
-        Verify node_list returns a transaction payload
-
-        Expected Result:
-
-        'transaction': {
-            'session_key': <random_string>,
-            'latest': {
-                'id': <trx_id>
-            }
-        }
-        """
-        resp = self._client_request('get', '/nodes/')
-        self.assertEquals(resp.status_code, 200)
-        data = json.loads(resp.data)
-        data = json.loads(resp.data)['transaction']
-        self.assertIsNotNone(data['session_key'])
-        self.assertIsInstance(data['latest'], dict)
-        self.assertTrue('id' in data['latest'])
-        self.assertIsInstance(data['latest']['id'], int)
+                        self.node_a['id'],
+                        self.node_b['id'],
+                        self.node_c['id']]
+        self.assertEquals(set(changed_nodes), set(test_id_list))
 
 
 class NodeOtherTests(util.RoushTestCase):

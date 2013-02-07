@@ -17,6 +17,7 @@
 
 import logging
 import gevent.event
+import gevent.coros
 
 import solver
 import copy
@@ -25,12 +26,83 @@ from roush.db.api import api_from_models
 
 api = api_from_models()
 util_conditions = {}
+util_locks = {}
+util_lock_lock = gevent.coros.Semaphore()
+
 LOG = logging.getLogger(__name__)
 
 
+def _get_or_make_lock(what):
+    """
+    Helper function that will retrieve a lock by
+    name or create a new one by that name
+
+    Arguments:
+    what - lock name
+
+    Returns:
+    gevent.coros.Semaphore object
+    """
+
+    util_lock_lock.acquire()
+
+    if not what in util_locks:
+        util_locks[what] = gevent.coros.Semaphore()
+
+    util_lock_lock.release()
+
+    return util_locks[what]
+
+
+def lock_acquire(what, timeout=None):
+    """
+    Acquire a named lock.  This will *always*
+    block.  It *may* be called with a timeout.
+
+    Arguments:
+    what -- semaphore name
+    timeout -- how long to wait for semaphore
+
+    Returns:
+    bool - lock acquired
+
+    if returning false with timeout, this almost
+    certainly implies timeout.  If not, then something
+    really really bad happened, and things will probably
+    go sideways soon.
+    """
+    lock = _get_or_make_lock(what)
+    return lock.acquire(blocking=True, timeout=timeout)
+
+
+def lock_release(what):
+    """
+    Release a held lock by name
+
+    If one tries to release a lock not held, that
+    would be problematic.  Don't do that.
+
+    Arguments:
+    what -- name of lock to acquire
+
+    Returns:
+    bool -- lock released
+
+    This should really always return true.  Should
+    it return false, you are probably likely to
+    deadlock.  Soon.
+    """
+    lock = _get_or_make_lock(what)
+    return lock.release()
+
+
 def _get_or_make_event(what):
+    util_lock_lock.acquire()
+
     if not what in util_conditions:
         util_conditions[what] = gevent.event.Event()
+
+    util_lock_lock.release()
 
     return util_conditions[what]
 
