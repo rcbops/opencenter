@@ -16,7 +16,7 @@
 #
 
 import flask
-from roush.webapp import generic
+
 from roush.db.api import api_from_models
 
 
