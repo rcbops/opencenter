@@ -16,6 +16,7 @@
 #
 
 import flask
+
 from roush.webapp import generic
 
 object_type = 'primitives'

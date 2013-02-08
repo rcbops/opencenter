@@ -15,12 +15,13 @@
 # limitations under the License.
 #
 
-import flask
 import time
 
-import utility
+import flask
+
 from roush.db import exceptions
 from roush.db.api import api_from_models
+from roush.webapp import utility
 
 
 api = api_from_models()
