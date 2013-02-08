@@ -159,10 +159,10 @@ class ChefClientBackend(roush.backends.Backend):
 
         node = api._model_get_by_id('nodes', node_id)
 
-        is_container = False
-
-        if 'container' in node['facts']['backends']:
-            is_container = True
+        # FIXME(shep): Un-executed code block
+        #is_container = False
+        #if 'container' in node['facts']['backends']:
+        #    is_container = True
 
         # generate node and environment settings
         node_attrs, env_attrs = self._represent_node_attributes(api, node_id)
