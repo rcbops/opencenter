@@ -16,7 +16,9 @@
 #
 
 import flask
+
 from roush.webapp import generic
+
 
 object_type = 'filters'
 bp = flask.Blueprint(object_type, __name__)

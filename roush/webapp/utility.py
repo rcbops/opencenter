@@ -15,14 +15,15 @@
 # limitations under the License.
 #
 
+import copy
 import logging
+
 import gevent.event
 import gevent.coros
 
-import solver
-import copy
-
 from roush.db.api import api_from_models
+from roush.webapp import solver
+
 
 api = api_from_models()
 util_conditions = {}

@@ -15,8 +15,9 @@
 # limitations under the License.
 #
 
-import flask
 import socket
+
+import flask
 import netifaces
 
 from roush.db import exceptions
