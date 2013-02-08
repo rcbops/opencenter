@@ -33,6 +33,7 @@ from flask import Flask, jsonify, request
 from roush.db import models
 from roush.db.api import api_from_models
 from roush.webapp import generic
+from roush.webapp import utility
 from roush.webapp.ast import FilterBuilder, FilterTokenizer
 from roush.webapp.adventures import bp as adventures_bp
 from roush.webapp.attrs import bp as attrs_bp
