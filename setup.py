@@ -15,9 +15,6 @@
 # limitations under the License.
 #
 
-import os
-import re
-import sys
 from setuptools import setup, find_packages
 
 requirements = ['flask', 'sqlalchemy==0.7.4', 'sqlalchemy-migrate', 'gevent',

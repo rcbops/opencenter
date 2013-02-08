@@ -15,19 +15,14 @@
 # limitations under the License.
 #
 
-import copy
-import time
-
 import flask
 
-import generic
-
 from roush.db.api import api_from_models
-
 from roush.webapp import ast
-from roush.webapp import utility
+# from roush.webapp import auth
 from roush.webapp import errors
-from roush.webapp import auth
+from roush.webapp import generic
+from roush.webapp import utility
 from roush.webapp.utility import unprovisioned_container
 
 api = api_from_models()

@@ -15,10 +15,12 @@
 # limitations under the License.
 #
 
-import flask
 import socket
+
+import flask
 import netifaces
 
+from roush.db import exceptions
 from roush.db.api import api_from_models
 from roush.webapp import generic
 from roush.webapp import utility
@@ -65,8 +67,6 @@ def task_log(task_id):
         task = api._model_get_by_id('tasks', task_id)
     except exceptions.IdNotFound:
         return generic.http_response(404, 'not found')
-
-    node_id = task['node_id']
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('', 0))

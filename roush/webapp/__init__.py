@@ -32,19 +32,20 @@ from flask import Flask, jsonify, request
 # from roush import backends
 from roush.db import models
 from roush.db.api import api_from_models
+from roush.webapp import generic
+from roush.webapp import utility
 from roush.webapp.ast import FilterBuilder, FilterTokenizer
-
 from roush.webapp.adventures import bp as adventures_bp
+from roush.webapp.attrs import bp as attrs_bp
 from roush.webapp.facts import bp as facts_bp
 from roush.webapp.facts_please import bp as facts_please
-from roush.webapp.attrs import bp as attrs_bp
 from roush.webapp.filters import bp as filters_bp
 from roush.webapp.index import bp as index_bp
 from roush.webapp.nodes import bp as nodes_bp
 # from roush.webapp.nodes_please import bp as nodes_please
+from roush.webapp.plan import bp as plan_bp
 from roush.webapp.primitives import bp as primitives_bp
 from roush.webapp.tasks import bp as tasks_bp
-from roush.webapp.plan import bp as plan_bp
 
 
 # api = api_from_models()
@@ -298,12 +299,18 @@ class Thing(Flask):
                 current_txid = time.time()
 
                 if session_key != self.transactions['session_key']:
-                    return generic.http_notfound()
+                    return generic.http_response(410, 'Invalid session_key')
 
                 txid = float(txid)
 
+                if 'poll' in request.args:
+                    # we'll poll if we have no changes
+                    if txid >= max(trans.keys()):
+                        semaphore = '%s-changes' % (what)
+                        utility.wait(semaphore)
+
                 if txid < min(trans.keys()):
-                    return generic.http_notfound()
+                    return generic.http_response(410, 'Expired transaction id')
 
                 retval = set([])
                 for x in [trans[tx] for tx in trans.keys() if tx > txid]:

@@ -20,8 +20,8 @@ import logging
 import re
 
 import roush.backends
-from roush.webapp import ast
 from roush.db import api as db_api
+from roush.webapp import ast
 
 
 class Solver:

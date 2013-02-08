@@ -15,13 +15,14 @@
 # limitations under the License.
 #
 
-import flask
 import time
 
-import utility
+import flask
+
 from roush.db import exceptions
 from roush.db.api import api_from_models
 from roush.webapp.auth import requires_auth
+from roush.webapp import utility
 
 api = api_from_models()
 
@@ -152,6 +153,9 @@ def _update_transaction_id(object_model, id_list=None):
         trans_time_past = trans_time - (60 * 5)
         for k in [x for x in trans.keys() if x < trans_time_past]:
             del trans[k]
+
+        semaphore_name = '%s-changes' % object_model
+        utility.notify(semaphore_name)
 
 
 @requires_auth()

@@ -15,10 +15,10 @@
 # limitations under the License.
 #
 
-import generic
 import flask
 
 from roush.db.api import api_from_models
+from roush.webapp import generic
 
 
 api = api_from_models()
@@ -41,8 +41,6 @@ def create():
     # fields = api._model_get_columns(object_type)
 
     data = flask.request.json
-
-    model_object = None
 
     if 'node_id' in data and 'key' in data:
         old_fact = api._model_get_first_by_query(

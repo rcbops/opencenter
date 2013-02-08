@@ -15,10 +15,10 @@
 # limitations under the License.
 #
 
-import generic
 import flask
 
 from roush.db.api import api_from_models
+from roush.webapp import generic
 
 
 api = api_from_models()
