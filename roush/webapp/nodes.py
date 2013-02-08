@@ -19,7 +19,7 @@ import flask
 
 from roush.db.api import api_from_models
 from roush.webapp import ast
-from roush.webapp import auth
+# from roush.webapp import auth
 from roush.webapp import errors
 from roush.webapp import generic
 from roush.webapp import utility

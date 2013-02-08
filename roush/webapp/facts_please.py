@@ -42,8 +42,6 @@ def create():
 
     data = flask.request.json
 
-    model_object = None
-
     if 'node_id' in data and 'key' in data:
         old_fact = api._model_get_first_by_query(
             object_type, 'node_id=%d and key="%s"' % (
