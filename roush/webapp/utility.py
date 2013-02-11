@@ -121,10 +121,10 @@ def clear(what):
         util_conditions[what].clear()
 
 
-def wait(what):
+def wait(what, timeout=30):
     event = _get_or_make_event(what)
     LOG.debug('waiting on %s' % what)
-    event.wait()
+    event.wait(timeout)
     event.clear()
 
 
