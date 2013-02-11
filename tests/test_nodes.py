@@ -7,83 +7,92 @@ import unittest2
 from roush.db.database import init_db
 from roush import webapp
 
-import util
+from util import RoushTestCase, ScaffoldedTestCase
 
 
 def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
 
 
-class NodeRegister(unittest2.TestCase):
-    @classmethod
-    def setUpClass(self):
-        self.foo = webapp.Thing('roush',
-                                configfile='tests/test.conf',
-                                debug=True)
-        init_db(self.foo.config['database_uri'], migrate=False)
-        self.app = self.foo.test_client()
+# class NodeRegister(unittest2.TestCase):
+class NodeRegister(RoushTestCase):
+    def setUp(self):
         self.content_type = 'application/json'
         self.name = _randomStr(10)
 
-    @classmethod
-    def tearDownClass(self):
-        pass
+    def tearDown(self):
+        self._clean_all()
 
     def test_node_registration(self):
         data = {'hostname': self.name}
-        resp = self.app.post('/nodes/whoami',
+        resp = self.client.post('/nodes/whoami',
                              content_type=self.content_type,
                              data=json.dumps(data))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
-        self.foo.logger.debug(out)
+        self.logger.debug(out)
         self.assertEquals(out['node']['name'], self.name)
         self.assertEquals(out['status'], 200)
         self.assertEquals(out['message'], 'success')
 
     def test_bad_node_registration(self):
         data = {'nothostname': self.name}
-        resp = self.app.post('/nodes/whoami',
+        resp = self.client.post('/nodes/whoami',
                              content_type=self.content_type,
                              data=json.dumps(data))
         self.assertEquals(resp.status_code, 400)
         out = json.loads(resp.data)
-        self.foo.logger.debug(out)
+        self.logger.debug(out)
         self.assertEquals(out['message'],
                           "'hostname' not found in json object")
         self.assertEquals(out['status'], 400)
 
 
-class NodeCreateTests(unittest2.TestCase):
-    @classmethod
-    def setUpClass(self):
-        self.foo = webapp.Thing('roush',
-                                configfile='tests/test.conf',
-                                debug=True)
-        init_db(self.foo.config['database_uri'], migrate=False)
-        self.app = self.foo.test_client()
+class NodeAdventures(ScaffoldedTestCase):
+    def setUp(self):
+        self.content_type = 'application/json'
+        self.name = _randomStr(10)
+
+    def tearDown(self):
+        pass
+
+    def test_check_for_install_chef_server_adventure(self):
+        data = {'hostname': self.name}
+        resp = self.client.post('/nodes/whoami',
+                             content_type=self.content_type,
+                             data=json.dumps(data))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        new_node_id = out['node']['id']
+        resp = self.client.get('/nodes/%s/adventures' % new_node_id,
+                             content_type=self.content_type)
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        adventure_install_chef_server = False
+        for adv in out['adventures']:
+            if adv['name'] == "install chef server":
+                adventure_install_chef_server = True
+        self.assertTrue(adventure_install_chef_server)
+
+
+class NodeCreateTests(RoushTestCase):
+    def setUp(self):
         self.name = _randomStr(10)
         self.desc = _randomStr(30)
         self.attribs = {_randomStr(5): _randomStr(10),
                         _randomStr(5): {_randomStr(5): _randomStr(10)},
                         _randomStr(5): [_randomStr(10), _randomStr(10)]}
         self.content_type = 'application/json'
-        # need to create a test cluster
         self.clus1_name = _randomStr(10)
         self.clus1_desc = _randomStr(30)
         self.clus1_data = {'name': self.clus1_name,
                            'description': self.clus1_desc}
-        # neet to create a test role
-        self.shep = 30
 
-    @classmethod
-    def tearDownClass(self):
-        pass
+    def tearDown(self):
+        self._clean_all()
 
     def _delete_node(self, node_id):
-        # if self.foo.config['backend'] != 'null':
-        #     time.sleep(2 * self.shep)  # chef-solr indexing can be slow
-        resp = self.app.delete('/nodes/%s' % node_id,
+        resp = self.client.delete('/nodes/%s' % node_id,
                                content_type=self.content_type)
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
@@ -92,22 +101,19 @@ class NodeCreateTests(unittest2.TestCase):
 
     def test_create_node_with_name_only(self):
         data = {'name': self.name}
-        resp = self.app.post('/nodes/',
+        resp = self.client.post('/nodes/',
                              content_type=self.content_type,
                              data=json.dumps(data))
         out = json.loads(resp.data)
-        self.foo.logger.debug(out)
+        self.logger.debug(out)
         self.assertEquals(resp.status_code, 201)
         self.assertEquals(out['status'], 201)
         self.assertEquals(out['message'], 'Node Created')
         self.assertEquals(out['node']['name'], self.name)
 
-        # Cleanup the node we created
-        self._delete_node(out['node']['id'])
-
     def test_create_node_without_name(self):
         data = {'description': self.desc}
-        resp = self.app.post('/nodes/',
+        resp = self.client.post('/nodes/',
                              content_type=self.content_type,
                              data=json.dumps(data))
         self.assertEquals(resp.status_code, 400)
@@ -115,24 +121,17 @@ class NodeCreateTests(unittest2.TestCase):
         self.assertEquals(out['status'], 400)
 
     def _generic_test(self, method, path, code):
-        resp = self.app.__getattribute__(method)(
+        resp = self.client.__getattribute__(method)(
             path,
             content_type=self.content_type)
         self.assertEquals(resp.status_code, code)
 
 
-class NodeInvalidHTTPMethodTests(unittest2.TestCase):
-    @classmethod
-    def setUpClass(self):
-        self.foo = webapp.Thing('roush',
-                                configfile='tests/test.conf',
-                                debug=True)
-        init_db(self.foo.config['database_uri'], migrate=False)
-        self.app = self.foo.test_client()
-        self.content_type = 'application/json'
+class NodeInvalidHTTPMethodTests(RoushTestCase):
+    def setUp(self):
+        pass
 
-    @classmethod
-    def tearDownClass(self):
+    def tearDown(self):
         pass
 
     def _execute_method(self, method_name, path, http_code):
@@ -143,9 +142,10 @@ class NodeInvalidHTTPMethodTests(unittest2.TestCase):
         :param path: path to execute the http call against
         :param http_code: http error code to validate against
         """
-        resp = self.app.__getattribute__(method_name)(
+        content_type = 'application/json'
+        resp = self.client.__getattribute__(method_name)(
             path,
-            content_type=self.content_type)
+            content_type=content_type)
         self.assertEquals(resp.status_code, http_code)
 
     def test_405_returned_by_delete_on_nodes(self):
@@ -164,7 +164,7 @@ class NodeInvalidHTTPMethodTests(unittest2.TestCase):
         self._execute_method('patch', '/nodes/1', 405)
 
 
-class NodeTransactionTests(util.RoushTestCase):
+class NodeTransactionTests(RoushTestCase):
     def setUp(self):
         self.container = self._model_create('nodes', name='test_container')
         self._model_create('facts', node_id=self.container['id'],
