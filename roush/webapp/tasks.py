@@ -15,7 +15,11 @@
 # limitations under the License.
 #
 
+import gevent
+import logging
 import socket
+import time
+import uuid
 
 import flask
 import netifaces
@@ -28,6 +32,7 @@ from roush.webapp import utility
 api = api_from_models()
 object_type = 'tasks'
 bp = flask.Blueprint(object_type, __name__)
+watched_tasks = {}
 
 
 @bp.route('/', methods=['GET', 'POST'])
@@ -63,10 +68,20 @@ def task_by_id(object_id):
 
 @bp.route('/<task_id>/logs', methods=['GET'])
 def task_log(task_id):
+    """
+    Tail a logfile on a client.  Given a task id, this asks
+    the client that ran it grab the last 1k of the logs from
+    that task and push them at the server on an ephemeral port.
+
+    This gets returned as 'log' in the return json blob.
+    """
+
     try:
         task = api._model_get_by_id('tasks', task_id)
     except exceptions.IdNotFound:
         return generic.http_response(404, 'not found')
+
+    watching = flask.request.args.get('watch', False) is not False
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('', 0))
@@ -79,44 +94,49 @@ def task_log(task_id):
         # flask fd, we could getsockname on that side
         # and see what we requested on.  that would
         # likely be a better guess.
-        interface_list = netifaces.interfaces()
-        iface = 'eth0'
-        if not iface in interface_list:
-            iface = 'en0'
 
-        try:
-            addr = netifaces.ifaddresses(iface)[netifaces.AF_INET][0]['addr']
-        except Exception:
-            # we don't have an eth0, or ipv4 or something else.  Enough that
-            # we aren't going to come up with a simple way to do this, so
-            # we'll punt
-            #
-            # randomly find an ip address that isn't loopback...
-            addr_list = []
+        # generate a list of all interfaces with
+        # non-loopback ipv4 addresses.
+        addr = None
 
-            addr = None
+        addrs = {}
+        for iface in netifaces.interfaces():
+            if netifaces.AF_INET in netifaces.ifaddresses(iface):
+                for ablock in netifaces.ifaddresses(iface)[netifaces.AF_INET]:
+                    if not iface in addrs:
+                        addrs[iface] = []
+                    if not ablock['addr'].startswith('127'):
+                        addrs[iface].append(ablock['addr'])
 
-            for iface in interface_list:
-                if netifaces.AF_INET in netifaces.ifaddresses(iface):
-                    someaddrs = netifaces.ifaddresses(iface)[netifaces.AF_INET]
-                    for paddr in someaddrs:
-                        if 'addr' in paddr:
-                            addr_list.append(paddr['addr'])
+                if iface in addrs and len(addrs[iface]) == 0:
+                    addrs.pop(iface)
 
-            for paddr in addr_list:
-                if not paddr.startswith('127'):
-                    addr = paddr
+        if len(addrs) == 0:
+            s.close()
+            return generic.http_response(400, 'cannot determine interface')
 
-            if not addr:
-                s.close()
-                return generic.http_response(500, 'cannot determine bind')
+        # try least-to-most interesting
+        for iface in ['en1', 'en0', 'eth1', 'eth0']:
+            if iface in addrs:
+                addr = addrs[iface][0]
 
-    new_task = api._model_create('tasks', {'node_id': task['node_id'],
-                                           'action': 'logfile.tail',
-                                           'payload': {'task_id': task['id'],
-                                                       'dest_ip': addr,
-                                                       'dest_port': port}})
+        # just grab the first
+        if not addr:
+            addr = addrs[addrs.keys().pop(0)][0]
 
+    client_action = 'logfile.watch' if watching else 'logfile.tail'
+
+    payload = {'node_id': task['node_id'],
+               'action': client_action,
+               'payload': {'task_id': task['id'],
+                           'dest_ip': addr,
+                           'dest_port': port}}
+    if watching:
+        payload['payload']['timeout'] = 30
+
+    new_task = api._model_create('tasks', payload)
+
+    # this should really be done by the data model.  <sigh>
     task_semaphore = 'task-for-%s' % task['node_id']
     flask.current_app.logger.debug('notifying event %s' %
                                    task_semaphore)
@@ -132,15 +152,116 @@ def task_log(task_id):
     try:
         conn, addr = s.accept()
     except socket.timeout:
+        flask.current_app.logger.error('Error waiting for '
+                                       'client connect on log tail')
+
         s.close()
-        api._model_update('tasks', new_task['id'],
-                          {'state': 'cancelled'})
+        api._model_update_by_id('tasks', new_task['id'],
+                                {'state': 'cancelled'})
 
         return generic.http_response(404, 'cannot fetch logs')
 
+    if watching:
+        watch = str(uuid.uuid1())
+        watched_tasks[watch] = {
+            'socket': conn,
+            'time': time.time(),
+            'task_id': new_task['id'],
+            'notifier': gevent.event.Event(),
+            'accept_socket': s,
+            'event': gevent.spawn(
+                lambda: _serve_connection(
+                    api, watch))}
+
+        return generic.http_response(200, request=watch)
+
+    # otherwise, just tail
     data = conn.recv(1024)
 
     conn.close()
     s.close()
 
     return generic.http_response(200, log=data)
+
+
+@bp.route('/<task_id>/logs/<transaction>', methods=['GET'])
+def task_log_tail(task_id, transaction):
+    if not transaction in watched_tasks:
+        flask.current_app.logger.error(
+            '%s not in watched tasks: %s' % (transaction,
+                                             watched_tasks))
+
+        return generic.http_notfound()
+
+    watched_tasks[transaction]['notifier'].set()
+
+    # yield to greenlets
+    gevent.sleep(0)
+
+    if not 'generator' in watched_tasks[transaction]:
+        # something very wrong here
+        flask.current_app.logger.error(
+            'no generator in %s: %s' % (
+                transaction,
+                watched_tasks[transaction]))
+
+        watched_tasks.pop(transaction)
+        return generic.http_notfound()
+
+    generator = watched_tasks[transaction]['generator']
+
+    return flask.Response(watched_tasks[transaction]['generator'],
+                          mimetype='text/plain')
+
+
+def _serve_connection(api, watch):
+    logger = logging.getLogger('roush.webapp.tasks')
+
+    watch_info = watched_tasks[watch]
+
+    listen_socket = watch_info['socket']
+    accept_socket = watch_info['accept_socket']
+
+    logger.debug('Waiting for wakeup')
+
+    # we'll wait for the follow-up request
+    if watch_info['notifier'].wait(30):
+        # we've been woken up -- someone is
+        # asking for the file.  We should have
+        # a response now.
+        def generate(watch, sock_in, accept_socket):
+            sock_in.settimeout(30)
+
+            while True:
+                data = sock_in.recv(1024)
+                if data == '':
+                    # remote disconnected
+                    return
+                yield data
+
+            sock_in.close()
+            accept_socket.close()
+
+            try:
+                watched_tasks.pop(watched)
+            except KeyError:
+                pass
+
+        logger.debug('Woke up -- spinning generator')
+        wrapped_socket = gevent.socket.fromfd(listen_socket.fileno(),
+                                              socket.AF_INET,
+                                              socket.SOCK_STREAM)
+        watch_info['generator'] = generate(watch, wrapped_socket,
+                                           accept_socket)
+
+        # we'll wait 30 seconds for the other side to pick it up...
+        # if it doesn't, we'll just throw away the transaction.
+        gevent.sleep(30)
+    else:
+        logger.debug('Error waking up.  Destroying all the things')
+
+    try:
+        watched_tasks.pop(watch)
+    except KeyError:
+        # popped on the other side.  this is okay
+        pass
