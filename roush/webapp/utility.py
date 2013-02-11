@@ -214,13 +214,10 @@ def run_adventure(adventure_dsl=None, nodes=None):
     """
 
     payload = {}
-    globals = {}
+    adv_globals = {}
 
     payload['adventure_dsl'] = adventure_dsl
-    globals['solved_adventure'] = True
-    globals['defined_adventure'] = False
-
-    payload['globals'] = globals
+    payload['globals'] = adv_globals
 
     node_list = nodes
 
