@@ -31,14 +31,19 @@ class AgentBackend(roush.backends.Backend):
     def run_task(self, api, node_id, **kwargs):
         action = kwargs.pop('action')
         payload = kwargs.pop('payload')
+        parent_task_id = None
 
         adventure_globals = {}
 
         # payload = dict([(x, kwargs[x]) for x in kwargs if x != 'action'])
 
         # push global variables
-        if 'globals' in kwargs:
-            adventure_globals = kwargs.pop('globals')
+        # if 'globals' in kwargs:
+        #     adventure_globals = kwargs.pop('globals')
+        #     parent_task_id = adventure_globals.get('parent_task_id', None)
+
+        if payload is not None and 'globals' in payload:
+            parent_task_id = payload['globals'].get('parent_task_id', None)
 
         # run through the rest of the args and typecast them
         # as appropriate.
@@ -73,9 +78,14 @@ class AgentBackend(roush.backends.Backend):
             if not k in payload:
                 payload[k] = v
 
-        task = api._model_create('tasks', {'node_id': node_id,
-                                           'action': action,
-                                           'payload': payload})
+        task_data = {'node_id': node_id,
+                     'action': action,
+                     'payload': payload}
+
+        if parent_task_id is not None:
+            task_data['parent_id'] = parent_task_id
+
+        task = api._model_create('tasks', task_data)
 
         self.logger.debug('added task as id %s' % task['id'])
 
