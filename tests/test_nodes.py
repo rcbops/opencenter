@@ -26,8 +26,8 @@ class NodeRegister(RoushTestCase):
     def test_node_registration(self):
         data = {'hostname': self.name}
         resp = self.client.post('/nodes/whoami',
-                             content_type=self.content_type,
-                             data=json.dumps(data))
+                                content_type=self.content_type,
+                                data=json.dumps(data))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.logger.debug(out)
@@ -38,8 +38,8 @@ class NodeRegister(RoushTestCase):
     def test_bad_node_registration(self):
         data = {'nothostname': self.name}
         resp = self.client.post('/nodes/whoami',
-                             content_type=self.content_type,
-                             data=json.dumps(data))
+                                content_type=self.content_type,
+                                data=json.dumps(data))
         self.assertEquals(resp.status_code, 400)
         out = json.loads(resp.data)
         self.logger.debug(out)
@@ -59,13 +59,13 @@ class NodeAdventures(ScaffoldedTestCase):
     def test_check_for_install_chef_server_adventure(self):
         data = {'hostname': self.name}
         resp = self.client.post('/nodes/whoami',
-                             content_type=self.content_type,
-                             data=json.dumps(data))
+                                content_type=self.content_type,
+                                data=json.dumps(data))
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         new_node_id = out['node']['id']
         resp = self.client.get('/nodes/%s/adventures' % new_node_id,
-                             content_type=self.content_type)
+                               content_type=self.content_type)
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         adventure_install_chef_server = False
@@ -93,7 +93,7 @@ class NodeCreateTests(RoushTestCase):
 
     def _delete_node(self, node_id):
         resp = self.client.delete('/nodes/%s' % node_id,
-                               content_type=self.content_type)
+                                  content_type=self.content_type)
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.assertEquals(out['status'], 200)
@@ -102,8 +102,8 @@ class NodeCreateTests(RoushTestCase):
     def test_create_node_with_name_only(self):
         data = {'name': self.name}
         resp = self.client.post('/nodes/',
-                             content_type=self.content_type,
-                             data=json.dumps(data))
+                                content_type=self.content_type,
+                                data=json.dumps(data))
         out = json.loads(resp.data)
         self.logger.debug(out)
         self.assertEquals(resp.status_code, 201)
@@ -114,8 +114,8 @@ class NodeCreateTests(RoushTestCase):
     def test_create_node_without_name(self):
         data = {'description': self.desc}
         resp = self.client.post('/nodes/',
-                             content_type=self.content_type,
-                             data=json.dumps(data))
+                                content_type=self.content_type,
+                                data=json.dumps(data))
         self.assertEquals(resp.status_code, 400)
         out = json.loads(resp.data)
         self.assertEquals(out['status'], 400)
