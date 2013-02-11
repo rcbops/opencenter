@@ -14,6 +14,46 @@ def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
 
 
+class NodeRegister(unittest2.TestCase):
+    @classmethod
+    def setUpClass(self):
+        self.foo = webapp.Thing('roush',
+                                configfile='tests/test.conf',
+                                debug=True)
+        init_db(self.foo.config['database_uri'], migrate=False)
+        self.app = self.foo.test_client()
+        self.content_type = 'application/json'
+        self.name = _randomStr(10)
+
+    @classmethod
+    def tearDownClass(self):
+        pass
+
+    def test_node_registration(self):
+        data = {'hostname': self.name}
+        resp = self.app.post('/nodes/whoami',
+                             content_type=self.content_type,
+                             data=json.dumps(data))
+        self.assertEquals(resp.status_code, 200)
+        out = json.loads(resp.data)
+        self.foo.logger.debug(out)
+        self.assertEquals(out['node']['name'], self.name)
+        self.assertEquals(out['status'], 200)
+        self.assertEquals(out['message'], 'success')
+
+    def test_bad_node_registration(self):
+        data = {'nothostname': self.name}
+        resp = self.app.post('/nodes/whoami',
+                             content_type=self.content_type,
+                             data=json.dumps(data))
+        self.assertEquals(resp.status_code, 400)
+        out = json.loads(resp.data)
+        self.foo.logger.debug(out)
+        self.assertEquals(out['message'],
+                          "'hostname' not found in json object")
+        self.assertEquals(out['status'], 400)
+
+
 class NodeCreateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
