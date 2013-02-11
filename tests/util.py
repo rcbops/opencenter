@@ -248,11 +248,10 @@ class ScaffoldedTestCase(RoushTestCase):
     def setUpClass(cls, *args, **kwargs):
         cls.app = webapp.Thing('roush',
                                configfile='tests/test.conf',
-                               migrate=False,
                                debug=True)
         init_db(cls.app.config['database_uri'], migrate=False)
         # run the memory migrator
-        _memorydb_migrage_db(engine)
+        _memorydb_migrate_db()
 
         cls.client = cls.app.test_client()
         cls.logger = cls.app.logger

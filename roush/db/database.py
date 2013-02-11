@@ -41,10 +41,10 @@ def init_db(uri, migrate=True, **kwargs):
     Base.metadata.create_all(bind=engine)
 
     if migrate:
-        migrate_db(uri, **kwargs)
+        migrate_db(engine, **kwargs)
 
 
-def _memorydb_migrate_db(engine, **kwargs):
+def _memorydb_migrate_db(**kwargs):
     """
     This is crazy crackheaded, and abusive to sqlalchemy.
 
@@ -58,6 +58,7 @@ def _memorydb_migrate_db(engine, **kwargs):
     def dispose_patch(*args, **kwargs):
         pass
 
+    global engine
     old_dispose = engine.dispose
     engine.dispose = dispose_patch
 
@@ -65,7 +66,7 @@ def _memorydb_migrate_db(engine, **kwargs):
         os.path.abspath(os.path.dirname(roush_repo.__file__)))
     migrate_api.version_control(engine, repo_path)
     migrate_api.upgrade(engine, repo_path)
-    ending.dispose = old_dispoase
+    engine.dispose = old_dispose
 
 
 def migrate_db(uri, **kwargs):
