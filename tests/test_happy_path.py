@@ -4,6 +4,8 @@ import json
 from util import ScaffoldedTestCase
 from roush.db import api as db_api
 
+import roush.backends
+
 
 class HappyPathTestCase(ScaffoldedTestCase):
     def setUp(self):
@@ -115,6 +117,29 @@ class HappyPathTestCase(ScaffoldedTestCase):
         valid_adventures = [x['id'] for x in result['adventures']]
         return valid_adventures
 
+    def _default_plan(self, plan):
+        for step in plan:
+            if 'args' in step:
+                for arg in step['args']:
+                    self.assertTrue('default' in step['args'][arg])
+                    step['args'][arg]['value'] = step['args'][arg]['default']
+        return plan
+
+    def _plan_submit(self, plan, node_id):
+        node_id = int(node_id)
+
+        self.logger.debug('running plan %s' % plan)
+
+        resp = self.client.post(
+            '/plan/', content_type='application/json',
+            data=json.dumps({'node': node_id,
+                             'plan': plan}))
+
+        result = json.loads(resp.data)
+        self.logger.debug('Result of plan submission: %s' % result)
+
+        return result
+
     def test_install_chef_server_no_adventurator(self):
         chef_adventure = self._model_filter(
             'adventures', '"chef server" in name')
@@ -191,3 +216,56 @@ class HappyPathTestCase(ScaffoldedTestCase):
         # this should 409
         self.assertTrue('status' in result)
         self.assertEqual(result['status'], 409)
+
+        self.assertTrue('plan' in result)
+
+        plan = result['plan']
+
+        # now, fill in the plan with defaults and submit
+        plan = self._default_plan(plan)
+
+        result = self._plan_submit(plan, 1)
+
+        self.assertTrue('status' in result)
+        self.assertEqual(result['status'], 202)
+
+        plan = result['plan']
+
+        # roll the plan forward and make sure it does what we think
+        node_count = len(self._model_get_all('nodes'))
+
+        self._safely_run_plan(plan, 1)
+
+        new_node_count = len(self._model_get_all('nodes'))
+
+        # we should now have a nova cluster, infra, compute and az... 4 new
+        # nodes.
+
+        self.assertEqual(node_count + 4, new_node_count)
+
+        agent_actions = json.loads("""
+{
+  "install_chef": {
+    "args": {},
+    "consequences": [
+      "facts.backends := union(facts.backends, 'chef-client')"
+    ],
+    "constraints": []
+  }
+}""")
+
+        # guess we should probably reparent now.
+        self._model_create(
+            'attrs', node_id=self.agent['id'],
+            key='roush_agent_actions',
+            value=agent_actions)
+
+        infra_container = self._model_filter('nodes',
+                                             '"frastructure" in name')
+
+        self.assertEqual(len(infra_container), 1)
+        infra_container = infra_container[0]['id']
+
+        resp = self._model_create('facts', node_id=self.agent['id'],
+                                  key='parent_id', value=infra_container,
+                                  please=True, raw=True, expect_code=202)
