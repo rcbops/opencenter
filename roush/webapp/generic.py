@@ -21,8 +21,8 @@ import flask
 
 from roush.db import exceptions
 from roush.db.api import api_from_models
+from roush.webapp.auth import requires_auth
 from roush.webapp import utility
-
 
 api = api_from_models()
 
@@ -158,6 +158,7 @@ def _update_transaction_id(object_model, id_list=None):
         utility.notify(semaphore_name)
 
 
+@requires_auth()
 def list(object_type):
     s_obj = singularize(object_type)
 
@@ -182,6 +183,7 @@ def list(object_type):
         return http_notfound(msg='Unknown method %s' % flask.request.method)
 
 
+@requires_auth()
 def object_by_id(object_type, object_id):
     s_obj = singularize(object_type)
 
@@ -217,6 +219,7 @@ def object_by_id(object_type, object_id):
         return http_notfound(msg='Unknown method %s' % flask.request.method)
 
 
+@requires_auth()
 def http_solver_request(node_id, constraints, api=api, result=None, plan=None):
     try:
         task, solution_plan = utility.solve_and_run(node_id,

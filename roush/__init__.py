@@ -22,6 +22,7 @@ from gevent.pywsgi import WSGIServer
 
 from roush.db.database import init_db
 from roush.webapp import Thing
+from roush.webapp.auth import is_allowed, authenticate
 
 
 def main():
@@ -40,6 +41,11 @@ def main():
             response.headers['Access-Control-Allow-Headers'] = \
                 'Content-Type'
         return response
+
+    @foo.before_request
+    def auth_f():
+        if not is_allowed(roles=None):
+            return authenticate()
 
     init_db(foo.config['database_uri'])
 
