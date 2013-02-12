@@ -198,7 +198,7 @@ class Attrs(JsonRenderer, Base):
 class Nodes(JsonRenderer, Base):
     __tablename__ = 'nodes'
     id = Column(Integer, primary_key=True)
-    name = Column(String(64), unique=True, nullable=False)
+    name = Column(String(64), nullable=False)
     adventure_id = Column(Integer, ForeignKey('adventures.id'))
     task_id = Column(Integer, ForeignKey('tasks.id',
                                          use_alter=True,
