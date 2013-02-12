@@ -24,6 +24,7 @@ from roush.db.database import init_db
 from roush.webapp import Thing
 from roush.webapp.auth import is_allowed, authenticate
 
+
 def main():
     foo = Thing("roush", argv=sys.argv[1:], configfile='local.conf',
                 debug=True)
