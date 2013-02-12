@@ -246,6 +246,9 @@ class RoushTestCase(unittest2.TestCase):
 class ScaffoldedTestCase(RoushTestCase):
     @classmethod
     def setUpClass(cls, *args, **kwargs):
+        ast_logger = logging.getLogger('roush.webapp.ast')
+        ast_logger.setLevel(logging.INFO)
+
         cls.app = webapp.Thing('roush',
                                configfile='tests/test.conf',
                                debug=True)
@@ -255,6 +258,13 @@ class ScaffoldedTestCase(RoushTestCase):
 
         cls.client = cls.app.test_client()
         cls.logger = cls.app.logger
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
+    def __init__(self, *args, **kwargs):
+        super(ScaffoldedTestCase, self).__init__(*args, **kwargs)
 
 
 def _test_fail(self):
