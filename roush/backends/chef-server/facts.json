@@ -6,5 +6,7 @@
     {"chef_server_client_pem": {"inheritance": "none",
                                 "settable": false}},
     {"chef_server_client_name": {"inheritance": "none",
-                                 "settable": false}}
+                                 "settable": false}},
+    {"chef_server_cookbook_channels": {"inheritance": "none",
+                                       "settable": false}}
 ]
