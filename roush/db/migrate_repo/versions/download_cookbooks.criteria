@@ -1,1 +1,1 @@
-('chef-server' in facts.backends) and ('agent' in facts.backends) and (facts.subscribed_channels)
+('chef-server' in facts.backends) and ('agent' in facts.backends) and (facts.chef_server_cookbook_channels)
