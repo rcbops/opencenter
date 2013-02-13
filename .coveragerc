@@ -1,0 +1,6 @@
+[run]
+omit =
+     test.py
+     tests/*
+
+include = roush/*
