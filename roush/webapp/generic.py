@@ -25,7 +25,6 @@ from roush.webapp.auth import requires_auth
 from roush.webapp import utility
 
 
-
 # Some notifications are related... facts updates must fire associated
 # node, for example.  This keeps those relationships.  There might be
 # others in the future, though.
@@ -222,7 +221,8 @@ def object_by_id(object_type, object_id):
 
 
 @requires_auth()
-def http_solver_request(node_id, constraints, api=None, result=None, plan=None):
+def http_solver_request(node_id, constraints,
+                        api=None, result=None, plan=None):
     if api is None:
         api = api_from_models()
     try:

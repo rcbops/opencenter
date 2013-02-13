@@ -144,7 +144,8 @@ def true_f(_):
     return True
 
 
-def _expand_nodes(nodelist, filter_f=true_f, api=None, depth=0, detailed=False):
+def _expand_nodes(nodelist, filter_f=true_f,
+                  api=None, depth=0, detailed=False):
     if api is None:
         api = api_from_models()
     final_nodes = []
