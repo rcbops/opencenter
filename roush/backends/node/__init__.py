@@ -156,24 +156,24 @@ class NodeBackend(backends.Backend):
                 return None
         return []
 
-    def set_parent(self, api, node_id, **kwargs):
+    def set_parent(self, state_data, api, node_id, **kwargs):
         parent = kwargs['parent']
         roush.webapp.ast.apply_expression(node_id,
                                           'facts.parent_id := %s' % parent,
                                           api)
 
-        return True
+        return self._ok()
 
-    def apply_fact(self, api, node_id, **kwargs):
+    def apply_fact(self, state_data, api, node_id, **kwargs):
         key, value = kwargs['key'], kwargs['value']
 
         self.logger.debug("Applying (vs. setting) fact %s->%s" %
                           (key, value))
 
         # something should be done here.
-        return True
+        return self._ok()
 
-    def set_fact(self, api, node_id, **kwargs):
+    def set_fact(self, state_data, api, node_id, **kwargs):
         key, value = kwargs['key'], kwargs['value']
 
         # if the fact exists, update it, else create it.
@@ -184,7 +184,7 @@ class NodeBackend(backends.Backend):
 
         if key in _by_key and _by_key[key] == value:
             # we dont' need to set the value, merely apply it
-            return self.apply_fact(api, node_id, **kwargs)
+            return self.apply_fact(state_data, api, node_id, **kwargs)
 
         if len(oldkeys) > 0:
             # update
@@ -195,13 +195,13 @@ class NodeBackend(backends.Backend):
                                         'key': key,
                                         'value': value})
 
-        return True
+        return self._ok()
 
-    def add_backend(self, api, node_id, **kwargs):
+    def add_backend(self, state_data, api, node_id, **kwargs):
         self.logger.debug('adding backend %s', kwargs['backend'])
 
         roush.webapp.ast.apply_expression(
             node_id, 'facts.backends := union(facts.backends, "%s")' %
             kwargs['backend'], api)
 
-        return True
+        return self._ok()

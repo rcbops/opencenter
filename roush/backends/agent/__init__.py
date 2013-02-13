@@ -28,7 +28,7 @@ class AgentBackend(roush.backends.Backend):
         # this is probably a bit viscious.
         return []
 
-    def run_task(self, api, node_id, **kwargs):
+    def run_task(self, state_data, api, node_id, **kwargs):
         action = kwargs.pop('action')
         payload = kwargs.pop('payload')
         parent_task_id = None
@@ -94,7 +94,7 @@ class AgentBackend(roush.backends.Backend):
             task = api._model_get_by_id('tasks', task['id'])
 
         if task['state'] != 'done':
-            return False
+            return self._fail(msg='task did not finish successfully')
 
         if 'result_code' in task['result'] and \
                 task['result']['result_code'] == 0:
@@ -117,6 +117,6 @@ class AgentBackend(roush.backends.Backend):
             for cons in conslist:
                 api.apply_expression(node_id, cons)
 
-            return True
+            return self._ok()
 
-        return False
+        return self._fail(msg='Task failed')

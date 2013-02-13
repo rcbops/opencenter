@@ -82,7 +82,7 @@ class SolverTestCase(RoushTestCase):
 
             f = roush.backends.primitive_by_name(primitive)
 
-            f(self.api, node_id, **ns)
+            f({}, self.api, node_id, **ns)
 
     def test_no_adventurator(self):
         # trying to run any solved thing should fail

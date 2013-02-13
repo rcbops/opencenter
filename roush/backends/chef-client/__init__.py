@@ -146,7 +146,7 @@ class ChefClientBackend(roush.backends.Backend):
                 result[key] = value
         return result
 
-    def converge_chef(self, api, node_id, **kwargs):
+    def converge_chef(self, state_data, api, node_id, **kwargs):
         # we are converging a node.  If the node is a container,
         # that probably implies converging all nodes under it.
         self.logger.debug('Converging chef')
@@ -172,9 +172,11 @@ class ChefClientBackend(roush.backends.Backend):
 
         for required_fact in required_facts:
             if not required_fact in node['facts']:
-                self.logger.error('Node %s: missing fact: %s' %
-                                  (node['id'], required_fact))
-                return False
+                msg = 'Node %s: missing fact: %s' % (
+                    node['id'], required_fact)
+
+                self.logger.error(msg)
+                return self._fail(msg=msg)
             # locals()[required_fact] = node['facts'][required_fact]
 
         nova_role = node['facts']['nova_role']
@@ -213,7 +215,7 @@ class ChefClientBackend(roush.backends.Backend):
 
         if env is None:
             self.logger.error('Cannot find/create chef environment')
-            return False
+            return self._fail()
 
         old_env_overrides = env.override_attributes
 
@@ -221,9 +223,9 @@ class ChefClientBackend(roush.backends.Backend):
 
         # Find the node
         if not self._node_exists(node['name'], chef_api):
-            self.logger.error('Node "%s" is not registered to chef' %
-                              node['name'])
-            return False
+            msg = 'Node "%s" is not registered to chef' % node['name']
+            self.logger.error(msg)
+            return self._fail(msg=msg)
 
         chef_node = chef.Node(node['name'], chef_api)
         old_node_overrides = self._serialize_node_blob(chef_node.override)
@@ -238,7 +240,7 @@ class ChefClientBackend(roush.backends.Backend):
         adventurator = api._model_get_first_by_query('nodes', query)
         if not adventurator:
             self.logger.error('Could not find adventurator')
-            return False
+            return self._fail(msg='could not find adventurator')
 
         # we'll always stomp this stuff..
 
@@ -277,7 +279,7 @@ class ChefClientBackend(roush.backends.Backend):
                                                     'adventure_dsl': dsl}})
 
         # FIXME: should poll for result here
-        return True
+        return self._ok()
 
     def add_backend(self, api, node_id, **kwargs):
-        return False
+        return self._fail(msg='backend added by install_chef')
