@@ -31,8 +31,6 @@ import api as db_api
 import inmemory
 import roush.backends
 
-roush.backends.load()
-
 
 # Special Fields
 class JsonBlob(types.TypeDecorator):
