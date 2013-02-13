@@ -21,7 +21,6 @@ from roush.db.api import api_from_models
 from roush.webapp import generic
 
 
-api = api_from_models()
 object_type = 'attrs'
 singular_object_type = generic.singularize(object_type)
 
@@ -39,6 +38,8 @@ def create():
 
     # if we are creating with the same host_id and key, then we'll just update
     # fields = api._model_get_columns(object_type)
+
+    api = api_from_models()
 
     data = flask.request.json
 

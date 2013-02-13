@@ -29,7 +29,6 @@ from roush.db.api import api_from_models
 from roush.webapp import generic
 from roush.webapp import utility
 
-api = api_from_models()
 object_type = 'tasks'
 bp = flask.Blueprint(object_type, __name__)
 watched_tasks = {}
@@ -55,6 +54,7 @@ def task_by_id(object_id):
     result = generic.object_by_id(object_type, object_id)
 
     if flask.request.method == 'PUT':
+        api = api_from_models()
         task = api.task_get_by_id(object_id)
         if 'node_id' in task:
             flask.current_app.logger.debug('Task: %s' % task)
@@ -76,6 +76,7 @@ def task_log(task_id):
     This gets returned as 'log' in the return json blob.
     """
 
+    api = api_from_models()
     try:
         task = api._model_get_by_id('tasks', task_id)
     except exceptions.IdNotFound:

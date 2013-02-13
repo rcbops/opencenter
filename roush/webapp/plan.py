@@ -21,7 +21,6 @@ from roush.db.api import api_from_models
 from roush.webapp import generic
 # from roush.webapp import utility
 
-api = api_from_models()
 bp = flask.Blueprint('plan', __name__)
 
 
@@ -30,6 +29,8 @@ def run_plan():
     # this comes in just like an optioned plan.  We'll stuff any returned
     # args and call it a plan.  <rimshot>
     #
+
+    api = api_from_models()
 
     data = flask.request.json
 
