@@ -24,7 +24,6 @@ from roush.db.api import api_from_models
 from roush.webapp.auth import requires_auth
 from roush.webapp import utility
 
-api = api_from_models()
 
 
 # Some notifications are related... facts updates must fire associated
@@ -97,6 +96,7 @@ def _notify(updated_object, object_type, object_id):
     if object_type == 'nodes':
         node_id = updated_object['id']
     if node_id is not None:
+        api = api_from_models()
         node_id = int(node_id)
         # We're just going to notify every child when containers are updated
         try:
@@ -162,6 +162,7 @@ def _update_transaction_id(object_model, id_list=None):
 def list(object_type):
     s_obj = singularize(object_type)
 
+    api = api_from_models()
     if flask.request.method == 'POST':
         data = flask.request.json
 
@@ -187,6 +188,7 @@ def list(object_type):
 def object_by_id(object_type, object_id):
     s_obj = singularize(object_type)
 
+    api = api_from_models()
     if flask.request.method == 'PUT':
         # we just updated something, poke any waiters
         model_object = api._model_update_by_id(object_type, object_id,
@@ -220,7 +222,9 @@ def object_by_id(object_type, object_id):
 
 
 @requires_auth()
-def http_solver_request(node_id, constraints, api=api, result=None, plan=None):
+def http_solver_request(node_id, constraints, api=None, result=None, plan=None):
+    if api is None:
+        api = api_from_models()
     try:
         task, solution_plan = utility.solve_and_run(node_id,
                                                     constraints,

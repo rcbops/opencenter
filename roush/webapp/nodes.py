@@ -25,7 +25,6 @@ from roush.webapp import generic
 from roush.webapp import utility
 from roush.webapp.utility import unprovisioned_container
 
-api = api_from_models()
 object_type = 'nodes'
 bp = flask.Blueprint(object_type,  __name__)
 
@@ -42,6 +41,7 @@ def by_id(object_id):
 
 @bp.route('/<node_id>/tasks_blocking', methods=['GET'])
 def tasks_blocking_by_node_id(node_id):
+    api = api_from_models()
     task = api.task_get_first_by_query("node_id=%d and state='pending'" %
                                        int(node_id))
 
@@ -63,6 +63,7 @@ def tasks_blocking_by_node_id(node_id):
 
 @bp.route('/<node_id>/tasks', methods=['GET'])
 def tasks_by_node_id(node_id):
+    api = api_from_models()
     # Display only tasks with state=pending
     task = api.task_get_first_by_query("node_id=%d and state='pending'" %
                                        int(node_id))
@@ -77,6 +78,7 @@ def tasks_by_node_id(node_id):
 
 @bp.route('/<node_id>/adventures', methods=['GET'])
 def adventures_by_node_id(node_id):
+    api = api_from_models()
     node = api.node_get_by_id(node_id)
     if not node:
         return errors.http_not_found()
@@ -102,6 +104,7 @@ def adventures_by_node_id(node_id):
 
 @bp.route('/whoami', methods=['POST'])
 def whoami():
+    api = api_from_models()
     body = flask.request.json
     if body is None or (not 'hostname' in body):
         return generic.http_badrequest(

@@ -25,7 +25,6 @@ from roush.db.api import api_from_models
 from roush.webapp import solver
 
 
-api = api_from_models()
 util_conditions = {}
 util_locks = {}
 util_lock_lock = gevent.coros.Semaphore()
@@ -145,7 +144,9 @@ def true_f(_):
     return True
 
 
-def _expand_nodes(nodelist, filter_f=true_f, api=api, depth=0, detailed=False):
+def _expand_nodes(nodelist, filter_f=true_f, api=None, depth=0, detailed=False):
+    if api is None:
+        api = api_from_models()
     final_nodes = []
     nodes = copy.deepcopy(nodelist)
     seen = {}
@@ -177,28 +178,34 @@ def _expand_nodes(nodelist, filter_f=true_f, api=api, depth=0, detailed=False):
     return final_nodes
 
 
-def expand_nodelist(nodelist, api=api):
+def expand_nodelist(nodelist, api=None):
     """
     given a list of nodes (including containers),
     generate a fully expanded list of non-container-y
     nodes
     """
+    if api is None:
+        api = api_from_models()
     return _expand_nodes(nodelist, api=api, filter_f=is_leaf)
 
 
-def fully_expand_nodelist(nodelist, api=api):
+def fully_expand_nodelist(nodelist, api=None):
     """
     given a list of nodes (including containers),
     generate a fully expanded list of all node_ids in node_list
     as well as their descendant nodes
     """
+    if api is None:
+        api = api_from_models()
     return _expand_nodes(nodelist, api=api)
 
 
-def get_direct_children(node_id, api=api):
+def get_direct_children(node_id, api=None):
     """
     given a node_id, return a list of all direct child nodes
     """
+    if api is None:
+        api = api_from_models()
     return [x for x in _expand_nodes([node_id], api=api,
                                      depth=1, detailed=True)
             if x['id'] != node_id]
@@ -220,6 +227,8 @@ def run_adventure(adventure_dsl=None, nodes=None):
     payload['globals'] = adv_globals
 
     node_list = nodes
+
+    api = api_from_models()
 
     # we will no longer expand node lists.  At some point
     # we either need hints on adventures for whether they are
@@ -257,13 +266,15 @@ def run_adventure(adventure_dsl=None, nodes=None):
     return task
 
 
-def solve_for_node(node_id, constraints, api=api, plan=None):
+def solve_for_node(node_id, constraints, api=None, plan=None):
     """
     given a node id and a list of constraints, run a solver
     to try and find a solution path.
 
     it returns (is_solvable, requires_input, solution_plan)
     """
+    if api is None:
+        api = api_from_models()
 
     if plan is not None:
         task_solver = solver.Solver.from_plan(api, node_id, [], plan)
@@ -275,7 +286,9 @@ def solve_for_node(node_id, constraints, api=api, plan=None):
     return (is_solvable, requires_input, solution_plan)
 
 
-def solve_and_run(node_id, constraints, api=api, plan=None):
+def solve_and_run(node_id, constraints, api=None, plan=None):
+    if api is None:
+        api = api_from_models()
     is_solvable, requires_input, solution_plan = solve_for_node(
         node_id, constraints, api=api, plan=plan)
 
@@ -288,6 +301,7 @@ def solve_and_run(node_id, constraints, api=api, plan=None):
 
 
 def unprovisioned_container():
+    api = api_from_models()
     unprovisioned = api._model_query(
         'nodes',
         'name = "unprovisioned" and "container" in facts.backends')

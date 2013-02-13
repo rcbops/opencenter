@@ -21,7 +21,6 @@ from roush.db.api import api_from_models
 from roush.webapp import generic
 
 
-api = api_from_models()
 object_type = 'facts'
 singular_object_type = generic.singularize(object_type)
 
@@ -40,6 +39,7 @@ def create():
     # if we are creating with the same host_id and key, then we'll just update
     # fields = api._model_get_columns(object_type)
 
+    api = api_from_models()
     data = flask.request.json
 
     if 'node_id' in data and 'key' in data:
@@ -88,6 +88,7 @@ def modify_fact(object_id):
     result
     """
     data = flask.request.json
+    api = api_from_models()
 
     model_object = api._model_get_by_id('facts', object_id)
     if not model_object:
