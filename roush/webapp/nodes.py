@@ -46,7 +46,18 @@ def tasks_blocking_by_node_id(node_id):
     api = api_from_models()
 
     # Update the last checkin attr for the node
-    api.attr_create(node_id=node_id, key='last_checkin', value=time.time())
+    timestamp = int(time.time())
+    args = {'node_id': node_id, 'key': 'last_checkin', 'value': timestamp}
+    attr_id = api.attrs_query('(key = "last_checkin") and (node_id = %s)' % int(node_id))
+    if len(attr_id) == 0:
+        api.attr_create(args)
+    elif len(attr_id) == 1:
+        api.attr_update_by_id(attr_id[0]['id'], args)
+    else:
+        # This should never happen
+        flask.current_app.logger.debug(
+            'Found more than one last_checkin attribute '
+            'for node: %s". NOT UPDATING!' % node_id)
 
     task = api.task_get_first_by_query("node_id=%d and state='pending'" %
                                        int(node_id))
