@@ -270,9 +270,14 @@ class ChefClientBackend(roush.backends.Backend):
             nodelist = [node_id]
 
         self.logger.debug('chef updating nodelist: %s' % nodelist)
-
+        dsl = [{'primitive': 'run_chef', 'ns': {}}]
+        # first run converge on the node in question
+        api._model_create('tasks', {'action': 'adventurate',
+                                    'node_id': adventurator['id'],
+                                    'payload': {'nodes': [node_id],
+                                                'adventure_dsl': dsl}})
+        # now converge the affected nodes
         if nodelist:
-            dsl = [{'primitive': 'run_chef', 'ns': {}}]
             api._model_create('tasks', {'action': 'adventurate',
                                         'node_id': adventurator['id'],
                                         'payload': {'nodes': nodelist,
