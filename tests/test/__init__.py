@@ -17,6 +17,6 @@ class TestBackend(backends.Backend):
 
         return []
 
-    def set_test_fact(self, api, node_id, **kwargs):
+    def set_test_fact(self, state_data, api, node_id, **kwargs):
         return roush.backends.fact_by_name('node.set_fact')(
-            api, node_id, **kwargs)
+            state_data, api, node_id, **kwargs)
