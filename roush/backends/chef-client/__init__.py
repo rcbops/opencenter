@@ -106,6 +106,10 @@ class ChefClientBackend(roush.backends.Backend):
             return ['role[single-compute]']
         elif role == 'nova-infra':
             return ['role[single-controller]']
+        elif role == 'nova-controller1':
+            return ['role[ha-controller1]']
+        elif role == 'nova-controller2':
+            return ['role[ha-controller2]']
         return []
 
     def _expand_nodelist(self, nodelist, api):
@@ -149,7 +153,8 @@ class ChefClientBackend(roush.backends.Backend):
     def converge_chef(self, state_data, api, node_id, **kwargs):
         # we are converging a node.  If the node is a container,
         # that probably implies converging all nodes under it.
-        self.logger.debug('Converging chef')
+        self.logger.info('Converging node %s via chef-client backend' % (
+            node_id,))
 
         required_facts = ['chef_server_consumed', 'chef_environment',
                           'nova_role']
@@ -252,8 +257,13 @@ class ChefClientBackend(roush.backends.Backend):
         self.logger.debug('Setting environment to %s' % chef_environment)
         chef_node.chef_environment = chef_environment
         chef_node.override = node_attrs
+        old_runlist = chef_node.run_list
         chef_node.run_list = self._map_roles(nova_role)
         chef_node.save()
+
+        if old_runlist != chef_node.run_list:
+            # roles changed, refreshing env just in case searches are affected.
+            need_env_converge = True
 
         if old_env_overrides != env_attrs:
             self.logger.debug('Updating environment')
