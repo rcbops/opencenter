@@ -15,9 +15,9 @@ class RoushTestCase(unittest2.TestCase):
         ast_logger = logging.getLogger('roush.webapp.ast')
         ast_logger.setLevel(logging.INFO)
 
-        cls.app = webapp.Thing('roush',
-                               configfile='tests/test.conf',
-                               debug=True)
+        cls.app = webapp.WebServer('roush',
+                                   configfile='tests/test.conf',
+                                   debug=True)
         init_db(cls.app.config['database_uri'], migrate=False)
         cls.client = cls.app.test_client()
         cls.logger = cls.app.logger
@@ -249,9 +249,9 @@ class ScaffoldedTestCase(RoushTestCase):
         ast_logger = logging.getLogger('roush.webapp.ast')
         ast_logger.setLevel(logging.INFO)
 
-        cls.app = webapp.Thing('roush',
-                               configfile='tests/test.conf',
-                               debug=True)
+        cls.app = webapp.WebServer('roush',
+                                   configfile='tests/test.conf',
+                                   debug=True)
         init_db(cls.app.config['database_uri'], migrate=False)
         # run the memory migrator
         _memorydb_migrate_db()
@@ -315,7 +315,7 @@ def inject(cls):
     test.__name__ = 'test_get_primitive_schema'
     setattr(cls, test.__name__, test)
 
-    app = webapp.Thing('roush', configfile='tests/test.conf', debug=True)
+    app = webapp.WebServer('roush', configfile='tests/test.conf', debug=True)
 
     init_db(app.config['database_uri'], migrate=False)
     client = app.test_client()
