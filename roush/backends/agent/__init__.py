@@ -32,8 +32,16 @@ class AgentBackend(roush.backends.Backend):
         action = kwargs.pop('action')
         payload = kwargs.pop('payload')
         parent_task_id = None
+        reply_data = {}
 
         adventure_globals = {}
+
+        node = api._model_get_by_id('nodes', node_id)
+        rollback_action = 'rollback_%s' % action
+        if 'roush_agent_actions' in node['attrs'] and \
+                rollback_actions in node['attrs']['roush_agent_actions']:
+            reply_data['rollback'] = {'primitive': rollback_action,
+                                      'ns': {}}
 
         # payload = dict([(x, kwargs[x]) for x in kwargs if x != 'action'])
 
@@ -117,6 +125,6 @@ class AgentBackend(roush.backends.Backend):
             for cons in conslist:
                 api.apply_expression(node_id, cons)
 
-            return self._ok()
+            return self._ok(data=reply_data)
 
         return self._fail(msg='Task failed')

@@ -157,12 +157,26 @@ class NodeBackend(backends.Backend):
         return []
 
     def set_parent(self, state_data, api, node_id, **kwargs):
+        reply_data = {}
+
+        current = api._model_get_first_by_query(
+            'facts', 'node_id = %s and key="parent_id"' % node_id)
+
+        # it's possible we have unparented things
+        curent_parent = 1
+        if current:
+            current_parent = current['value']
+
+        if current:
+            reply_data['rollback'] = {'primitive': 'node.set_parent',
+                                      'ns': {'parent': current_parent}}
+
         parent = kwargs['parent']
         roush.webapp.ast.apply_expression(node_id,
                                           'facts.parent_id := %s' % parent,
                                           api)
 
-        return self._ok()
+        return self._ok(data=reply_data)
 
     def apply_fact(self, state_data, api, node_id, **kwargs):
         key, value = kwargs['key'], kwargs['value']
@@ -174,6 +188,8 @@ class NodeBackend(backends.Backend):
         return self._ok()
 
     def set_fact(self, state_data, api, node_id, **kwargs):
+        reply_data = {}
+
         key, value = kwargs['key'], kwargs['value']
 
         # if the fact exists, update it, else create it.
@@ -183,8 +199,12 @@ class NodeBackend(backends.Backend):
         _by_key = dict([[x['key'], x['value']] for x in oldkeys])
 
         if key in _by_key and _by_key[key] == value:
-            # we dont' need to set the value, merely apply it
+            # we dont' need to set the value, merely apply it -- no rollback
             return self.apply_fact(state_data, api, node_id, **kwargs)
+        elif key in _by_key:
+            reply_data['rollback'] = {'primitive': 'node.set_fact',
+                                      'ns': {'key': key,
+                                             'value': _by_key[key]}}
 
         if len(oldkeys) > 0:
             # update
@@ -195,13 +215,22 @@ class NodeBackend(backends.Backend):
                                         'key': key,
                                         'value': value})
 
-        return self._ok()
+        return self._ok(data=reply_data)
 
     def add_backend(self, state_data, api, node_id, **kwargs):
+        reply_data = {}
+
         self.logger.debug('adding backend %s', kwargs['backend'])
+
+        old_node = api._model_get_by_id('nodes', node_id)
+        old_backend = old_node['facts'].get('backends', [])
+
+        reply_data['rollback'] = {'primitive': 'node.set_fact',
+                                  'ns': {'key': 'backends',
+                                         'value': old_backend}}
 
         roush.webapp.ast.apply_expression(
             node_id, 'facts.backends := union(facts.backends, "%s")' %
             kwargs['backend'], api)
 
-        return self._ok()
+        return self._ok(data=reply_data)
