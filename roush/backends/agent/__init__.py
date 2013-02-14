@@ -39,7 +39,7 @@ class AgentBackend(roush.backends.Backend):
         node = api._model_get_by_id('nodes', node_id)
         rollback_action = 'rollback_%s' % action
         if 'roush_agent_actions' in node['attrs'] and \
-                rollback_actions in node['attrs']['roush_agent_actions']:
+                rollback_action in node['attrs']['roush_agent_actions']:
             reply_data['rollback'] = {'primitive': rollback_action,
                                       'ns': {}}
 
