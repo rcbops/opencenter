@@ -48,7 +48,8 @@ def tasks_blocking_by_node_id(node_id):
     # Update the last checkin attr for the node
     timestamp = int(time.time())
     args = {'node_id': node_id, 'key': 'last_checkin', 'value': timestamp}
-    attr_id = api.attrs_query('(key = "last_checkin") and (node_id = %s)' % int(node_id))
+    attr_id = api.attrs_query(
+        '(key = "last_checkin") and (node_id = %s)' % int(node_id))
     if len(attr_id) == 0:
         api.attr_create(args)
     elif len(attr_id) == 1:
