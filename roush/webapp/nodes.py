@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+import time
+
 import flask
 
 from roush.db.api import api_from_models
@@ -53,6 +55,9 @@ def tasks_blocking_by_node_id(node_id):
                                            int(node_id))
         if task:
             utility.clear(semaphore)
+
+    # Update the last checkin attr for the node
+    api.attr_create(node_id=node_id, key='last_checkin', value=time.time())
 
     result = flask.jsonify({'task': task})
     # we are going to let the client do this...
