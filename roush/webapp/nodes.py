@@ -44,6 +44,10 @@ def by_id(object_id):
 @bp.route('/<node_id>/tasks_blocking', methods=['GET'])
 def tasks_blocking_by_node_id(node_id):
     api = api_from_models()
+
+    # Update the last checkin attr for the node
+    api.attr_create(node_id=node_id, key='last_checkin', value=time.time())
+
     task = api.task_get_first_by_query("node_id=%d and state='pending'" %
                                        int(node_id))
 
@@ -55,9 +59,6 @@ def tasks_blocking_by_node_id(node_id):
                                            int(node_id))
         if task:
             utility.clear(semaphore)
-
-    # Update the last checkin attr for the node
-    api.attr_create(node_id=node_id, key='last_checkin', value=time.time())
 
     result = flask.jsonify({'task': task})
     # we are going to let the client do this...
