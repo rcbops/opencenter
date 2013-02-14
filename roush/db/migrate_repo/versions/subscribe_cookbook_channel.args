@@ -1,0 +1,7 @@
+{
+    "channel_name": {
+        "friendly": "name of cookbook channel",
+        "type": "string",
+        "required": true
+    }
+}

@@ -72,7 +72,7 @@ class HappyPathTestCase(ScaffoldedTestCase):
                 pass
             else:
                 f = roush.backends.primitive_by_name(primitive)
-                f(self.api, node_id, **ns)
+                f({}, self.api, node_id, **ns)
 
     def _make_facts(self, node_id, facts):
         for k, v in facts.items():

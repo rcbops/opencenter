@@ -81,7 +81,7 @@ class PidFile(object):
         os.remove(self.path)
 
 
-class Thing(Flask):
+class WebServer(Flask):
     def __init__(self, name, argv=None, configfile=None,
                  confighash=None, debug=False):
         daemonize = False
@@ -90,7 +90,7 @@ class Thing(Flask):
             'session_key': "".join([random.choice(string.hexdigits)
                                    for n in xrange(30)])}
 
-        super(Thing, self).__init__(name)
+        super(WebServer, self).__init__(name)
 
         if argv:
             try:
@@ -224,9 +224,9 @@ class Thing(Flask):
 [-d|--deamonize]:     if set then roush will run as a daemon"""
 
     def register_blueprint(self, blueprint, url_prefix='/', **kwargs):
-        super(Thing, self).register_blueprint(blueprint,
-                                              url_prefix=url_prefix,
-                                              **kwargs)
+        super(WebServer, self).register_blueprint(blueprint,
+                                                  url_prefix=url_prefix,
+                                                  **kwargs)
 
         # auto-register the schema url
         def schema_details(what):
@@ -411,8 +411,8 @@ class Thing(Flask):
             if context:
                 context.open()
 
-            super(Thing, self).run(host=self.config['bind_address'],
-                                   port=self.config['bind_port'])
+            super(WebServer, self).run(host=self.config['bind_address'],
+                                       port=self.config['bind_port'])
         except KeyboardInterrupt:
             sys.exit(1)
         except SystemExit:

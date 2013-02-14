@@ -28,13 +28,13 @@ from roush.db.api import api_from_models
 
 
 # Base = declarative_base()
-api = api_from_models()
 meta = MetaData()
 
 
 def upgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
 
+    api = api_from_models()
     # Create default nodes
     workspace = api.node_create({'name': 'workspace'})
     unprov = api.node_create({'name': 'unprovisioned'})
@@ -57,6 +57,7 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
     node_list = ['"support"', '"unprovisioned"', '"workspace"']
+    api = api_from_models()
     for node in node_list:
         tmp = api.nodes_query('name = %s' % node)
         fact_list = api.facts_query('node_id = %s' % tmp['id'])
