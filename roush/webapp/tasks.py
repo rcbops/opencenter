@@ -32,10 +32,42 @@ from roush.webapp import utility
 object_type = 'tasks'
 bp = flask.Blueprint(object_type, __name__)
 watched_tasks = {}
+task_last_run = 0
+
+
+def _clean_tasks():
+    """
+    clean up completed tasks over task_reaping_threshold seconds old.
+    This is set in the [main] section of the config.  The default is
+    300 seconds (5 min).
+
+    This will not run more often than once per minute.
+    """
+
+    current_time = time.time()
+    if current_time < task_last_run + 60:
+        return
+
+    api = api_from_models()
+
+    expiration_threshold = flask.current_app.config['task_reaping_threshold']
+    expiration_threshold = current_time - \
+        flask.current_app.config['task_reaping_threshold']
+
+    expired_tasks = api._model_query(
+        'tasks',
+        '(state = "done" or state="cancelled") '
+        'and completed < %d' %
+        expiration_threshold)
+
+    for task in expired_tasks:
+        api._model_delete_by_id('tasks', task['id'])
 
 
 @bp.route('/', methods=['GET', 'POST'])
 def list():
+    _clean_tasks()
+
     result = generic.list(object_type)
 
     if flask.request.method == 'POST':
@@ -244,7 +276,7 @@ def _serve_connection(api, watch):
             accept_socket.close()
 
             try:
-                watched_tasks.pop(watched)
+                watched_tasks.pop(watch)
             except KeyError:
                 pass
 

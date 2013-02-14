@@ -8,6 +8,8 @@ import unittest2
 
 from roush import webapp
 
+from util import RoushTestCase
+
 
 def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
@@ -23,6 +25,58 @@ def _gen_payload_obj():
 def _gen_result_obj():
     ret = _gen_payload_obj()
     return ret
+
+
+class TestTaskPruning(RoushTestCase):
+    def setUp(self):
+        self._clean_all()
+
+        self.node = self._model_create('nodes', name='stub_node')
+
+    def test_do_not_prune_recent_tasks(self):
+        too_short_to_prune = int(time.time())
+
+        all_tasks = self._model_get_all('tasks')
+        self.assertTrue(len(all_tasks) == 0)
+
+        self._model_create('tasks', state='done',
+                           node_id=self.node['id'],
+                           action='something',
+                           payload={},
+                           completed=too_short_to_prune)
+
+        all_tasks = self._model_get_all('tasks')
+        self.assertTrue(len(all_tasks) == 1)
+
+    def test_prune_old_tasks(self):
+        prunable_time = int(time.time()) - 301
+
+        all_tasks = self._model_get_all('tasks')
+        self.assertTrue(len(all_tasks) == 0)
+
+        self._model_create('tasks', state='done',
+                           node_id=self.node['id'],
+                           action='something',
+                           payload={},
+                           completed=prunable_time)
+
+        all_tasks = self._model_get_all('tasks')
+        self.assertTrue(len(all_tasks) == 0)
+
+    def test_do_not_prune_running_tasks(self):
+        prunable_time = int(time.time()) - 301
+
+        all_tasks = self._model_get_all('tasks')
+        self.assertTrue(len(all_tasks) == 0)
+
+        self._model_create('tasks', state='running',
+                           node_id=self.node['id'],
+                           action='something',
+                           payload={},
+                           completed=prunable_time)
+
+        all_tasks = self._model_get_all('tasks')
+        self.assertTrue(len(all_tasks) == 1)
 
 
 class TaskCreateTests(unittest2.TestCase):
