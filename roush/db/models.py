@@ -100,9 +100,9 @@ class Tasks(JsonRenderer, Base):
     __tablename__ = 'tasks'
 
     id = Column(Integer, primary_key=True)
-    node_id = Column(Integer, ForeignKey('nodes.id'))
-    action = Column(String(40))
-    payload = Column(JsonBlob, default={})
+    node_id = Column(Integer, ForeignKey('nodes.id'), nullable=False)
+    action = Column(String(40), nullable=False)
+    payload = Column(JsonBlob, default={}, nullable=False)
     state = Column(
         Enum('pending', 'delivered', 'running',
              'done', 'timeout', 'cancelled'),

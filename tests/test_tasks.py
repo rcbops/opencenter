@@ -9,6 +9,7 @@ import unittest2
 from roush import webapp
 
 from util import RoushTestCase
+from util import inject
 
 
 def _randomStr(size):
@@ -77,6 +78,13 @@ class TestTaskPruning(RoushTestCase):
 
         all_tasks = self._model_get_all('tasks')
         self.assertTrue(len(all_tasks) == 1)
+
+
+class TaskGenericTests(RoushTestCase):
+    base_object = 'task'
+
+
+TaskGenericTests = inject(TaskGenericTests)
 
 
 class TaskCreateTests(unittest2.TestCase):
