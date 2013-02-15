@@ -141,25 +141,6 @@ def task_state_mungery(target, value, oldvalue, initiator):
         target.completed = int(time.time())
 
 
-# This shifts over to in-memory on the backends
-
-# class Primitives(Base):
-#     __tablename__ = 'primitives'
-
-#     id = Column(Integer, primary_key=True)
-#     name = Column(String(64), unique=True, nullable=False)
-#     args = Column(JsonBlob, default={})
-#     constraints = Column(JsonBlob, default=[])
-#     consequences = Column(JsonBlob, default=[])
-
-#     def __init__(self, name, args=None, constraints=None,
-#                  consequences=None):
-#         self.name = name
-#         self.args = args
-#         self.constraints = constraints
-#         self.consequences = consequences
-
-
 class Facts(JsonRenderer, Base):
     __tablename__ = 'facts'
     id = Column(Integer, primary_key=True)

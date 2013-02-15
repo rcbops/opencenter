@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+import time
+
 import flask
 
 from roush.db.api import api_from_models
@@ -42,22 +44,36 @@ def by_id(object_id):
 @bp.route('/<node_id>/tasks_blocking', methods=['GET'])
 def tasks_blocking_by_node_id(node_id):
     api = api_from_models()
+
+    # README(shep): Using last_checkin attr for agent-health
+    timestamp = int(time.time())
+    args = {'node_id': node_id, 'key': 'last_checkin', 'value': timestamp}
+    attr_id = api.attrs_query(
+        '(key = "last_checkin") and (node_id = %s)' % int(node_id))
+    if len(attr_id) == 0:
+        api.attr_create(args)
+    elif len(attr_id) == 1:
+        api.attr_update_by_id(attr_id[0]['id'], args)
+    else:
+        # This should never happen
+        flask.current_app.logger.debug(
+            'Found more than one last_checkin attribute '
+            'for node: %s". NOT UPDATING!' % node_id)
+
     task = api.task_get_first_by_query("node_id=%d and state='pending'" %
                                        int(node_id))
 
-    while not task:
-        semaphore = 'task-for-%s' % node_id
-        flask.current_app.logger.debug('waiting on %s' % semaphore)
-        utility.wait(semaphore)
-        task = api.task_get_first_by_query("node_id=%d and state='pending'" %
-                                           int(node_id))
-        if task:
-            utility.clear(semaphore)
-
-    result = flask.jsonify({'task': task})
-    # we are going to let the client do this...
-    # task['state'] = 'delivered'
-    # api._model_update_by_id('tasks', task['id'], task)
+    # README(shep): moving this out of a while loop, to let agent-health work
+    semaphore = 'task-for-%s' % node_id
+    flask.current_app.logger.debug('waiting on %s' % semaphore)
+    utility.wait(semaphore)
+    task = api.task_get_first_by_query("node_id=%d and state='pending'" %
+                                       int(node_id))
+    if task:
+        utility.clear(semaphore)
+        result = flask.jsonify({'task': task})
+    else:
+        result = generic.http_response(404, 'no task found')
     return result
 
 

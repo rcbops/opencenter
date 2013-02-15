@@ -124,12 +124,9 @@ class WebServer(Flask):
                 'loglevel': 'WARNING',
                 'database_uri': 'sqlite:///',
                 'daemonize': False,
-                'pidfile': None
-            },
-            'ChefClientBackend': {
-                'role_location': '/etc/roush/roles.d'},
-            'ChefServerBackend': {},
-            'UnprovisionedBackend': {}
+                'pidfile': None,
+                'task_reaping_threshold': 300
+            }
         }
 
         if configfile:

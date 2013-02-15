@@ -67,7 +67,7 @@ class ExpressionTestCase(RoushTestCase):
         self.logger.debug('Got result: %s' % result)
         self.assertEquals(result, True)
 
-    def test_invert_equlas(self):
+    def test_invert_equals(self):
         expression = "facts.test = 'test'"
         result = self._invert_expression(expression)
         self.assertEquals(result, ["facts.test := 'test'"])
@@ -82,6 +82,12 @@ class ExpressionTestCase(RoushTestCase):
         expression = "'test' in facts.foo"
         result = self._invert_expression(expression)
         self.assertTrue("facts.foo := union(facts.foo, 'test')" in result)
+        self.assertEquals(len(result), 1)
+
+    def test_invert_not_in(self):
+        expression = "'test' !in facts.foo"
+        result = self._invert_expression(expression)
+        self.assertTrue("facts.foo := remove(facts.foo, 'test')" in result)
         self.assertEquals(len(result), 1)
 
     def test_eval_assign(self):
@@ -99,6 +105,32 @@ class ExpressionTestCase(RoushTestCase):
 
         node = self._eval_expression(expression, node_id)
         self.assertEquals(node['facts']['woof'], [3])
+
+    def test_eval_remove(self):
+        node_id = self.nodes['node-1']['id']
+        fact = self._model_create('facts', node_id=node_id,
+                                  key='array_fact', value=[1, 2])
+
+        expression = 'facts.array_fact := remove(facts.array_fact, 2)'
+        node = self._eval_expression(expression, node_id)
+        self.assertEquals(node['facts']['array_fact'], [1])
+
+        # verify removing from none returns none.  This is perhaps
+        # questionable, but is inline with the rest of the none/empty
+        # behavior.  It could probably also return [], but enforce
+        # current behavior
+        self._model_delete('facts', fact['id'])
+        expression = 'facts.array_fact := remove(facts.array_fact, "test")'
+        node = self._eval_expression(expression, node_id)
+        self.assertEquals(node['facts']['array_fact'], None)
+
+        # verify removing from a non-list raises SyntaxError
+        self._model_create('facts', node_id=node_id,
+                           key='array_fact', value='non-array')
+        expression = 'facts.array_fact := remove(facts.array_fact, "whoops")'
+
+        self.assertRaises(SyntaxError, self._eval_expression,
+                          expression, node_id)
 
     def test_eval_namespaces(self):
         node_id = self.nodes['node-1']['id']
@@ -132,6 +164,14 @@ class ExpressionTestCase(RoushTestCase):
                           (inverted, expression))
         self.assertEquals(len(inverted), 1)
         self.assertEquals(inverted[0], 'test in facts.test')
+
+    def test_inverted_remove(self):
+        expression = 'facts.test := remove(facts.test, test)'
+        inverted = ast.invert_expression(expression)
+        self.logger.debug('Got inverted expression "%s" for "%s"' %
+                          (inverted, expression))
+        self.assertEquals(len(inverted), 1)
+        self.assertEquals(inverted[0], 'test !in facts.test')
 
     def test_concrete_expression(self):
         expression = "foo = value"
