@@ -296,7 +296,9 @@ class ChefClientBackend(roush.backends.Backend):
                                     'payload': {'nodes': [node_id],
                                                 'adventure_dsl': dsl}})
         # now converge the affected nodes
-        if nodelist:
+        if node_id in nodelist:
+            nodelist.remove(node_id)
+        if len(nodelist) > 0:
             api._model_create('tasks', {'action': 'adventurate',
                                         'node_id': adventurator['id'],
                                         'payload': {'nodes': nodelist,
