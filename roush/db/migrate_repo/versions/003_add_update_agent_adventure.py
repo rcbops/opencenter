@@ -37,13 +37,18 @@ meta = MetaData()
 def upgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
 
+    api = api_from_models()
+    workspace = api.nodes_query('name = "workspace"')
+    api.attr_create(node_id=workspace['id'],
+                    key='json_schema_version',
+                    value=1)
+
     adventures = [
         {'name': 'update roush agent',
          'dsl': 'update_agent.json',
          'criteria': 'update_agent.criteria',
          'args': 'update_agent.args'}]
 
-    api = api_from_models()
     for adventure in adventures:
         json_path = os.path.join(
             os.path.dirname(__file__), adventure['dsl'])
@@ -60,4 +65,7 @@ def upgrade(migrate_engine):
 
 def downgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
-    pass
+
+    api = api_from_models()
+    adv = api.adventures_query('name = "update roush agent"')
+    rc = api.adventure_delete_by_id(adv['id'])
