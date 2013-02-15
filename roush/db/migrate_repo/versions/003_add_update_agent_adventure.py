@@ -47,7 +47,11 @@ def upgrade(migrate_engine):
         {'name': 'update roush agent',
          'dsl': 'update_agent.json',
          'criteria': 'update_agent.criteria',
-         'args': 'update_agent.args'}]
+         'args': 'update_agent.args'},
+        {'name': 'restart roush agent',
+         'dsl': 'restart.json',
+         'criteria': 'restart.criteria',
+         'args': 'restart.args'}]
 
     for adventure in adventures:
         json_path = os.path.join(
