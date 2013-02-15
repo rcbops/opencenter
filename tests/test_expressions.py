@@ -100,6 +100,32 @@ class ExpressionTestCase(RoushTestCase):
         node = self._eval_expression(expression, node_id)
         self.assertEquals(node['facts']['woof'], [3])
 
+    def test_eval_remove(self):
+        node_id = self.nodes['node-1']['id']
+        fact = self._model_create('facts', node_id=node_id,
+                                  key='array_fact', value=[1, 2])
+
+        expression = 'facts.array_fact := remove(facts.array_fact, 2)'
+        node = self._eval_expression(expression, node_id)
+        self.assertEquals(node['facts']['array_fact'], [1])
+
+        # verify removing from none returns none.  This is perhaps
+        # questionable, but is inline with the rest of the none/empty
+        # behavior.  It could probably also return [], but enforce
+        # current behavior
+        self._model_delete('facts', fact['id'])
+        expression = 'facts.array_fact := remove(facts.array_fact, "test")'
+        node = self._eval_expression(expression, node_id)
+        self.assertEquals(node['facts']['array_fact'], None)
+
+        # verify removing from a non-list raises SyntaxError
+        self._model_create('facts', node_id=node_id,
+                           key='array_fact', value='non-array')
+        expression = 'facts.array_fact := remove(facts.array_fact, "whoops")'
+
+        self.assertRaises(SyntaxError, self._eval_expression,
+                          expression, node_id)
+
     def test_eval_namespaces(self):
         node_id = self.nodes['node-1']['id']
         expression = "facts.parent_id := value"

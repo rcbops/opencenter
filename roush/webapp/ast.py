@@ -96,22 +96,54 @@ def util_count(context, ary):
     return len(ary)
 
 
-def util_union(context, listish1, listish2):
-    # I'm not entirely sure how this should work.. this is
-    # likely not a very useful implementation
-    newlist = None
+def util_union(context, array, item):
+    """
+    given a list, add item to the list
 
-    if listish1 is None:
-        listish1 = []
+    :param: context: held by the ast, contains api and
+                     other context sensitive data
+    :param: array: list to add item to
+    :param: item: item to add to list
 
-    if isinstance(listish1, list):
-        if isinstance(listish2, list):
-            newlist = copy.deepcopy(listish1)
-            newlist += [x for x in listish2 if x not in newlist]
-        else:
-            newlist = copy.deepcopy(listish1)
-            if not listish2 in newlist:
-                newlist += [listish2]
+    :returns: modified list
+    """
+
+    if array is None:
+        return [item]
+
+    if not isinstance(array, list):
+        raise SyntaxError('union on non-list type')
+
+    newlist = copy.deepcopy(array)
+
+    if not item in newlist:
+        newlist.append(item)
+
+    return newlist
+
+
+def util_remove(context, array, item):
+    """
+    given a list, remove matching item.
+
+    :param: context: held by the ast, contains api and
+                     other context sensitive data
+    :param: array: list to remove items from
+    :param: item: item to remove from array
+
+    :returns: modified list
+    """
+
+    if array is None:
+        return None
+
+    if not isinstance(array, list):
+        raise SyntaxError('remove on non-list type')
+
+    newlist = copy.deepcopy(array)
+
+    if item in newlist:
+        newlist.remove(item)
 
     return newlist
 
@@ -196,7 +228,8 @@ default_functions = {'nth': util_nth,
                      'printf': util_printf,
                      'union': util_union,
                      'ifcount': util_ifcount,
-                     'childof': util_childof}
+                     'childof': util_childof,
+                     'remove': util_remove}
 
 
 class AbstractTokenizer(object):
