@@ -1,1 +1,6 @@
-('agent' in facts.backends)
+[
+    {
+        "primitive": "agent_restart",
+        "ns": {}
+    }
+]
