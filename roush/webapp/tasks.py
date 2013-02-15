@@ -50,18 +50,17 @@ def _clean_tasks():
 
     api = api_from_models()
 
-    expiration_threshold = flask.current_app.config['task_reaping_threshold']
-    expiration_threshold = current_time - \
-        flask.current_app.config['task_reaping_threshold']
+    reaping_threshold = flask.current_app.config['task_reaping_threshold']
+    expiration_threshold = current_time - reaping_threshold
 
     expired_tasks = api._model_query(
-        'tasks',
+        object_type,
         '(state = "done" or state="cancelled") '
         'and completed < %d' %
         expiration_threshold)
 
     for task in expired_tasks:
-        api._model_delete_by_id('tasks', task['id'])
+        api._model_delete_by_id(object_type, task['id'])
 
 
 @bp.route('/', methods=['GET', 'POST'])
@@ -240,8 +239,6 @@ def task_log_tail(task_id, transaction):
 
         watched_tasks.pop(transaction)
         return generic.http_notfound()
-
-    generator = watched_tasks[transaction]['generator']
 
     return flask.Response(watched_tasks[transaction]['generator'],
                           mimetype='text/plain')
