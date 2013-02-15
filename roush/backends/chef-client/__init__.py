@@ -22,6 +22,7 @@ import StringIO
 import chef
 import roush
 import roush.backends
+import time
 import mako.template
 
 
@@ -106,6 +107,10 @@ class ChefClientBackend(roush.backends.Backend):
             return ['role[single-compute]']
         elif role == 'nova-infra':
             return ['role[single-controller]']
+        elif role == 'nova-controller1':
+            return ['role[ha-controller1]']
+        elif role == 'nova-controller2':
+            return ['role[ha-controller2]']
         return []
 
     def _expand_nodelist(self, nodelist, api):
@@ -149,7 +154,8 @@ class ChefClientBackend(roush.backends.Backend):
     def converge_chef(self, state_data, api, node_id, **kwargs):
         # we are converging a node.  If the node is a container,
         # that probably implies converging all nodes under it.
-        self.logger.debug('Converging chef')
+        self.logger.info('Converging node %s via chef-client backend' % (
+            node_id,))
 
         required_facts = ['chef_server_consumed', 'chef_environment',
                           'nova_role']
@@ -221,11 +227,20 @@ class ChefClientBackend(roush.backends.Backend):
 
         self.logger.debug('Old environment overrides: %s' % old_env_overrides)
 
-        # Find the node
-        if not self._node_exists(node['name'], chef_api):
-            msg = 'Node "%s" is not registered to chef' % node['name']
-            self.logger.error(msg)
-            return self._fail(msg=msg)
+        # Find the node.  Sometimes chef takes a while to index; we will retry
+        for i in range(3):
+            if self._node_exists(node['name'], chef_api):
+                break
+            else:
+                self.logger.info("Node '%s' is not registered with chef"
+                                 "server.  Retrying %s/3)" % (
+                                     node['name'], i + 1))
+                time.sleep(10)
+            if i == 3:
+                msg = ("Node '%s' is not registered to chef.  "
+                       "Exceeded max retries" % node['name'])
+                self.logger.error(msg)
+                return self._fail(msg=msg)
 
         chef_node = chef.Node(node['name'], chef_api)
         old_node_overrides = self._serialize_node_blob(chef_node.override)
@@ -252,8 +267,13 @@ class ChefClientBackend(roush.backends.Backend):
         self.logger.debug('Setting environment to %s' % chef_environment)
         chef_node.chef_environment = chef_environment
         chef_node.override = node_attrs
+        old_runlist = chef_node.run_list
         chef_node.run_list = self._map_roles(nova_role)
         chef_node.save()
+
+        if old_runlist != chef_node.run_list:
+            # roles changed, refreshing env just in case searches are affected.
+            need_env_converge = True
 
         if old_env_overrides != env_attrs:
             self.logger.debug('Updating environment')
@@ -270,9 +290,16 @@ class ChefClientBackend(roush.backends.Backend):
             nodelist = [node_id]
 
         self.logger.debug('chef updating nodelist: %s' % nodelist)
-
-        if nodelist:
-            dsl = [{'primitive': 'run_chef', 'ns': {}}]
+        dsl = [{'primitive': 'run_chef', 'ns': {}}]
+        # first run converge on the node in question
+        api._model_create('tasks', {'action': 'adventurate',
+                                    'node_id': adventurator['id'],
+                                    'payload': {'nodes': [node_id],
+                                                'adventure_dsl': dsl}})
+        # now converge the affected nodes
+        if node_id in nodelist:
+            nodelist.remove(node_id)
+        if len(nodelist) > 0:
             api._model_create('tasks', {'action': 'adventurate',
                                         'node_id': adventurator['id'],
                                         'payload': {'nodes': nodelist,
