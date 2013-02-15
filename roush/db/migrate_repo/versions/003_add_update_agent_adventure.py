@@ -41,7 +41,7 @@ def upgrade(migrate_engine):
     workspace = api.nodes_query('name = "workspace"')
     api.attr_create({'node_id': workspace[0]['id'],
                      'key': 'json_schema_version',
-                     'value': 1)
+                     'value': 1})
 
     adventures = [
         {'name': 'update roush agent',
