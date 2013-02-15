@@ -2,9 +2,5 @@
     {
         "primitive": "do_updates",
         "ns": { "PACKAGE_NAME": "roush-agent" }
-    },
-    {
-        "primitive": "service_restart",
-        "ns": { "service": "roush-agent" }
     }
 ]
