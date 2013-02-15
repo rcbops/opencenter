@@ -289,6 +289,10 @@ def _test_missing_create_field(self, missing_field, expected_code):
 
     data.pop(missing_field)
 
+    # special case tasks -- need schema for enum type
+    if bo == 'task' and 'state' in data:
+        data['state'] = 'running'
+
     self.logger.debug('creating with data %s (missing %s)' %
                       (data, missing_field))
 
