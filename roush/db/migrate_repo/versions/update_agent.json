@@ -1,0 +1,10 @@
+[
+    {
+        "primitive": "do_updates",
+        "ns": {}
+    },
+    {
+        "primitive": "service_restart",
+        "ns": {}
+    }
+]
