@@ -226,11 +226,19 @@ class ChefClientBackend(roush.backends.Backend):
 
         self.logger.debug('Old environment overrides: %s' % old_env_overrides)
 
-        # Find the node
-        if not self._node_exists(node['name'], chef_api):
-            msg = 'Node "%s" is not registered to chef' % node['name']
-            self.logger.error(msg)
-            return self._fail(msg=msg)
+        # Find the node.  Sometimes chef takes a while to index; we will retry
+        for i in range(3):
+            if self._node_exists(node['name'], chef_api):
+                break
+            else:
+                self.logger.info("Node '%s' is not registered with chef server."
+                                 "  Retrying %s/3)" % (node['name'], i + 1))
+                os.sleep(10)
+            if i == 3:
+                msg = ("Node '%s' is not registered to chef.  "
+                       "Exceeded max retries" % node['name'])
+                self.logger.error(msg)
+                return self._fail(msg=msg)
 
         chef_node = chef.Node(node['name'], chef_api)
         old_node_overrides = self._serialize_node_blob(chef_node.override)
