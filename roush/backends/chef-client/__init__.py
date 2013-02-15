@@ -232,8 +232,9 @@ class ChefClientBackend(roush.backends.Backend):
             if self._node_exists(node['name'], chef_api):
                 break
             else:
-                self.logger.info("Node '%s' is not registered with chef server."
-                                 "  Retrying %s/3)" % (node['name'], i + 1))
+                self.logger.info("Node '%s' is not registered with chef"
+                                 "server.  Retrying %s/3)" % (
+                                     node['name'], i + 1))
                 time.sleep(10)
             if i == 3:
                 msg = ("Node '%s' is not registered to chef.  "
