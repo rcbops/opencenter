@@ -22,6 +22,7 @@ import StringIO
 import chef
 import roush
 import roush.backends
+import time
 import mako.template
 
 
@@ -233,7 +234,7 @@ class ChefClientBackend(roush.backends.Backend):
             else:
                 self.logger.info("Node '%s' is not registered with chef server."
                                  "  Retrying %s/3)" % (node['name'], i + 1))
-                os.sleep(10)
+                time.sleep(10)
             if i == 3:
                 msg = ("Node '%s' is not registered to chef.  "
                        "Exceeded max retries" % node['name'])
