@@ -1,10 +1,20 @@
 [
     {
-        "primitive": "do_updates",
-        "ns": {}
+        "primitive": "agent.run_task",
+        "parameters": {
+            "action": "do_updates",
+            "payload": {
+                "PACKAGE_NAME": "roush-agent"
+            }
+        }
     },
     {
-        "primitive": "service_restart",
-        "ns": {}
+        "primitive": "agent.run_task",
+        "parameters": {
+            "action": "service_restart",
+            "payload": {
+                "service": "roush-agent"
+            }
+        }
     }
 ]
