@@ -665,9 +665,13 @@ class Node:
                                 'STRING',
                                 'IDENTIFIER',
                                 'NONE'] and self.rhs.op == 'IDENTIFIER'):
-                return ['%s := union(%s, %s)' % (self.rhs.value_to_s(),
-                                                 self.rhs.value_to_s(),
-                                                 self.lhs.value_to_s())]
+                op = 'union'
+                if self.negate:
+                    op = 'remove'
+
+                return ['%s := %s(%s, %s)' % (self.rhs.value_to_s(), op,
+                                              self.rhs.value_to_s(),
+                                              self.lhs.value_to_s())]
 
         # foo.facts.blah := "blah"
         # foo.facts.blah := union(foo.facts, "blah")
@@ -691,6 +695,12 @@ class Node:
                         self.rhs.lhs == 'union'))):
                 return ['%s in %s' % (self.rhs.rhs[1].value_to_s(),
                                       self.rhs.rhs[0].value_to_s())]
+
+            if (self.lhs.op == 'IDENTIFIER' and (
+                    self.rhs.op == 'FUNCTION' and (
+                        self.rhs.lhs == 'remove'))):
+                return ['%s !in %s' % (self.rhs.rhs[1].value_to_s(),
+                                       self.rhs.rhs[0].value_to_s())]
 
         raise SyntaxError('un-invertable operator: %s' % self.op)
 

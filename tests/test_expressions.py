@@ -67,7 +67,7 @@ class ExpressionTestCase(RoushTestCase):
         self.logger.debug('Got result: %s' % result)
         self.assertEquals(result, True)
 
-    def test_invert_equlas(self):
+    def test_invert_equals(self):
         expression = "facts.test = 'test'"
         result = self._invert_expression(expression)
         self.assertEquals(result, ["facts.test := 'test'"])
@@ -82,6 +82,12 @@ class ExpressionTestCase(RoushTestCase):
         expression = "'test' in facts.foo"
         result = self._invert_expression(expression)
         self.assertTrue("facts.foo := union(facts.foo, 'test')" in result)
+        self.assertEquals(len(result), 1)
+
+    def test_invert_not_in(self):
+        expression = "'test' !in facts.foo"
+        result = self._invert_expression(expression)
+        self.assertTrue("facts.foo := remove(facts.foo, 'test')" in result)
         self.assertEquals(len(result), 1)
 
     def test_eval_assign(self):
@@ -158,6 +164,14 @@ class ExpressionTestCase(RoushTestCase):
                           (inverted, expression))
         self.assertEquals(len(inverted), 1)
         self.assertEquals(inverted[0], 'test in facts.test')
+
+    def test_inverted_remove(self):
+        expression = 'facts.test := remove(facts.test, test)'
+        inverted = ast.invert_expression(expression)
+        self.logger.debug('Got inverted expression "%s" for "%s"' %
+                          (inverted, expression))
+        self.assertEquals(len(inverted), 1)
+        self.assertEquals(inverted[0], 'test !in facts.test')
 
     def test_concrete_expression(self):
         expression = "foo = value"
