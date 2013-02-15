@@ -156,6 +156,13 @@ class AstTests(RoushTestCase):
         self.assertEquals(len(result), 1)
         self.assertTrue(result[0]['name'] == 'node1')
 
+    def test_remove(self):
+        query = 'count(remove(facts.array_fact, 2)) = 1'
+        result = self._model_filter('nodes', query)
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 1)
+        self.assertTrue(result[0]['name'] == 'node1')
+
     def test_union_of_null(self):
         query = '("node" in name) and (count(union(facts.array_fact, 3)) = 1)'
         result = self._model_filter('nodes', query)
