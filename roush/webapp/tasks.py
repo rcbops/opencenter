@@ -50,7 +50,6 @@ def _clean_tasks():
 
     api = api_from_models()
 
-    expiration_threshold = flask.current_app.config['task_reaping_threshold']
     expiration_threshold = current_time - \
         flask.current_app.config['task_reaping_threshold']
 
