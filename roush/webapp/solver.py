@@ -81,7 +81,8 @@ class Solver:
                     task['consequences']
                 self.task_primitives[id]['args'] = task['args']
                 self.task_primitives[id]['weight'] = 50
-                self.task_primitives[id]['timeout'] = task['timeout']
+                self.task_primitives[id]['timeout'] = task['timeout'] if \
+                    'timeout' in task else 30
 
         self.logger.debug('Node before applying consequences: %s' % pre_node)
         self.logger.debug('Applied consequences: %s' %
