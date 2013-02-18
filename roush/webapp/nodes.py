@@ -54,7 +54,7 @@ def tasks_blocking_by_node_id(node_id):
     r = api.attr_create(args)
     #DB does not hit updater, so we need to notify
     generic._update_transaction_id('nodes', id_list=[node_id])
-    generic._update_transaction_id('attrs', id_list=r['id'])
+    generic._update_transaction_id('attrs', id_list=[r['id']])
     task = api.task_get_first_by_query("node_id=%d and state='pending'" %
                                        int(node_id))
 
