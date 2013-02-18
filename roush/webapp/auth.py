@@ -36,7 +36,7 @@ def check_auth(username, password, roles):
 def authenticate():
     return Response(
         '{"msg": "unauthorized"}', 401,
-        {'WWW-Authenticate': 'Basic realm="Login Required"'})
+        {})
 
 
 def get_roles(username):
