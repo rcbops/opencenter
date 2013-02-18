@@ -139,13 +139,12 @@ class NodeBackend(backends.Backend):
 
                 required_facts = []
                 for key in changed_facts:
-                    action = 'apply_fact'
+                    action = 'unapply_fact'
+                    value = None
 
-                    if not key in proposed_node['facts']:
+                    if key in proposed_node['facts']:
                         action = 'unapply_fact'
-
-                    # FIXME: needs to be type aware
-                    value = proposed_node['facts'][key]
+                        value = proposed_node['facts'][key]
 
                     # run this through the fact discovery
                     new_fact_reqs = self.additional_constraints(
