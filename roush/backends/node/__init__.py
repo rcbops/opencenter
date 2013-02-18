@@ -49,6 +49,28 @@ class NodeBackend(backends.Backend):
                     return addl_constraints
             return None
 
+        if action == 'unapply_fact':
+            if not 'key' in ns:
+                raise ValueError('no key in ns')
+
+            key = ns['key']
+
+            addl_constraints = []
+
+            for name, obj in backends.backend_objects.iteritems():
+                if key in obj.facts:
+                    # we can only solve for settable facts.  If the
+                    # fact is not settable, then there is likely (HAS TO BE!)
+                    # a primitive to set this somewhere else.  Probably in
+                    # the same backend.
+                    addl_constraints.append('"%s" in facts.backends' % name)
+                    fact_info = obj.facts[key]
+                    if fact_info['converge'] is True:
+                        addl_constraints.append('facts.converged = true')
+
+                    return addl_constraints
+            return None
+
         if action == 'apply_fact':
             if not 'key' in ns:
                 raise ValueError('no key in ns')
@@ -117,28 +139,26 @@ class NodeBackend(backends.Backend):
 
                 required_facts = []
                 for key in changed_facts:
-                    if not key in proposed_node['facts']:
-                        # we'll assume deleting a constraint doesn't
-                        # actually increase your constraints
-                        # new_constraints.append('facts.%s := None' % key)
-                        pass
-                    else:
-                        # FIXME: needs to be type aware
+                    action = 'unapply_fact'
+                    value = None
+
+                    if key in proposed_node['facts']:
+                        action = 'unapply_fact'
                         value = proposed_node['facts'][key]
 
-                        # run this through the fact discovery
-                        new_fact_reqs = self.additional_constraints(
-                            api, node_id, 'apply_fact', {'key': key,
-                                                         'value': value})
+                    # run this through the fact discovery
+                    new_fact_reqs = self.additional_constraints(
+                        api, node_id, action, {'key': key,
+                                               'value': value})
 
-                        if new_fact_reqs is None:
-                            self.logger.debug('Impossible to satisfy %s->%s' %
-                                              (key, value))
-                            return None
+                    if new_fact_reqs is None:
+                        self.logger.debug('Impossible to satisfy %s->%s' %
+                                          (key, value))
+                        return None
 
-                        for fact in new_fact_reqs:
-                            if not fact in new_constraints:
-                                new_constraints.append(fact)
+                    for fact in new_fact_reqs:
+                        if not fact in new_constraints:
+                            new_constraints.append(fact)
 
                 self.logger.debug('Required facts: %s' % required_facts)
                 return new_constraints

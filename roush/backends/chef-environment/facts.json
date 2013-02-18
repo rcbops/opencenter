@@ -1,7 +1,8 @@
 [
     {
         "chef_server_consumed": {
-            "settable": false
+            "settable": false,
+            "inheritance": "none"
         }
     },
     {
