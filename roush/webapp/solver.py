@@ -81,6 +81,7 @@ class Solver:
                     task['consequences']
                 self.task_primitives[id]['args'] = task['args']
                 self.task_primitives[id]['weight'] = 50
+                self.task_primitives[id]['timeout'] = task['timeout']
 
         self.logger.debug('Node before applying consequences: %s' % pre_node)
         self.logger.debug('Applied consequences: %s' %
@@ -804,7 +805,8 @@ class Solver:
         if self.prim:
             current.append({'primitive': self.prim['name'],
                             'ns': self.ns,
-                            'weight': self.prim['weight']})
+                            'weight': self.prim['weight'],
+                            'timeout': self.prim['timeout']})
 
         if len(self.children) > 1:
             raise ValueError('solution tree not pruned')
@@ -817,6 +819,7 @@ class Solver:
 
         if self.parent is None:
             return [{'primitive': x['primitive'],
+                     'timeout': x['timeout'],
                      'ns': x['ns']} for x in current_sorted]
         return current_sorted
 

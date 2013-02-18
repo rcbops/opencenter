@@ -336,14 +336,16 @@ class Primitives(JsonRenderer, inmemory.InMemoryBase):
     constraints = inmemory.Column(inmemory.JsonBlob, default=[])
     consequences = inmemory.Column(inmemory.JsonBlob, default=[])
     weight = inmemory.Column(inmemory.Integer, default=50)
+    timeout = inmemory.Column(inmemory.Integer, default=30)
 
     def __init__(self, name, args=None, constraints=None,
-                 consequences=None, weight=None):
+                 consequences=None, weight=50, timeout=30):
         self.name = name
         self.args = args
         self.constraints = constraints
         self.consequences = consequences
         self.weight = weight
+        self.timeout = timeout
 
 
 class CFactDoesNotExist(object):
