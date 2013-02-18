@@ -296,7 +296,7 @@ class FilterTokenizer(AbstractTokenizer):
             (r"[a-zA-Z_]*:", self.typedef),
             (r"\<\=|\>\=", self.op),
             (r"\=|\<|\>", self.op),
-            (r"[A-Za-z_\.\-{}]*", self.identifier),
+            (r"[A-Za-z{][A-Za-z0-9_\.\-{}]*", self.identifier),
         ])
 
     # token generators
