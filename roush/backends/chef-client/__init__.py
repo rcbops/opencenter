@@ -181,7 +181,6 @@ class ChefClientBackend(roush.backends.Backend):
         if not cs:
             return self._fail(msg='cannot find consumed chef server')
 
-
         if not verify_facts(cs, ['chef_server_uri',
                                  'chef_server_client_name',
                                  'chef_server_client_pem']):
