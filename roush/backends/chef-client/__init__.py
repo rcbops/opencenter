@@ -157,18 +157,15 @@ class ChefClientBackend(roush.backends.Backend):
         self.logger.info('Converging node %s via chef-client backend' % (
             node_id,))
 
-        required_facts = ['chef_server_consumed', 'chef_environment',
-                          'nova_role']
-
-                          # 'chef_server_uri', 'chef_server_client_name',
-                          # 'chef_server_client_pem']
-
         node = api._model_get_by_id('nodes', node_id)
 
-        # FIXME(shep): Un-executed code block
-        #is_container = False
-        #if 'container' in node['facts']['backends']:
-        #    is_container = True
+        if not 'chef_environment' in node['facts']:
+            # this node has been pulled out of a chef environment.
+            # need to move it back into _default
+            return
+
+        required_facts = ['chef_server_consumed', 'chef_environment',
+                          'nova_role']
 
         # generate node and environment settings
         node_attrs, env_attrs = self._represent_node_attributes(api, node_id)

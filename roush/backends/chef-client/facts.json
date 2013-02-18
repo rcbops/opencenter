@@ -1,2 +1,6 @@
-[{"converged": { "settable": false,
-                 "inheritance": "none"}}]
+[
+    { "converged": { "settable": false,
+                     "inheritance": "none"}},
+    { "chef_server_consumed": { "settable": false,
+                                "inheritance": "none"}}
+]
