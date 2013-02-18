@@ -15,14 +15,14 @@
 # limitations under the License.
 #
 
+import time
+
 import flask
 
-import utility
 from roush.db import exceptions
 from roush.db.api import api_from_models
-
-
-api = api_from_models()
+from roush.webapp.auth import requires_auth
+from roush.webapp import utility
 
 
 # Some notifications are related... facts updates must fire associated
@@ -95,6 +95,7 @@ def _notify(updated_object, object_type, object_id):
     if object_type == 'nodes':
         node_id = updated_object['id']
     if node_id is not None:
+        api = api_from_models()
         node_id = int(node_id)
         # We're just going to notify every child when containers are updated
         try:
@@ -131,16 +132,36 @@ def _update_transaction_id(object_model, id_list=None):
     """
     if id_list is not None:
         trans = flask.current_app.transactions[object_model]
-        latest, lowest = trans['latest'], trans['lowest']
-        next_int = latest + 1
-        # TODO(shep): Probably need to prune the hash here
-        trans['updates'][next_int] = {object_model: id_list}
-        trans['latest'] = next_int
+        trans_time = time.time()
+        lock_name = '%s-txid' % object_model
+
+        utility.lock_acquire(lock_name)
+
+        try:
+            while trans_time in trans:
+                trans_time += 0.000001
+
+            trans[trans_time] = set(id_list)
+        except:
+            utility.lock_release(lock_name)
+            raise
+
+        utility.lock_release(lock_name)
+
+        # prune any updates > 5 min ago
+        trans_time_past = trans_time - (60 * 5)
+        for k in [x for x in trans.keys() if x < trans_time_past]:
+            del trans[k]
+
+        semaphore_name = '%s-changes' % object_model
+        utility.notify(semaphore_name)
 
 
+@requires_auth()
 def list(object_type):
     s_obj = singularize(object_type)
 
+    api = api_from_models()
     if flask.request.method == 'POST':
         data = flask.request.json
 
@@ -157,23 +178,16 @@ def list(object_type):
                              ref=href, **{s_obj: model_object})
     elif flask.request.method == 'GET':
         model_objects = api._model_get_all(object_type)
-        args_hash = {object_type: model_objects}
-        if object_type in ['nodes']:
-            session_key = flask.current_app.transactions['session_key']
-            trans = flask.current_app.transactions[object_type]
-            latest = trans['latest']
-            args_hash['transaction'] = {
-                'session_key': session_key,
-                'latest': {'id': latest}}
-        # return http_response(200, 'success', **{object_type: model_objects})
-        return http_response(200, 'success', **args_hash)
+        return http_response(200, 'success', **{object_type: model_objects})
     else:
         return http_notfound(msg='Unknown method %s' % flask.request.method)
 
 
+@requires_auth()
 def object_by_id(object_type, object_id):
     s_obj = singularize(object_type)
 
+    api = api_from_models()
     if flask.request.method == 'PUT':
         # we just updated something, poke any waiters
         model_object = api._model_update_by_id(object_type, object_id,
@@ -206,7 +220,11 @@ def object_by_id(object_type, object_id):
         return http_notfound(msg='Unknown method %s' % flask.request.method)
 
 
-def http_solver_request(node_id, constraints, api=api, result=None, plan=None):
+@requires_auth()
+def http_solver_request(node_id, constraints,
+                        api=None, result=None, plan=None):
+    if api is None:
+        api = api_from_models()
     try:
         task, solution_plan = utility.solve_and_run(node_id,
                                                     constraints,
@@ -214,7 +232,7 @@ def http_solver_request(node_id, constraints, api=api, result=None, plan=None):
                                                     plan=plan)
     except ValueError as e:
         # no adventurator, or the generated ast was broken somehow
-        return http_response(403, msg=e.message)
+        return http_response(403, msg=str(e))
 
     if task is None:
         is_solvable, requires_input, solution_plan = utility.solve_for_node(

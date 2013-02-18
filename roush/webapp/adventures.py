@@ -16,14 +16,13 @@
 #
 
 import flask
-import generic
-import utility
 
 from roush.db.api import api_from_models
-from roush.webapp import solver
+from roush.webapp import generic
+# from roush.webapp import solver
+# from roush.webapp import utility
 
 
-api = api_from_models()
 object_type = 'adventures'
 bp = flask.Blueprint(object_type, __name__)
 
@@ -45,6 +44,7 @@ def execute_adventure(adventure_id):
     if not 'node' in data:
         return generic.http_badrequest(msg='node not specified')
 
+    api = api_from_models()
     adventure = api._model_get_by_id('adventures', int(adventure_id))
 
     if adventure is None:

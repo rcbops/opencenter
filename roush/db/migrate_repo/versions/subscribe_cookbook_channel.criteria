@@ -1,0 +1,1 @@
+('chef-server' in facts.backends) and ('agent' in facts.backends)

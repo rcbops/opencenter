@@ -31,7 +31,6 @@ from roush.db.api import api_from_models
 
 
 # Base = declarative_base()
-api = api_from_models()
 meta = MetaData()
 
 
@@ -67,11 +66,16 @@ def upgrade(migrate_engine):
          'dsl': 'download_cookbooks.json',
          'criteria': 'download_cookbooks.criteria',
          'args': 'download_cookbooks.args'},
+        {'name': 'subscribe cookbook channel',
+         'dsl': 'subscribe_cookbook_channel.json',
+         'criteria': 'subscribe_cookbook_channel.criteria',
+         'args': 'subscribe_cookbook_channel.args'},
         {'name': 'sleep',
          'dsl': 'sleep.json',
          'criteria': 'sleep.criteria',
          'args': 'sleep.args'}]
 
+    api = api_from_models()
     for adventure in adventures:
         json_path = os.path.join(
             os.path.dirname(__file__), adventure['dsl'])

@@ -20,8 +20,8 @@ import logging
 import re
 
 import roush.backends
-from roush.webapp import ast
 from roush.db import api as db_api
+from roush.webapp import ast
 
 
 class Solver:
@@ -89,8 +89,10 @@ class Solver:
         self.logger.debug('Node after applying consequences: %s' % node)
 
     @classmethod
-    def from_plan(cls, api, node_id, constraints, plan):
-        root_solver = Solver(api, node_id, constraints)
+    def from_plan(cls, api, node_id, constraints, plan,
+                  applied_consequences=None):
+        root_solver = Solver(api, node_id, constraints,
+                             applied_consequences=applied_consequences)
         current_node = root_solver
 
         for plan_item in plan:
@@ -470,7 +472,38 @@ class Solver:
                          (len(all_solutions),
                          [x['primitive']['name'] for x in all_solutions]))
 
+        ###
+        # This might be invalid, but we'll classify all solutions into
+        # one of two groups -- those that have discovered consequences,
+        # and those that don't.  Those that don't, we'll consider
+        # interchangable, and just choose one.
+        #
+        # This might not be right.
+        #
+        unconstrained_solutions = []
+        constrained_solutions = []
+
         for solution in all_solutions:
+            solution['discovered'] = self._get_additional_constraints(
+                solution['primitive']['id'],
+                solution['ns'])
+
+            if solution['discovered'] is None:
+                # we'll just drop it
+                self.logger.debug(
+                    'Cannot solve %s due to addl constraints' %
+                    (solution['primitive']['name'], ))
+                pass
+            elif len(solution['discovered']) != 0:
+                constrained_solutions.append(solution)
+            else:
+                unconstrained_solutions.append(solution)
+
+        candidate_solutions = constrained_solutions
+        if len(unconstrained_solutions) > 0:
+            candidate_solutions.append(unconstrained_solutions[0])
+
+        for solution in candidate_solutions:
             self.logger.info("%s with %s, solving %s" %
                              (solution['primitive']['name'],
                               solution['ns'],
@@ -487,9 +520,11 @@ class Solver:
                               (solution['primitive']['name'],
                                solution['ns']))
 
-            new_constraints = self._get_additional_constraints(
-                solution['primitive']['id'],
-                solution['ns'])
+            # new_constraints = self._get_additional_constraints(
+            #     solution['primitive']['id'],
+            #     solution['ns'])
+            new_constraints = solution['discovered']
+            solution.pop('discovered')
 
             # FIXME(rp)
             # pull in backends for primitives that can solve constraints
@@ -525,7 +560,8 @@ class Solver:
                     sub_solver = Solver.from_plan(
                         self.base_api, self.node_id,
                         new_constraints + constraints,
-                        sub_plan)
+                        sub_plan,
+                        applied_consequences=applied_consequences)
                     new_solver = sub_solver.children[0]
 
                 self.logger.info(' - subsolver for %s: %s' %

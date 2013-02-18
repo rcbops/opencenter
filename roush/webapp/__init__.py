@@ -24,6 +24,7 @@ import random
 import string
 import sys
 import traceback
+import time
 
 from ConfigParser import ConfigParser
 from flask import Flask, jsonify, request
@@ -31,19 +32,20 @@ from flask import Flask, jsonify, request
 # from roush import backends
 from roush.db import models
 from roush.db.api import api_from_models
+from roush.webapp import generic
+from roush.webapp import utility
 from roush.webapp.ast import FilterBuilder, FilterTokenizer
-
 from roush.webapp.adventures import bp as adventures_bp
+from roush.webapp.attrs import bp as attrs_bp
 from roush.webapp.facts import bp as facts_bp
 from roush.webapp.facts_please import bp as facts_please
-from roush.webapp.attrs import bp as attrs_bp
 from roush.webapp.filters import bp as filters_bp
 from roush.webapp.index import bp as index_bp
 from roush.webapp.nodes import bp as nodes_bp
 # from roush.webapp.nodes_please import bp as nodes_please
+from roush.webapp.plan import bp as plan_bp
 from roush.webapp.primitives import bp as primitives_bp
 from roush.webapp.tasks import bp as tasks_bp
-from roush.webapp.plan import bp as plan_bp
 
 
 # api = api_from_models()
@@ -79,7 +81,7 @@ class PidFile(object):
         os.remove(self.path)
 
 
-class Thing(Flask):
+class WebServer(Flask):
     def __init__(self, name, argv=None, configfile=None,
                  confighash=None, debug=False):
         daemonize = False
@@ -88,7 +90,7 @@ class Thing(Flask):
             'session_key': "".join([random.choice(string.hexdigits)
                                    for n in xrange(30)])}
 
-        super(Thing, self).__init__(name)
+        super(WebServer, self).__init__(name)
 
         if argv:
             try:
@@ -122,12 +124,9 @@ class Thing(Flask):
                 'loglevel': 'WARNING',
                 'database_uri': 'sqlite:///',
                 'daemonize': False,
-                'pidfile': None
-            },
-            'ChefClientBackend': {
-                'role_location': '/etc/roush/roles.d'},
-            'ChefServerBackend': {},
-            'UnprovisionedBackend': {}
+                'pidfile': None,
+                'task_reaping_threshold': 300
+            }
         }
 
         if configfile:
@@ -204,9 +203,7 @@ class Thing(Flask):
 
         # Define transaction dict for all models
         for model in self.registered_models:
-            self.transactions[model] = {
-                'latest': 0, 'lowest': 0,
-                'updates': {0: {model: []}}}
+            self.transactions[model] = {time.time(): set([])}
 
         if debug:
             self.config['TESTING'] = True
@@ -224,9 +221,9 @@ class Thing(Flask):
 [-d|--deamonize]:     if set then roush will run as a daemon"""
 
     def register_blueprint(self, blueprint, url_prefix='/', **kwargs):
-        super(Thing, self).register_blueprint(blueprint,
-                                              url_prefix=url_prefix,
-                                              **kwargs)
+        super(WebServer, self).register_blueprint(blueprint,
+                                                  url_prefix=url_prefix,
+                                                  **kwargs)
 
         # auto-register the schema url
         def schema_details(what):
@@ -269,9 +266,83 @@ class Thing(Flask):
 
             return f
 
+        def updates_by_txid(what):
+            def f(session_key, txid):
+                """
+                Accepts a transaction id, and returns a list of
+                updated nodes from input transaction_id to latest
+                transaction_id.  transaction dict.
+
+                FIXME: As an optimization, the changes could be
+                accumulated in a single set up until the point
+                that someone got a new txid.  Then we could avoid
+                having a long list of one-element transactions, and
+                instead only create db version intervals on the intervals
+                that we know people could possibly refer from.  If that
+                makes sense.
+
+                Arguments:
+                txid -- transaction id (opaque)
+
+                Returns:
+
+                session_key -- unique session key
+
+                nodes -- list of updated node_ids from trx_id to
+                latest transaction id
+                """
+
+                trans = self.transactions[what]
+                current_txid = time.time()
+
+                if session_key != self.transactions['session_key']:
+                    return generic.http_response(410, 'Invalid session_key')
+
+                txid = float(txid)
+
+                if 'poll' in request.args:
+                    # we'll poll if we have no changes
+                    if txid >= max(trans.keys()):
+                        semaphore = '%s-changes' % (what)
+                        utility.wait(semaphore)
+
+                if txid < min(trans.keys()):
+                    return generic.http_response(410, 'Expired transaction id')
+
+                retval = set([])
+                for x in [trans[tx] for tx in trans.keys() if tx > txid]:
+                    retval = retval.union(x)
+
+                return generic.http_response(
+                    200, 'Updated %s' % what.title(),
+                    **{"transaction": {'session_key': session_key,
+                                       'txid': '%.6f' % current_txid},
+                       what: list(retval)})
+            return f
+
         def root_schema():
             schema = {'schema': {'objects': self.registered_models}}
             return jsonify(schema)
+
+        def root_updates():
+            """Returns the latest transaction information from the
+            in-memory transaction dict.  Realize that this is only
+            accurate at the time of the request.  So clearly, one
+            should call this BEFORE serializing stuffs.
+
+            Arguments:
+            None
+
+            Returns:
+            json object containing: the unique session key,
+                                    the latest transaction id
+            """
+            session_key = self.transactions['session_key']
+            txid = time.time()
+
+            return generic.http_response(
+                transaction={'session_key': session_key,
+                             'txid': '%.6f' % txid})
 
         bpname = blueprint.name
         if bpname.endswith('_please'):
@@ -299,12 +370,23 @@ class Thing(Flask):
                               filter_object_by_id(bpname),
                               methods=['GET'])
 
+            txid_url = '%s/updates/<session_key>/<txid>' % (url_prefix,)
+            self.add_url_rule(txid_url, '%s.txid' % blueprint.name,
+                              updates_by_txid(bpname),
+                              methods=['GET'])
+
         elif url_prefix == '/':
             self.add_url_rule('/schema', 'root.schema',
                               root_schema,
                               methods=['GET'])
             self.add_url_rule('/admin/schema', 'admin.schema',
                               root_schema,
+                              methods=['GET'])
+            self.add_url_rule('/updates', 'root.updates',
+                              root_updates,
+                              methods=['GET'])
+            self.add_url_rule('/admin/updates', 'admin.updates',
+                              root_updates,
                               methods=['GET'])
 
     def run(self):
@@ -326,8 +408,8 @@ class Thing(Flask):
             if context:
                 context.open()
 
-            super(Thing, self).run(host=self.config['bind_address'],
-                                   port=self.config['bind_port'])
+            super(WebServer, self).run(host=self.config['bind_address'],
+                                       port=self.config['bind_port'])
         except KeyboardInterrupt:
             sys.exit(1)
         except SystemExit:

@@ -15,22 +15,94 @@
 # limitations under the License.
 #
 
-import logging
-import gevent.event
-
-import solver
 import copy
+import logging
+
+import gevent.event
+import gevent.coros
 
 from roush.db.api import api_from_models
+from roush.webapp import solver
 
-api = api_from_models()
+
 util_conditions = {}
+util_locks = {}
+util_lock_lock = gevent.coros.Semaphore()
+
 LOG = logging.getLogger(__name__)
 
 
+def _get_or_make_lock(what):
+    """
+    Helper function that will retrieve a lock by
+    name or create a new one by that name
+
+    Arguments:
+    what - lock name
+
+    Returns:
+    gevent.coros.Semaphore object
+    """
+
+    util_lock_lock.acquire()
+
+    if not what in util_locks:
+        util_locks[what] = gevent.coros.Semaphore()
+
+    util_lock_lock.release()
+
+    return util_locks[what]
+
+
+def lock_acquire(what, timeout=None):
+    """
+    Acquire a named lock.  This will *always*
+    block.  It *may* be called with a timeout.
+
+    Arguments:
+    what -- semaphore name
+    timeout -- how long to wait for semaphore
+
+    Returns:
+    bool - lock acquired
+
+    if returning false with timeout, this almost
+    certainly implies timeout.  If not, then something
+    really really bad happened, and things will probably
+    go sideways soon.
+    """
+    lock = _get_or_make_lock(what)
+    return lock.acquire(blocking=True, timeout=timeout)
+
+
+def lock_release(what):
+    """
+    Release a held lock by name
+
+    If one tries to release a lock not held, that
+    would be problematic.  Don't do that.
+
+    Arguments:
+    what -- name of lock to acquire
+
+    Returns:
+    bool -- lock released
+
+    This should really always return true.  Should
+    it return false, you are probably likely to
+    deadlock.  Soon.
+    """
+    lock = _get_or_make_lock(what)
+    return lock.release()
+
+
 def _get_or_make_event(what):
+    util_lock_lock.acquire()
+
     if not what in util_conditions:
         util_conditions[what] = gevent.event.Event()
+
+    util_lock_lock.release()
 
     return util_conditions[what]
 
@@ -48,10 +120,10 @@ def clear(what):
         util_conditions[what].clear()
 
 
-def wait(what):
+def wait(what, timeout=30):
     event = _get_or_make_event(what)
     LOG.debug('waiting on %s' % what)
-    event.wait()
+    event.wait(timeout)
     event.clear()
 
 
@@ -72,7 +144,10 @@ def true_f(_):
     return True
 
 
-def _expand_nodes(nodelist, filter_f=true_f, api=api, depth=0, detailed=False):
+def _expand_nodes(nodelist, filter_f=true_f,
+                  api=None, depth=0, detailed=False):
+    if api is None:
+        api = api_from_models()
     final_nodes = []
     nodes = copy.deepcopy(nodelist)
     seen = {}
@@ -104,28 +179,34 @@ def _expand_nodes(nodelist, filter_f=true_f, api=api, depth=0, detailed=False):
     return final_nodes
 
 
-def expand_nodelist(nodelist, api=api):
+def expand_nodelist(nodelist, api=None):
     """
     given a list of nodes (including containers),
     generate a fully expanded list of non-container-y
     nodes
     """
+    if api is None:
+        api = api_from_models()
     return _expand_nodes(nodelist, api=api, filter_f=is_leaf)
 
 
-def fully_expand_nodelist(nodelist, api=api):
+def fully_expand_nodelist(nodelist, api=None):
     """
     given a list of nodes (including containers),
     generate a fully expanded list of all node_ids in node_list
     as well as their descendant nodes
     """
+    if api is None:
+        api = api_from_models()
     return _expand_nodes(nodelist, api=api)
 
 
-def get_direct_children(node_id, api=api):
+def get_direct_children(node_id, api=None):
     """
     given a node_id, return a list of all direct child nodes
     """
+    if api is None:
+        api = api_from_models()
     return [x for x in _expand_nodes([node_id], api=api,
                                      depth=1, detailed=True)
             if x['id'] != node_id]
@@ -141,15 +222,14 @@ def run_adventure(adventure_dsl=None, nodes=None):
     """
 
     payload = {}
-    globals = {}
+    adv_globals = {}
 
     payload['adventure_dsl'] = adventure_dsl
-    globals['solved_adventure'] = True
-    globals['defined_adventure'] = False
-
-    payload['globals'] = globals
+    payload['globals'] = adv_globals
 
     node_list = nodes
+
+    api = api_from_models()
 
     # we will no longer expand node lists.  At some point
     # we either need hints on adventures for whether they are
@@ -187,13 +267,15 @@ def run_adventure(adventure_dsl=None, nodes=None):
     return task
 
 
-def solve_for_node(node_id, constraints, api=api, plan=None):
+def solve_for_node(node_id, constraints, api=None, plan=None):
     """
     given a node id and a list of constraints, run a solver
     to try and find a solution path.
 
     it returns (is_solvable, requires_input, solution_plan)
     """
+    if api is None:
+        api = api_from_models()
 
     if plan is not None:
         task_solver = solver.Solver.from_plan(api, node_id, [], plan)
@@ -205,7 +287,9 @@ def solve_for_node(node_id, constraints, api=api, plan=None):
     return (is_solvable, requires_input, solution_plan)
 
 
-def solve_and_run(node_id, constraints, api=api, plan=None):
+def solve_and_run(node_id, constraints, api=None, plan=None):
+    if api is None:
+        api = api_from_models()
     is_solvable, requires_input, solution_plan = solve_for_node(
         node_id, constraints, api=api, plan=plan)
 
@@ -218,6 +302,7 @@ def solve_and_run(node_id, constraints, api=api, plan=None):
 
 
 def unprovisioned_container():
+    api = api_from_models()
     unprovisioned = api._model_query(
         'nodes',
         'name = "unprovisioned" and "container" in facts.backends')

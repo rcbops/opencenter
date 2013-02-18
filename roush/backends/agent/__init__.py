@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-import copy
+# import copy
 import time
 import roush
 
@@ -28,17 +28,30 @@ class AgentBackend(roush.backends.Backend):
         # this is probably a bit viscious.
         return []
 
-    def run_task(self, api, node_id, **kwargs):
+    def run_task(self, state_data, api, node_id, **kwargs):
         action = kwargs.pop('action')
         payload = kwargs.pop('payload')
+        parent_task_id = None
+        reply_data = {}
 
         adventure_globals = {}
+
+        node = api._model_get_by_id('nodes', node_id)
+        rollback_action = 'rollback_%s' % action
+        if 'roush_agent_actions' in node['attrs'] and \
+                rollback_action in node['attrs']['roush_agent_actions']:
+            reply_data['rollback'] = {'primitive': rollback_action,
+                                      'ns': {}}
 
         # payload = dict([(x, kwargs[x]) for x in kwargs if x != 'action'])
 
         # push global variables
-        if 'globals' in kwargs:
-            adventure_globals = kwargs.pop('globals')
+        # if 'globals' in kwargs:
+        #     adventure_globals = kwargs.pop('globals')
+        #     parent_task_id = adventure_globals.get('parent_task_id', None)
+
+        if payload is not None and 'globals' in payload:
+            parent_task_id = payload['globals'].get('parent_task_id', None)
 
         # run through the rest of the args and typecast them
         # as appropriate.
@@ -73,9 +86,14 @@ class AgentBackend(roush.backends.Backend):
             if not k in payload:
                 payload[k] = v
 
-        task = api._model_create('tasks', {'node_id': node_id,
-                                           'action': action,
-                                           'payload': payload})
+        task_data = {'node_id': node_id,
+                     'action': action,
+                     'payload': payload}
+
+        if parent_task_id is not None:
+            task_data['parent_id'] = parent_task_id
+
+        task = api._model_create('tasks', task_data)
 
         self.logger.debug('added task as id %s' % task['id'])
 
@@ -84,7 +102,7 @@ class AgentBackend(roush.backends.Backend):
             task = api._model_get_by_id('tasks', task['id'])
 
         if task['state'] != 'done':
-            return False
+            return self._fail(msg='task did not finish successfully')
 
         if 'result_code' in task['result'] and \
                 task['result']['result_code'] == 0:
@@ -107,6 +125,6 @@ class AgentBackend(roush.backends.Backend):
             for cons in conslist:
                 api.apply_expression(node_id, cons)
 
-            return True
+            return self._ok(data=reply_data)
 
-        return False
+        return self._fail(msg='Task failed')

@@ -15,25 +15,24 @@
 # limitations under the License.
 #
 
-import copy
+import time
+
 import flask
-import generic
 
 from roush.db.api import api_from_models
-
 from roush.webapp import ast
-from roush.webapp import utility
+# from roush.webapp import auth
 from roush.webapp import errors
-from roush.webapp import auth
+from roush.webapp import generic
+from roush.webapp import utility
 from roush.webapp.utility import unprovisioned_container
 
-api = api_from_models()
 object_type = 'nodes'
 bp = flask.Blueprint(object_type,  __name__)
 
 
 @bp.route('/', methods=['GET', 'POST'])
-def list():
+def root():
     return generic.list(object_type)
 
 
@@ -44,27 +43,43 @@ def by_id(object_id):
 
 @bp.route('/<node_id>/tasks_blocking', methods=['GET'])
 def tasks_blocking_by_node_id(node_id):
+    api = api_from_models()
+
+    # README(shep): Using last_checkin attr for agent-health
+    timestamp = int(time.time())
+    args = {'node_id': node_id, 'key': 'last_checkin', 'value': timestamp}
+    attr_id = api.attrs_query(
+        '(key = "last_checkin") and (node_id = %s)' % int(node_id))
+    if len(attr_id) == 0:
+        api.attr_create(args)
+    elif len(attr_id) == 1:
+        api.attr_update_by_id(attr_id[0]['id'], args)
+    else:
+        # This should never happen
+        flask.current_app.logger.debug(
+            'Found more than one last_checkin attribute '
+            'for node: %s". NOT UPDATING!' % node_id)
+
     task = api.task_get_first_by_query("node_id=%d and state='pending'" %
                                        int(node_id))
 
-    while not task:
-        semaphore = 'task-for-%s' % node_id
-        flask.current_app.logger.debug('waiting on %s' % semaphore)
-        utility.wait(semaphore)
-        task = api.task_get_first_by_query("node_id=%d and state='pending'" %
-                                           int(node_id))
-        if task:
-            utility.clear(semaphore)
-
-    result = flask.jsonify({'task': task})
-    # we are going to let the client do this...
-    # task['state'] = 'delivered'
-    # api._model_update_by_id('tasks', task['id'], task)
+    # README(shep): moving this out of a while loop, to let agent-health work
+    semaphore = 'task-for-%s' % node_id
+    flask.current_app.logger.debug('waiting on %s' % semaphore)
+    utility.wait(semaphore)
+    task = api.task_get_first_by_query("node_id=%d and state='pending'" %
+                                       int(node_id))
+    if task:
+        utility.clear(semaphore)
+        result = flask.jsonify({'task': task})
+    else:
+        result = generic.http_response(404, 'no task found')
     return result
 
 
 @bp.route('/<node_id>/tasks', methods=['GET'])
 def tasks_by_node_id(node_id):
+    api = api_from_models()
     # Display only tasks with state=pending
     task = api.task_get_first_by_query("node_id=%d and state='pending'" %
                                        int(node_id))
@@ -79,6 +94,7 @@ def tasks_by_node_id(node_id):
 
 @bp.route('/<node_id>/adventures', methods=['GET'])
 def adventures_by_node_id(node_id):
+    api = api_from_models()
     node = api.node_get_by_id(node_id)
     if not node:
         return errors.http_not_found()
@@ -102,103 +118,9 @@ def adventures_by_node_id(node_id):
     return resp
 
 
-@bp.route('/<node_id>/tree', methods=['GET'])
-def tree_by_id(node_id):
-    seen_nodes = []
-
-    def fill_children(node_hash):
-        node_id = node_hash['id']
-
-        children = api._model_query(
-            'nodes', 'facts.parent_id = %s' % node_id)
-
-        for child in children:
-            if child['id'] in seen_nodes:
-                flask.current_app.logger.error("Loop detected in data model")
-            else:
-                seen_nodes.append(child['id'])
-
-                if not 'children' in node_hash:
-                    node_hash['children'] = []
-
-                child = copy.deepcopy(child)
-
-                node_hash['children'].append(child)
-                fill_children(child)
-
-    try:
-        node = copy.deepcopy(api._model_get_by_id('nodes', node_id))
-    except:
-        return generic.http_notfound()
-
-    seen_nodes.append(node_id)
-
-    fill_children(node)
-    resp = generic.http_response(children=node)
-    return resp
-
-
-@bp.route('/updates/', methods=['GET'])
-def return_latest_update():
-    """Returns the latest transaction information from the in-memory
-    transaction dict.
-
-    Arguments:
-    None
-
-    Returns:
-    json object containing: the unique session key, the latest transaction id
-    """
-    session_key = flask.current_app.transactions['session_key']
-    trans = flask.current_app.transactions[object_type]
-    transaction_hash = {'session_key': session_key,
-                        'latest': {'id': trans['latest']}}
-    return generic.http_response(
-        200, 'Transaction information',
-        transaction=transaction_hash)
-
-
-@bp.route('/updates/<trx_id>', methods=['GET'])
-def updates_by_trxid(trx_id):
-    """Accepts a transaction id, and returns a list of updated nodes from
-    input transaction_id to latest transaction_id.
-    transaction dict.
-
-    Arguments:
-    trx_id -- transaction id (Integer)
-
-    Returns:
-    session_key -- unique session key
-    nodes -- list of updated node_ids from trx_id to latest transaction id
-    """
-    session_key = flask.current_app.transactions['session_key']
-    trans = flask.current_app.transactions[object_type]
-    latest = trans['latest']
-    lowest = trans['lowest']
-    updates = trans['updates']
-    if int(trx_id) in updates:
-        node_list, ret = [], []
-        if int(trx_id) < latest:
-            stop = latest + 1
-        else:
-            stop = latest
-        for i in xrange(int(trx_id) + 1, stop):
-            node_list.extend(updates[i]['nodes'])
-        ret.extend(x for x in node_list if x not in ret)
-        return generic.http_response(
-            200, 'Updated Nodes',
-            session_key=session_key, nodes=ret)
-    else:
-        # Need to check if the trx_id is < lowest, if so call for a refetch
-        # TODO(shep): need to figure out code for a refetch
-        if trx_id < lowest:
-            return generic.http_notfound()
-        else:
-            return generic.http_notfound()
-
-
 @bp.route('/whoami', methods=['POST'])
 def whoami():
+    api = api_from_models()
     body = flask.request.json
     if body is None or (not 'hostname' in body):
         return generic.http_badrequest(

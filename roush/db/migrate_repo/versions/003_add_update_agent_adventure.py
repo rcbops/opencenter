@@ -15,6 +15,9 @@
 # limitations under the License.
 #
 
+import json
+import os
+
 from sqlalchemy import *
 from migrate import *
 
@@ -35,32 +38,34 @@ def upgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
 
     api = api_from_models()
-    # Create default nodes
-    workspace = api.node_create({'name': 'workspace'})
-    unprov = api.node_create({'name': 'unprovisioned'})
-    api._model_create('facts', {'node_id': unprov['id'],
-                                'key': 'parent_id',
-                                'value': workspace['id']})
-    support = api.node_create({'name': 'support'})
-    api._model_create('facts', {'node_id': support['id'],
-                                'key': 'parent_id',
-                                'value': workspace['id']})
+    workspace = api.nodes_query('name = "workspace"')
+    api.attr_create({'node_id': workspace[0]['id'],
+                     'key': 'json_schema_version',
+                     'value': 1})
 
-    # Add default fact to the default nodes
-    node_id_list = [workspace['id'], unprov['id'], support['id']]
-    for nid in node_id_list:
-        api.fact_create({'node_id': nid,
-                         'key': 'backends',
-                         'value': ["container", "node"]})
+    adventures = [
+        {'name': 'update roush agent',
+         'dsl': 'update_agent.json',
+         'criteria': 'update_agent.criteria',
+         'args': 'update_agent.args'}]
+
+    for adventure in adventures:
+        json_path = os.path.join(
+            os.path.dirname(__file__), adventure['dsl'])
+        criteria_path = os.path.join(
+            os.path.dirname(__file__), adventure['criteria'])
+        args_path = os.path.join(
+            os.path.dirname(__file__), adventure['args'])
+
+        adventure['dsl'] = json.loads(open(json_path).read())
+        adventure['criteria'] = open(criteria_path).read()
+        adventure['args'] = json.loads(open(args_path).read())
+        adv = api.adventure_create(adventure)
 
 
 def downgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
-    node_list = ['"support"', '"unprovisioned"', '"workspace"']
+
     api = api_from_models()
-    for node in node_list:
-        tmp = api.nodes_query('name = %s' % node)
-        fact_list = api.facts_query('node_id = %s' % tmp['id'])
-        for fact in fact_list:
-            api.fact_delete_by_id(fact['id'])
-        api.node_delete_by_id(tmp['id'])
+    adv = api.adventures_query('name = "update roush agent"')
+    rc = api.adventure_delete_by_id(adv['id'])

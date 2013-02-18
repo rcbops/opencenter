@@ -52,20 +52,19 @@ class Backend(object):
                 self.facts = normalize_facts(json.loads(f.read()),
                                              backend)
 
+    def _ok(self, code=0, msg='Action succeeded', data=None):
+        if data is None:
+            data = {}
+
+        return {'result_code': code,
+                'result_str': msg,
+                'result_data': data}
+
+    def _fail(self, code=1, msg='Action failed', data=None):
+        return self._ok(code=code, msg=msg, data=data)
+
     def additional_constraints(self, api, node_id, action, ns):
         return []
-
-    def fact_template(self, fact, converger):
-        paths = [
-            "%s/map/fact-%s-%s.templ" % (self.base_path, fact, converger),
-            "%s/map/default.%s.templ" % (self.base_path, converger)]
-
-        for path in paths:
-            if os.path.exists(path):
-                with open(path, 'r') as f:
-                    return f.read()
-
-        return None
 
 
 def additional_constraints(api, node_id, primitive_id, ns):

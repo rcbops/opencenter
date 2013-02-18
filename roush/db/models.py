@@ -31,8 +31,6 @@ import api as db_api
 import inmemory
 import roush.backends
 
-roush.backends.load()
-
 
 # Special Fields
 class JsonBlob(types.TypeDecorator):
@@ -102,9 +100,9 @@ class Tasks(JsonRenderer, Base):
     __tablename__ = 'tasks'
 
     id = Column(Integer, primary_key=True)
-    node_id = Column(Integer, ForeignKey('nodes.id'))
-    action = Column(String(40))
-    payload = Column(JsonBlob, default={})
+    node_id = Column(Integer, ForeignKey('nodes.id'), nullable=False)
+    action = Column(String(40), nullable=False)
+    payload = Column(JsonBlob, default={}, nullable=False)
     state = Column(
         Enum('pending', 'delivered', 'running',
              'done', 'timeout', 'cancelled'),
@@ -143,25 +141,6 @@ def task_state_mungery(target, value, oldvalue, initiator):
         target.completed = int(time.time())
 
 
-# This shifts over to in-memory on the backends
-
-# class Primitives(Base):
-#     __tablename__ = 'primitives'
-
-#     id = Column(Integer, primary_key=True)
-#     name = Column(String(64), unique=True, nullable=False)
-#     args = Column(JsonBlob, default={})
-#     constraints = Column(JsonBlob, default=[])
-#     consequences = Column(JsonBlob, default=[])
-
-#     def __init__(self, name, args=None, constraints=None,
-#                  consequences=None):
-#         self.name = name
-#         self.args = args
-#         self.constraints = constraints
-#         self.consequences = consequences
-
-
 class Facts(JsonRenderer, Base):
     __tablename__ = 'facts'
     id = Column(Integer, primary_key=True)
@@ -198,7 +177,7 @@ class Attrs(JsonRenderer, Base):
 class Nodes(JsonRenderer, Base):
     __tablename__ = 'nodes'
     id = Column(Integer, primary_key=True)
-    name = Column(String(64), unique=True, nullable=False)
+    name = Column(String(64), nullable=False)
     adventure_id = Column(Integer, ForeignKey('adventures.id'))
     task_id = Column(Integer, ForeignKey('tasks.id',
                                          use_alter=True,
@@ -298,8 +277,8 @@ class Nodes(JsonRenderer, Base):
 class Adventures(JsonRenderer, Base):
     __tablename__ = 'adventures'
     id = Column(Integer, primary_key=True)
-    name = Column(String(30))
-    dsl = Column(JsonBlob, default={})
+    name = Column(String(30), nullable=False)
+    dsl = Column(JsonBlob, default={}, nullable=False)
     criteria = Column(String(255))
     args = Column(JsonBlob, default={})
 

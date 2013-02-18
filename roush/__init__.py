@@ -21,18 +21,19 @@ from flask import request
 from gevent.pywsgi import WSGIServer
 
 from roush.db.database import init_db
-from roush.webapp import Thing
+from roush.webapp import WebServer
+from roush.webapp.auth import is_allowed, authenticate
 
 
 def main():
-    foo = Thing("roush", argv=sys.argv[1:], configfile='local.conf',
-                debug=True)
+    server = WebServer("roush", argv=sys.argv[1:], configfile='local.conf',
+                       debug=True)
 
-    @foo.after_request
+    @server.after_request
     def allow_cors(response):
-        if 'cors_uri' in foo.config and \
+        if 'cors_uri' in server.config and \
                 'Origin' in request.headers and \
-                request.headers['Origin'] in foo.config['cors_uri']:
+                request.headers['Origin'] in server.config['cors_uri']:
             response.headers['Access-Control-Allow-Origin'] = \
                 request.headers['Origin']
             response.headers['Access-Control-Allow-Methods'] = \
@@ -41,23 +42,28 @@ def main():
                 'Content-Type'
         return response
 
-    init_db(foo.config['database_uri'])
+    @server.before_request
+    def auth_f():
+        if not is_allowed(roles=None):
+            return authenticate()
 
-    if 'key_file' in foo.config and 'cert_file' in foo.config:
+    init_db(server.config['database_uri'])
+
+    if 'key_file' in server.config and 'cert_file' in server.config:
         import ssl
         verification = ssl.CERT_NONE
         ca_certs = None
-        if 'ca_cert' in foo.config:
-            ca_certs = [foo.config['ca_cert']]
+        if 'ca_cert' in server.config:
+            ca_certs = [server.config['ca_cert']]
             verification = ssl.CERT_OPTIONAL
         http_server = WSGIServer(
-            (foo.config['bind_address'], int(foo.config['bind_port'])),
-            foo,
-            keyfile=foo.config['key_file'],
-            certfile=foo.config['cert_file'],
+            (server.config['bind_address'], int(server.config['bind_port'])),
+            server,
+            keyfile=server.config['key_file'],
+            certfile=server.config['cert_file'],
             cert_reqs=verification,
             ca_certs=ca_certs)
     else:
-        http_server = WSGIServer((foo.config['bind_address'],
-                                  int(foo.config['bind_port'])), foo)
+        http_server = WSGIServer((server.config['bind_address'],
+                                  int(server.config['bind_port'])), server)
     http_server.serve_forever()

@@ -42,9 +42,9 @@ class NovaBackend(roush.backends.Backend):
 
         return subcontainer
 
-    def create_cluster(self, api, node_id, **kwargs):
+    def create_cluster(self, state_data, api, node_id, **kwargs):
         if not 'cluster_name' in kwargs:
-            return False
+            return self._fail(msg='Cluster Name (cluster_name) required')
 
         cluster_facts = ["nova_public_if",
                          "keystone_admin_pw",
@@ -71,21 +71,21 @@ class NovaBackend(roush.backends.Backend):
             ['node', 'container', 'nova', 'chef-environment'])
 
         if cluster is None:
-            return False
+            return self._fail(msg='cannot create nova cluster container')
 
         infra = self._make_subcontainer(
             api, 'Infrastructure', cluster['id'],
             {'nova_role': 'nova-infra'}, ['node', 'container', 'nova'])
 
         if infra is None:
-            return False
+            return self._fail(msg='cannot create "Infra" container')
 
         comp = self._make_subcontainer(
             api, 'Compute', cluster['id'],
             {'nova_role': 'nova-compute'}, ['node', 'container', 'nova'])
 
         if comp is None:
-            return False
+            return self._fail(msg='cannot create "Compute" container')
 
         az = 'nova'
         if 'nova_az' in kwargs:
@@ -95,4 +95,4 @@ class NovaBackend(roush.backends.Backend):
             api, 'AZ %s' % az, comp['id'], {'nova_az': az},
             ['node', 'container', 'nova'])
 
-        return True
+        return self._ok()

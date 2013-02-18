@@ -77,12 +77,12 @@ class SolverTestCase(RoushTestCase):
             if 'ns' in step:
                 ns = step['ns']
 
-            if 'run_task' in step:
+            if not '.' in primitive:
                 continue
 
             f = roush.backends.primitive_by_name(primitive)
 
-            f(self.api, node_id, **ns)
+            f({}, self.api, node_id, **ns)
 
     def test_no_adventurator(self):
         # trying to run any solved thing should fail
