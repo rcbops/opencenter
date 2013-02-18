@@ -1,2 +1,4 @@
-[{"converged": { "settable": false,
-                 "inheritance": "none"}}]
+[
+    { "converged": { "settable": false,
+                     "inheritance": "none"}}
+]

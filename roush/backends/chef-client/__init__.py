@@ -107,9 +107,9 @@ class ChefClientBackend(roush.backends.Backend):
             return ['role[single-compute]']
         elif role == 'nova-infra':
             return ['role[single-controller]']
-        elif role == 'nova-controller1':
+        elif role == 'nova-controller-master':
             return ['role[ha-controller1]']
-        elif role == 'nova-controller2':
+        elif role == 'nova-controller-backup':
             return ['role[ha-controller2]']
         return []
 
@@ -152,48 +152,43 @@ class ChefClientBackend(roush.backends.Backend):
         return result
 
     def converge_chef(self, state_data, api, node_id, **kwargs):
+        def safe_get_fact(node, fact):
+            if not fact in node['facts']:
+                return None
+
+            return node['facts'][fact]
+
+        def verify_facts(node, facts):
+            for fact in facts:
+                if not fact in node['facts']:
+                    return False
+
+            return True
+
         # we are converging a node.  If the node is a container,
         # that probably implies converging all nodes under it.
         self.logger.info('Converging node %s via chef-client backend' % (
             node_id,))
 
-        required_facts = ['chef_server_consumed', 'chef_environment',
-                          'nova_role']
-
-                          # 'chef_server_uri', 'chef_server_client_name',
-                          # 'chef_server_client_pem']
-
         node = api._model_get_by_id('nodes', node_id)
 
-        # FIXME(shep): Un-executed code block
-        #is_container = False
-        #if 'container' in node['facts']['backends']:
-        #    is_container = True
+        if not 'chef_server_consumed' in node['facts']:
+            return self._fail(msg='missing fact: chef_server_consumed')
 
-        # generate node and environment settings
-        node_attrs, env_attrs = self._represent_node_attributes(api, node_id)
-
-        self.logger.debug('node: %s' % node_attrs)
-        self.logger.debug('environment: %s' % env_attrs)
-
-        for required_fact in required_facts:
-            if not required_fact in node['facts']:
-                msg = 'Node %s: missing fact: %s' % (
-                    node['id'], required_fact)
-
-                self.logger.error(msg)
-                return self._fail(msg=msg)
-            # locals()[required_fact] = node['facts'][required_fact]
-
-        nova_role = node['facts']['nova_role']
         chef_server_consumed = node['facts']['chef_server_consumed']
-        chef_environment = node['facts']['chef_environment'].replace(' ', '_')
+        cs = api._model_get_by_id('nodes', chef_server_consumed)
 
-        csn = api._model_get_by_id('nodes', chef_server_consumed)
+        if not cs:
+            return self._fail(msg='cannot find consumed chef server')
 
-        chef_server_uri = csn['facts']['chef_server_uri']
-        chef_server_client_name = csn['facts']['chef_server_client_name']
-        chef_server_client_pem = csn['facts']['chef_server_client_pem']
+        if not verify_facts(cs, ['chef_server_uri',
+                                 'chef_server_client_name',
+                                 'chef_server_client_pem']):
+            return self._faile(msg='chef server missing chef attrs')
+
+        chef_server_uri = cs['facts']['chef_server_uri']
+        chef_server_client_name = cs['facts']['chef_server_client_name']
+        chef_server_client_pem = cs['facts']['chef_server_client_pem']
 
         self.logger.debug('Creating connection to chef server')
 
@@ -205,6 +200,27 @@ class ChefClientBackend(roush.backends.Backend):
                                 rsa_key,
                                 chef_server_client_name)
         pem.close()
+
+        if not 'chef_environment' in node['facts']:
+            # this node has been pulled out of a chef environment.
+            # this is hateful, but...
+            api.apply_expression(node_id, 'facts.backends := '
+                                 'remove(facts.backends, "chef-client")')
+
+            if self._node_exists(node['name'], chef_api):
+                chef_node = chef.Node(node['name'], chef_api)
+                chef_node.delete()
+
+            return self._ok()
+
+        # generate node and environment settings
+        node_attrs, env_attrs = self._represent_node_attributes(api, node_id)
+
+        self.logger.debug('node: %s' % node_attrs)
+        self.logger.debug('environment: %s' % env_attrs)
+
+        nova_role = node['facts']['nova_role']
+        chef_environment = node['facts']['chef_environment'].replace(' ', '_')
 
         # create the environment if it does not exist
         env = None
