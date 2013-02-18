@@ -225,9 +225,9 @@ class SqlAlchemyAbstraction(DbAbstraction):
 
         new_data = self._sanitize_for_create(data)
 
-        if self.name == 'facts':
+        if self.name == 'facts' or 'attrs':
             existing = self.api._model_query(
-                'facts', 'node_id=%d and key="%s"' % (
+                self.name, 'node_id=%d and key="%s"' % (
                     int(new_data['node_id']), new_data['key']))
             if len(existing) != 0:
                 return self.update(existing[0]['id'], data)
