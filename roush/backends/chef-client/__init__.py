@@ -162,7 +162,7 @@ class ChefClientBackend(roush.backends.Backend):
         if not 'chef_environment' in node['facts']:
             # this node has been pulled out of a chef environment.
             # need to move it back into _default
-            return
+            return self._ok()
 
         required_facts = ['chef_server_consumed', 'chef_environment',
                           'nova_role']
