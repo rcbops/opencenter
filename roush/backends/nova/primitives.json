@@ -23,6 +23,7 @@
                 "required": true
             },
             "nova_dmz_cidr": {
+                "friendly": "NAT Exclusion CIDRs",
                 "description": "A comma separated list of CIDR network ranges that will be excluded from NAT rules.  This is useful for allowing direct communication to and from instances from other network ranges without the use of floating ips.",
                 "default": "172.16.0.0/24",
                 "type": "string",
