@@ -2,73 +2,84 @@
     "create_cluster": {
         "args": {
             "cluster_name": {
-                "friendly": "name of nova cluster",
+                "friendly": "Nova Cluster Name",
+                "description": "The name of your new nova cluster.  This should be unique.",
                 "default": "Nova Cluster",
                 "type": "string",
                 "required": true
             },
             "nova_public_if": {
-                "friendly": "interface of the public network on compute nodes (eth0, etc)",
+                "friendly": "Nova public network interface",
+                "description": "The network interface that is connected to the public (internet/wan) network on compute nodes.  Compute nodes will NAT instance traffic out from this interface unless a specific floating ip has been assigned to an instance.",
                 "default": "eth0",
                 "type": "string",
                 "required": true
             },
             "keystone_admin_pw": {
-                "friendly": "password for admin user",
+                "friendly": "OpenStack Admin Password",
+                "description": "The password for the OpenStack administrative User",
                 "default": "secret",
                 "type": "string",
                 "required": true
             },
             "nova_dmz_cidr": {
-                "friendly": "cidr of the range to not outbound nat",
+                "description": "A comma separated list of CIDR network ranges that will be excluded from NAT rules.  This is useful for allowing direct communication to and from instances from other network ranges without the use of floating ips.",
                 "default": "172.16.0.0/24",
                 "type": "string",
                 "required": true
             },
             "nova_vm_fixed_range": {
-                "friendly": "cidr of ips to allocate for vm network",
+                "friendly": "VM Network CIDR",
+                "description": "IP addresses will be allocated from this network by Nova to instances and compute hosts as necessary.  This network should be dedicated to OpenStack and not shared with other services.",
                 "default": "192.168.0.0/24",
                 "type": "string",
                 "required": true
             },
             "nova_vm_fixed_if": {
-                "friendly": "interface of the vm network on compute nodes (eth1, etc)",
+                "friendly": "VM Network Interface",
+                "description": "The network interface of the VM network on compute nodes",
                 "default": "eth1",
                 "type": "string",
                 "required": true
             },
             "nova_vm_bridge": {
-                "friendly": "bridge to bring up as vm bridge (br100)",
+                "friendly": "Nova VM Bridge Interface",
+                "description": "The bridge device that will be used as the VM bridge on compute nodes.  The default value is usually acceptable here.  This bridge will be created by nova as necessary and does not need to be manually configured on the system.",
                 "default": "br100",
                 "type": "string",
                 "required": true
             },
             "osops_mgmt": {
-                "friendly": "cidr of network to run management stuff on",
+                "friendly": "Nova Management Network CIDR",
+                "description": "The cidr of network on which internal nova management services such as api services will run.  An IP address from this network should be configured on all hosts in the nova cluster.",
                 "default": "192.168.200.0/24",
                 "type": "string",
                 "required": true
             },
             "osops_nova": {
-                "friendly": "cidr of network to run nova stuff on (mysql, etc)",
+                "friendly": "Nova Internal Network CIDR",
+                "description": "cidr of network to run services used by nova internally, such as rabbitmq and mysql.  An IP address from this network should be configured on all hosts in the nova cluster.",
                 "default": "192.168.200.0/24",
                 "type": "string",
                 "required": true
             },
             "osops_public": {
-                "friendly": "cidr of network to run public stuff on (lb, etc)",
+                "friendly": "Nova Public Network CIDR",
+                "description": "cidr of network to run public nova services on (lb, etc).  An IP address from this network should be configured on all hosts in the nova cluster.",
                 "default": "192.168.200.0/24",
                 "type": "string",
                 "required": true
             },
             "nova_az": {
-                "friendly": "name of nova availability zone",
+                "friendly": "Default Availability Zone",
+                "description": "The name of the default availability zone for Nova",
                 "default": "nova",
                 "type": "string",
                 "required": true
             },
             "chef_server": {
-                "friendly": "chef server to use",
+                "friendly": "Chef Server",
+                "description": "chef server to use",
                 "type": "interface",
                 "name": "chef-server",
                 "required": true
