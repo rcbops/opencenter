@@ -1,1 +1,0 @@
-(backend='chef-client') and (count(filter('nodes', 'role=\'nova-controller\'')) = 0) and (role = none)

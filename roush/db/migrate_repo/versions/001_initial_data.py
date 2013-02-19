@@ -38,10 +38,6 @@ def upgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
 
     adventures = [
-        {'name': 'install chef client',
-         'dsl': 'install_chef.json',
-         'criteria': 'install_chef.criteria',
-         'args': 'install_chef.args'},
         {'name': 'run chef',
          'dsl': 'run_chef.json',
          'criteria': 'run_chef.criteria',
@@ -54,14 +50,6 @@ def upgrade(migrate_engine):
          'dsl': 'create_nova_cluster.json',
          'criteria': 'create_nova_cluster.criteria',
          'args': 'create_nova_cluster.args'},
-        {'name': 'install nova controller',
-         'dsl': 'install_nova_controller.json',
-         'criteria': 'install_nova_controller.criteria',
-         'args': 'install_nova_controller.args'},
-        {'name': 'install nova compute',
-         'dsl': 'install_nova_compute.json',
-         'criteria': 'install_nova_compute.criteria',
-         'args': 'install_nova_compute.args'},
         {'name': 'download chef cookbooks',
          'dsl': 'download_cookbooks.json',
          'criteria': 'download_cookbooks.criteria',
