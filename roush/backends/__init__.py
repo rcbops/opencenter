@@ -143,6 +143,9 @@ def load_specific_backend(import_str, class_str):
         if not 'weight' in backend_primitives[synthetic_id]:
             backend_primitives[synthetic_id]['weight'] = 50
 
+        if not 'timeout' in backend_primitives[synthetic_id]:
+            backend_primitives[synthetic_id]['timeout'] = 30
+
 
 def load():
     """

@@ -250,7 +250,8 @@ class HappyPathTestCase(ScaffoldedTestCase):
     "consequences": [
       "facts.backends := union(facts.backends, 'chef-client')"
     ],
-    "constraints": []
+    "constraints": [],
+    "timeout": 300
   }
 }""")
 
