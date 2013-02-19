@@ -363,8 +363,22 @@ class ChefClientBackend(roush.backends.Backend):
                     'payload': {'nodes': nodelist,
                     'adventure_dsl': dsl}})
 
-            # FIXME: should poll for result here
-            return self._ok()
+                # watch for task state
+                while all_task['state'] not in \
+                        ['timeout', 'cancelled', 'done']:
+                    time.sleep(5)
+                    all_task = api._model_get_by_id(
+                        'tasks', all_task['id'])
+
+                if all_task['state'] != 'done':
+                    return self._fail(
+                        msg='task did not finish successfully')
+
+                if 'result_code' in node_task['result'] and \
+                        node_task['result']['result_code'] == 0:
+                    return self._ok()
+
+                return self._fail(msg='task did not finish successfully')
 
     def add_backend(self, api, node_id, **kwargs):
         return self._fail(msg='backend added by install_chef')
