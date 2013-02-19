@@ -279,7 +279,7 @@ class ChefClientBackend(roush.backends.Backend):
         #         chef_node.chef_environment != chef_environment or\
         #         chef_node.run_list != self._map_roles(nova_role):
         self.logger.debug('Updating chef node')
-        need_node_converge = True
+        #need_node_converge = True
         self.logger.debug('Setting environment to %s' % chef_environment)
         chef_node.chef_environment = chef_environment
         chef_node.override = node_attrs
@@ -288,41 +288,56 @@ class ChefClientBackend(roush.backends.Backend):
         chef_node.save()
 
         if old_runlist != chef_node.run_list:
-            # roles changed, refreshing env just in case searches are affected.
-            need_env_converge = True
+            # roles changed, refresh node and then all other nodes in env
+            need_node_converge = True
 
         if old_env_overrides != env_attrs:
+            # refresh entire environment in one go
             self.logger.debug('Updating environment')
             need_env_converge = True
             env.override_attributes = env_attrs
             env.save()
 
-        nodelist = [node_id]
-
-        if need_env_converge:
-            # FIXME: this should be the top-level environment container...
-            nodelist = self._expand_nodelist([node_id], api)
-        elif need_node_converge:
+        if need_node_converge:
+            # first run converge on the node in question
             nodelist = [node_id]
-
-        self.logger.debug('chef updating nodelist: %s' % nodelist)
-        dsl = [{'primitive': 'run_chef', 'ns': {}}]
-        # first run converge on the node in question
-        api._model_create('tasks', {'action': 'adventurate',
+            self.logger.debug('chef updating node: %s' % nodelist)
+            dsl = [{'primitive': 'run_chef', 'ns': {}}]
+            api._model_create('tasks', {'action': 'adventurate',
                                     'node_id': adventurator['id'],
                                     'payload': {'nodes': [node_id],
                                                 'adventure_dsl': dsl}})
-        # now converge the affected nodes
-        if node_id in nodelist:
-            nodelist.remove(node_id)
-        if len(nodelist) > 0:
-            api._model_create('tasks', {'action': 'adventurate',
-                                        'node_id': adventurator['id'],
-                                        'payload': {'nodes': nodelist,
-                                                    'adventure_dsl': dsl}})
 
-        # FIXME: should poll for result here
-        return self._ok()
+            #FIXME: should poll for result here before converging rest
+
+            # now converge the rest of the nodes in the environment
+            nodelist = self._expand_nodelist([node_id], api)
+            if node_id in nodelist:
+                nodelist.remove(node_id)
+            self.logger.debug('chef updating nodes: %s' % nodelist)
+            # now converge the affected nodes
+            if len(nodelist) > 0:
+                api._model_create('tasks', {'action': 'adventurate',
+                                    'node_id': adventurator['id'],
+                                    'payload': {'nodes': nodelist,
+                                                'adventure_dsl': dsl}})
+
+            # FIXME: should poll for result here
+            return self._ok()
+
+        elif need_env_converge:
+            # converge ALL of the nodes
+            nodelist = self._expand_nodelist([node_id], api)
+            self.logger.debug('chef updating nodes: %s' % nodelist)
+            # now converge the affected nodes
+            if len(nodelist) > 0:
+                api._model_create('tasks', {'action': 'adventurate',
+                                    'node_id': adventurator['id'],
+                                    'payload': {'nodes': nodelist,
+                                                'adventure_dsl': dsl}})
+
+            # FIXME: should poll for result here
+            return self._ok()
 
     def add_backend(self, api, node_id, **kwargs):
         return self._fail(msg='backend added by install_chef')
