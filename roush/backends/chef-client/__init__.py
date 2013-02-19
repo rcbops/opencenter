@@ -300,30 +300,55 @@ class ChefClientBackend(roush.backends.Backend):
 
         if need_node_converge:
             # first run converge on the node in question
-            nodelist = [node_id]
-            self.logger.debug('chef updating node: %s' % nodelist)
+            self.logger.debug('chef updating node: %s' % node_id)
             dsl = [{'primitive': 'run_chef', 'ns': {}}]
-            api._model_create('tasks', {'action': 'adventurate',
-                                    'node_id': adventurator['id'],
-                                    'payload': {'nodes': [node_id],
-                                                'adventure_dsl': dsl}})
+            node_task = api._model_create(
+                'tasks',
+                {'action': 'adventurate',
+                'node_id': adventurator['id'],
+                'payload': {'nodes': [node_id],
+                'adventure_dsl': dsl}})
 
-            #FIXME: should poll for result here before converging rest
+            # watch for task state
+            while node_task['state'] not in ['timeout', 'cancelled', 'done']:
+                time.sleep(5)
+                node_task = api._model_get_by_id('tasks', node_task['id'])
 
-            # now converge the rest of the nodes in the environment
-            nodelist = self._expand_nodelist([node_id], api)
-            if node_id in nodelist:
-                nodelist.remove(node_id)
-            self.logger.debug('chef updating nodes: %s' % nodelist)
-            # now converge the affected nodes
-            if len(nodelist) > 0:
-                api._model_create('tasks', {'action': 'adventurate',
-                                    'node_id': adventurator['id'],
-                                    'payload': {'nodes': nodelist,
-                                                'adventure_dsl': dsl}})
+            if node_task['state'] != 'done':
+                return self._fail(msg='task did not finish successfully')
 
-            # FIXME: should poll for result here
-            return self._ok()
+            if 'result_code' in node_task['result'] and \
+                    node_task['result']['result_code'] == 0:
+                # now converge the rest of the nodes in the environment
+                nodelist = self._expand_nodelist([node_id], api)
+                if node_id in nodelist:
+                    nodelist.remove(node_id)
+                self.logger.debug('chef updating nodes: %s' % nodelist)
+                # now converge the affected nodes
+                if len(nodelist) > 0:
+                    all_task = api._model_create(
+                        'tasks',
+                        {'action': 'adventurate',
+                        'node_id': adventurator['id'],
+                        'payload': {'nodes': nodelist,
+                        'adventure_dsl': dsl}})
+
+                    # watch for task state
+                    while all_task['state'] not in \
+                            ['timeout', 'cancelled', 'done']:
+                        time.sleep(5)
+                        all_task = api._model_get_by_id(
+                            'tasks', all_task['id'])
+
+                    if all_task['state'] != 'done':
+                        return self._fail(
+                            msg='task did not finish successfully')
+
+                    if 'result_code' in node_task['result'] and \
+                            node_task['result']['result_code'] == 0:
+                        return self._ok()
+
+            return self._fail(msg='task did not finish successfully')
 
         elif need_env_converge:
             # converge ALL of the nodes
@@ -331,10 +356,12 @@ class ChefClientBackend(roush.backends.Backend):
             self.logger.debug('chef updating nodes: %s' % nodelist)
             # now converge the affected nodes
             if len(nodelist) > 0:
-                api._model_create('tasks', {'action': 'adventurate',
-                                    'node_id': adventurator['id'],
-                                    'payload': {'nodes': nodelist,
-                                                'adventure_dsl': dsl}})
+                all_task = api._model_create(
+                    'tasks',
+                    {'action': 'adventurate',
+                    'node_id': adventurator['id'],
+                    'payload': {'nodes': nodelist,
+                    'adventure_dsl': dsl}})
 
             # FIXME: should poll for result here
             return self._ok()
