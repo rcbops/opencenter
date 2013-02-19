@@ -2,6 +2,7 @@
     "sleep_interval": {
         "friendly": "Interval",
         "description": "The amount of time to wait in seconds.",
+        "default": 5,
         "type": "int",
         "required": true
     }
