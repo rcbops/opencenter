@@ -345,7 +345,6 @@ class ChefClientBackend(roush.backends.Backend):
             if 'result_code' in node_task['result'] and \
                     node_task['result']['result_code'] == 0:
                 # now converge the rest of the nodes in the environment
-               # nodelist = self._expand_nodelist([node_id], api)
                 nodelist = self._get_nodes_in_env(chef_environment)
                 if node_id in nodelist:
                     nodelist.remove(node_id)
@@ -378,7 +377,7 @@ class ChefClientBackend(roush.backends.Backend):
 
         elif need_env_converge:
             # converge ALL of the nodes
-            nodelist = self._expand_nodelist([node_id], api)
+            nodelist = self._get_nodes_in_env(chef_environment)
             self.logger.debug('chef updating nodes: %s' % nodelist)
             # now converge the affected nodes
             if len(nodelist) > 0:
