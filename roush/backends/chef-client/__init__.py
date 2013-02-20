@@ -184,7 +184,7 @@ class ChefClientBackend(roush.backends.Backend):
         if not verify_facts(cs, ['chef_server_uri',
                                  'chef_server_client_name',
                                  'chef_server_client_pem']):
-            return self._faile(msg='chef server missing chef attrs')
+            return self._fail(msg='chef server missing chef attrs')
 
         chef_server_uri = cs['facts']['chef_server_uri']
         chef_server_client_name = cs['facts']['chef_server_client_name']
