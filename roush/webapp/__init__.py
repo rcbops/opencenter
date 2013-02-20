@@ -125,7 +125,7 @@ class WebServer(Flask):
                 'database_uri': 'sqlite:///',
                 'daemonize': False,
                 'pidfile': None,
-                'task_reaping_threshold': 300
+                'task_reaping_threshold': 1800
             }
         }
 
