@@ -226,7 +226,7 @@ class AstTests(RoushTestCase):
         self.assertTrue(result[0]['name'] == 'node1')
         query = 'remove(facts.map_fact, "1")'
         self.assertRaisesRegexp(SyntaxError, 'remove on non-list type',
-                          self._model_filter, 'nodes', query)
+                                self._model_filter, 'nodes', query)
 
     def test_union_of_null(self):
         query = '("node" in name) and (count(union(facts.array_fact, 3)) = 1)'
