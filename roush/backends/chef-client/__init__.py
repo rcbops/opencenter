@@ -107,9 +107,9 @@ class ChefClientBackend(roush.backends.Backend):
             return ['role[single-compute]']
         elif role == 'nova-infra':
             return ['role[single-controller]']
-        elif role == 'nova-controller1':
+        elif role == 'nova-controller-master':
             return ['role[ha-controller1]']
-        elif role == 'nova-controller2':
+        elif role == 'nova-controller-backup':
             return ['role[ha-controller2]']
         return []
 
