@@ -16,6 +16,7 @@
 #
 
 import roush
+import string
 
 
 class NovaBackend(roush.backends.Backend):
@@ -45,6 +46,12 @@ class NovaBackend(roush.backends.Backend):
     def create_az(self, state_data, api, node_id, **kwargs):
         if not 'az_name' in kwargs:
             return self._fail(msg='AZ Name is required')
+
+        valid = string.letters + string.digits + "_"
+        test_valid = all([c in valid for c in kwargs['az_name']])
+        if not test_valid:
+            return self._fail(msg='Name cannot contain spaces or special'
+                                  'characters')
 
         self._make_subcontainer(api,
                                 'AZ %s' % kwargs['az_name'],
