@@ -50,7 +50,7 @@ class TestTaskPruning(RoushTestCase):
         self.assertTrue(len(all_tasks) == 1)
 
     def test_prune_old_tasks(self):
-        prunable_time = int(time.time()) - 301
+        prunable_time = int(time.time()) - 1801
 
         all_tasks = self._model_get_all('tasks')
         self.assertTrue(len(all_tasks) == 0)
@@ -65,7 +65,7 @@ class TestTaskPruning(RoushTestCase):
         self.assertTrue(len(all_tasks) == 0)
 
     def test_do_not_prune_running_tasks(self):
-        prunable_time = int(time.time()) - 301
+        prunable_time = int(time.time()) - 1801
 
         all_tasks = self._model_get_all('tasks')
         self.assertTrue(len(all_tasks) == 0)
