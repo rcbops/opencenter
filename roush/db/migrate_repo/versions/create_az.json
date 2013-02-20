@@ -1,0 +1,6 @@
+[
+    {
+        "primitive": "nova.create_az",
+        "ns": {} 
+    }
+]
