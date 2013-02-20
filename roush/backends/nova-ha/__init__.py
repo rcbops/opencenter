@@ -48,11 +48,11 @@ class NovaHaBackend(roush.backends.Backend):
         if action == 'add_backend':
             return []
 
-
     def add_backend(self, state_data, api, node_id, **kwargs):
         reply_data = {}
 
-        api.apply_expression(node_id,
+        api.apply_expression(
+            node_id,
             'facts.backends := union(facts.backends, "nova-ha")')
 
         #### BEGIN STUB ####
