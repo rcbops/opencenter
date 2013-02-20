@@ -28,11 +28,11 @@ class Solver:
     def __init__(self, api, node_id, constraints,
                  parent=None, prim=None, ns=None, applied_consequences=None):
 
-        self.constraints = constraints
+        self.constraints = copy.deepcopy([api.regularize_expression(x)
+                                          for x in constraints])
         self.node_id = node_id
         self.base_api = api
-        self.consequences = []
-        self.applied_consequences = applied_consequences if \
+        self.applied_consequences = copy.deepcopy(applied_consequences) if \
             applied_consequences is not None else []
 
         self.children = []
@@ -55,6 +55,10 @@ class Solver:
         for consequence in self.applied_consequences:
             node = self.api._model_get_by_id('nodes', self.node_id)
             ast.apply_expression(node, consequence, self.api)
+
+        # get rid of constraints we've already solved
+        self.constraints = [x for x in self.constraints if not
+                            self._constraint_satisfied(x)]
 
         node = self.api._model_get_by_id('nodes', self.node_id)
 
@@ -485,25 +489,30 @@ class Solver:
         unconstrained_solutions = []
         constrained_solutions = []
 
-        for solution in all_solutions:
-            solution['discovered'] = self._get_additional_constraints(
-                solution['primitive']['id'],
-                solution['ns'])
+        if not proposed_plan:
+            for solution in all_solutions:
+                solution['discovered'] = self._get_additional_constraints(
+                    solution['primitive']['id'],
+                    solution['ns'])
 
-            if solution['discovered'] is None:
-                # we'll just drop it
-                self.logger.debug(
-                    'Cannot solve %s due to addl constraints' %
-                    (solution['primitive']['name'], ))
-                pass
-            elif len(solution['discovered']) != 0:
-                constrained_solutions.append(solution)
-            else:
-                unconstrained_solutions.append(solution)
+                if solution['discovered'] is None:
+                    # we'll just drop it
+                    self.logger.debug(
+                        'Cannot solve %s due to addl constraints' %
+                        (solution['primitive']['name'], ))
+                    pass
+                elif len(solution['discovered']) != 0:
+                    constrained_solutions.append(solution)
+                else:
+                    unconstrained_solutions.append(solution)
 
-        candidate_solutions = constrained_solutions
-        if len(unconstrained_solutions) > 0:
-            candidate_solutions.append(unconstrained_solutions[0])
+            candidate_solutions = constrained_solutions
+            if len(unconstrained_solutions) > 0:
+                candidate_solutions.append(unconstrained_solutions[0])
+        else:
+            candidate_solutions = all_solutions
+
+        self.logger.info('All candidate solutions: %s' % candidate_solutions)
 
         for solution in candidate_solutions:
             self.logger.info("%s with %s, solving %s" %
@@ -518,6 +527,7 @@ class Solver:
             #     raise RuntimeError('constraint disappeared?!?!')
 
             # get additional constraints from the primitive itself.
+
             self.logger.debug("finding addl constraints for %s using ns %s" %
                               (solution['primitive']['name'],
                                solution['ns']))
@@ -525,8 +535,11 @@ class Solver:
             # new_constraints = self._get_additional_constraints(
             #     solution['primitive']['id'],
             #     solution['ns'])
-            new_constraints = solution['discovered']
-            solution.pop('discovered')
+            if proposed_plan is not None:
+                new_constraints = []
+            else:
+                new_constraints = solution['discovered']
+                solution.pop('discovered')
 
             # FIXME(rp)
             # pull in backends for primitives that can solve constraints
@@ -536,45 +549,82 @@ class Solver:
                 be, prim_name = solution['primitive']['name'].split('.')
                 if new_constraints is not None:
                     if prim_name != "add_backend":
-                        new_constraints.append('"%s" in facts.backends' % be)
+                        new_expr = '"%s" in facts.backends' % be
+
+                        if not new_expr in new_constraints:
+                            new_constraints.append(new_expr)
 
                         self.logger.info(
                             ' - New constraints from primitive: %s' %
                             new_constraints)
 
-            new_solver = None
+            if proposed_plan is not None:
+                new_constraints = []
 
             if new_constraints:
-                new_constraints = [x for x in new_constraints if not
-                                   self._constraint_satisfied(x)]
+                new_constraints = [self.api.regularize_expression(x)
+                                   for x in new_constraints]
 
-            if new_constraints and len(new_constraints) > 0:
+                # FIXME(rp): we should be carrying constraints and
+                # consequences around as sets rather than lists anyway
+                new_constraints = [x for x in list(set(new_constraints))
+                                   if not self._constraint_satisfied(x)]
+
+            new_solver = None
+
+            if new_constraints is None:
+                self.logger.info(' - abandoning solution %s -- unsolvable' %
+                                 solution['primitive']['name'])
+            elif new_constraints and len(new_constraints) > 0:
                 # do a subsolve on this
                 self.logger.info(' - running subsolver for %s' %
                                  new_constraints)
 
+                # concrete-ize the current primitive consequences
+                # and roll them into the current applied consequences
+                # for the purpose of the solve
+
+                assumed_consequences = []
+                for consequence in solution['primitive']['consequences']:
+                    conc = ast.concrete_expression(consequence, solution['ns'])
+                    assumed_consequences.append(conc)
+
                 subsolve = Solver(
                     self.base_api, self.node_id, new_constraints,
-                    applied_consequences=applied_consequences)
+                    applied_consequences=applied_consequences +
+                    assumed_consequences)
 
                 sub_success, _, sub_plan = subsolve.solve()
                 if sub_success:
-                    sub_solver = Solver.from_plan(
-                        self.base_api, self.node_id,
-                        new_constraints + constraints,
-                        sub_plan,
-                        applied_consequences=applied_consequences)
-                    new_solver = sub_solver.children[0]
+                    self.logger.info(' - SOLVED WITH PLAN: %s' % sub_plan)
 
-                self.logger.info(' - subsolver for %s: %s' %
-                                 (new_constraints,
-                                  "ok!" if sub_success else "no!"))
+                    new_solver = subsolve.children[0]
+                    new_solver.parent = self
 
-            elif new_constraints is None:
-                # we'll just jettison this solution if the exposed
-                # constraints are None -- i.e. it cannot be solved
-                # given the bound parameters.
-                self.logger.info(' - abandoning solution -- unsolvable')
+                    last_solver = new_solver
+                    while(len(last_solver.children) != 0):
+                        last_solver = last_solver.children[0]
+
+                    # at this point, we can consider this primitive successful.
+                    # throw it at the end.
+
+                    if solution['solves'] in constraints:
+                        constraints.remove(solution['solves'])
+
+                    this_primitive = Solver(self.base_api, self.node_id,
+                                            constraints, last_solver,
+                                            solution['primitive'],
+                                            ns=solution['ns'],
+                                            applied_consequences=
+                                            applied_consequences +
+                                            assumed_consequences)
+
+                    last_solver.children.append(this_primitive)
+
+                    self.children.append(new_solver)
+
+                    if this_primitive.constraints == []:
+                        return this_primitive
             else:
                 # find the concrete consequence so we can roll forward
                 # the cluster api representation
@@ -615,12 +665,9 @@ class Solver:
                                     solution['primitive'], ns=solution['ns'],
                                     applied_consequences=applied_consequences)
 
-            if new_solver:
                 self.children.append(new_solver)
-
-        for child in self.children:
-            if child.found_solution():
-                return child
+                if new_solver.constraints == []:
+                    return new_solver
 
         return None
 
