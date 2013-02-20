@@ -75,5 +75,5 @@ def downgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
 
     api = api_from_models()
-    adv = api.adventures_query('name = "update roush agent"')
+    adv = api.adventures_query('name = "update agent"')
     rc = api.adventure_delete_by_id(adv['id'])
