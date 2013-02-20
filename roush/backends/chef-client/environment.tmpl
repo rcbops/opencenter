@@ -34,6 +34,7 @@
         "network": {
             "fixed_range": "${facts['nova_vm_fixed_range']}",
             "dmz_cidr": "${facts['nova_dmz_cidr']}",
+            "multi_host": true,
             "public_interface": "${facts['nova_public_if']}"
         },
         "apply_patches": true,

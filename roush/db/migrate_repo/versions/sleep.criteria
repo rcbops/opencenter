@@ -1,1 +1,1 @@
-1=1
+count(filter('nodes', 'attrs.dev = true and id = 1')) = 1
