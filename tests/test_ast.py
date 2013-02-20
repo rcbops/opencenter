@@ -24,6 +24,11 @@ class AstTests(RoushTestCase):
         self._model_create('facts', node_id=self.node1['id'],
                            key='array_fact', value=[1, 2])
         self._model_create('facts', node_id=self.node1['id'],
+                           key='map_fact',
+                           value={'1': '2', '3': '4', '9': '5'})
+        self._model_create('facts', node_id=self.node1['id'],
+                           key='str_fact', value='azbycxdw')
+        self._model_create('facts', node_id=self.node1['id'],
                            key='node1', value=True)
         self._model_create('facts', node_id=self.node1['id'],
                            key='selfref', value='node1')
@@ -109,12 +114,26 @@ class AstTests(RoushTestCase):
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), 1)
         self.assertTrue(result[0]['name'] == 'node1')
+        result = self._model_filter('nodes', 'nth(2, facts.array_fact)')
+        self.app.logger.debug('result: %s' % result)
+        self.assertEqual(len(result), 0)
+        result = self._model_filter('nodes', 'nth("0", facts.array_fact)')
+        self.app.logger.debug('result: %s' % result)
+        self.assertEqual(len(result), 0)
+        self.assertRaises(RuntimeError, self._model_filter,
+                          'nodes', 'nth(-1, facts.array_fact)')
 
     def test_max(self):
         result = self._model_filter('nodes', 'max(facts.array_fact) = 2')
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), 1)
         self.assertTrue(result[0]['name'] == 'node1')
+        result = self._model_filter('nodes', 'max(facts.map_fact) = "9"')
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 0)
+        result = self._model_filter('nodes', 'max(facts.str_fact) = "z"')
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 0)
 
     def test_str(self):
         self._model_create('facts', node_id=self.node1['id'],
@@ -124,6 +143,12 @@ class AstTests(RoushTestCase):
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), 1)
         self.assertTrue(result[0]['name'] == 'node1')
+        self._model_create('facts', node_id=self.node1['id'],
+                           key='empty',
+                           value='')
+        result = self._model_filter('nodes', 'str(facts.empty) = ""')
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 0)
 
     def test_int(self):
         self._model_create('facts', node_id=self.node1['id'],
@@ -133,6 +158,25 @@ class AstTests(RoushTestCase):
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), 1)
         self.assertTrue(result[0]['name'] == 'node1')
+        self._model_create('facts', node_id=self.node1['id'],
+                           key='zero_int',
+                           value=0)
+        result = self._model_filter('nodes', 'int(facts.zero_int) = 0')
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 0)
+        self._model_create('facts', node_id=self.node1['id'],
+                           key='one_int',
+                           value=1)
+        result = self._model_filter('nodes', 'int(facts.one_int) = 1')
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 1)
+        self.assertTrue(result[0]['name'] == 'node1')
+        self._model_create('facts', node_id=self.node1['id'],
+                           key='neg_int',
+                           value=-1)
+        result = self._model_filter('nodes', 'int(facts.neg_int) < 0')
+        self.assertEqual(len(result), 1)
+        self.assertTrue(result[0]['name'] == 'node1')
         # self.assertEquals(len(result), 1)
 
     def test_count(self):
@@ -140,6 +184,12 @@ class AstTests(RoushTestCase):
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), 1)
         self.assertTrue(result[0]['name'] == 'node1')
+        result = self._model_filter('nodes', 'count(facts.map_fact) = 3')
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 0)
+        result = self._model_filter('nodes', 'count(facts.str_fact) = 8')
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 0)
         # self.assertEquals(len(result), 1)
 
     def test_filter(self):
@@ -155,6 +205,10 @@ class AstTests(RoushTestCase):
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), 1)
         self.assertTrue(result[0]['name'] == 'node1')
+        query = 'count(union(facts.array_fact, 2)) > 2'
+        result = self._model_filter('nodes', query)
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 0)
 
     def test_remove(self):
         query = 'count(remove(facts.array_fact, 2)) = 1'
@@ -162,6 +216,17 @@ class AstTests(RoushTestCase):
         self.app.logger.debug('result: %s' % result)
         self.assertEquals(len(result), 1)
         self.assertTrue(result[0]['name'] == 'node1')
+        self._model_create('facts', node_id=self.node1['id'],
+                           key='dups_array',
+                           value=[1, 1, 2, 3])
+        query = 'count(remove(facts.dups_array, 1)) = 3'
+        result = self._model_filter('nodes', query)
+        self.app.logger.debug('result: %s' % result)
+        self.assertEquals(len(result), 1)
+        self.assertTrue(result[0]['name'] == 'node1')
+        query = 'remove(facts.map_fact, "1")'
+        self.assertRaisesRegexp(SyntaxError, 'remove on non-list type',
+                                self._model_filter, 'nodes', query)
 
     def test_union_of_null(self):
         query = '("node" in name) and (count(union(facts.array_fact, 3)) = 1)'
