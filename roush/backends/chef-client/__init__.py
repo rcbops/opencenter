@@ -142,6 +142,31 @@ class ChefClientBackend(roush.backends.Backend):
 
         return final_nodelist
 
+    def _get_nodes_in_env(self, env):
+        """
+        given a chef environment, find all nodes with that environment
+        in their facts and return a list of node ids. Exclude containers
+        """
+
+        final_nodelist = []
+
+        self.logger.debug('environment: %s' % env)
+
+        query = 'facts.chef_environment = %s' % env
+        nodelist = api.nodes_query(query)
+
+        for node in nodelist:
+            is_container = False
+            if 'backends' in node['facts'] and \
+                    'container' in node['facts']['backends']:
+                is_container = True
+
+            if not is_container:
+                node_id = node['id']
+                final_nodelist.append(node_id)
+
+        return final_nodelist
+
     def _serialize_node_blob(self, blob):
         result = {}
         for key, value in blob.items():
@@ -320,7 +345,8 @@ class ChefClientBackend(roush.backends.Backend):
             if 'result_code' in node_task['result'] and \
                     node_task['result']['result_code'] == 0:
                 # now converge the rest of the nodes in the environment
-                nodelist = self._expand_nodelist([node_id], api)
+               # nodelist = self._expand_nodelist([node_id], api)
+                nodelist = self._get_nodes_in_env(chef_environment)
                 if node_id in nodelist:
                     nodelist.remove(node_id)
                 self.logger.debug('chef updating nodes: %s' % nodelist)
