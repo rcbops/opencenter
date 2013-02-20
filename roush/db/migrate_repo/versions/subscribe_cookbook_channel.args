@@ -1,7 +1,9 @@
 {
     "channel_name": {
-        "friendly": "name of cookbook channel",
+        "friendly": "Update Channel",
+        "description": "The name of the update channel to subscribe to.",
         "type": "string",
+        "default": "current",
         "required": true
     }
 }
