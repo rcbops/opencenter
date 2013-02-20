@@ -49,7 +49,7 @@ class NovaBackend(roush.backends.Backend):
         self._make_subcontainer(api,
                                 'AZ %s' % kwargs['az_name'],
                                 node_id,
-                                {'nova_az': kwargs['value']},
+                                {'nova_az': kwargs['az_name']},
                                 ['node', 'container', 'nova'])
 
         return self._ok()
