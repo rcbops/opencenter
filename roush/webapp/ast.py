@@ -648,7 +648,7 @@ class Node:
             return '(%s) %s (%s)' % (self.lhs.to_s(), self.op, self.rhs.to_s())
 
         return '%s %s%s %s' % (self.lhs.to_s(), '!' if self.negate else '',
-                               self.op, self.rhs.to_s())
+                               self.op.lower(), self.rhs.to_s())
 
     def invert(self):
         # this is kind of strange, as it only inverts things it can invert,

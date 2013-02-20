@@ -53,17 +53,49 @@ class RoushApi(object):
 
         return result
 
+    def invert_expression(self, expression):
+        # rather than raising an exception on an un-invertable
+        # expression, we'll log it and return none.
+        result = None
+
+        try:
+            result = roush.webapp.ast.invert_expression(expression)
+        except SyntaxError as e:
+            self.logger.error('Error inverting expression: %s: %s' %
+                              (expression, str(e)))
+
+        return result
+
+    def regularize_expression(self, expression):
+        try:
+            return roush.webapp.ast.regularize_expression(expression)
+        except SyntaxError as e:
+            self.logger.error('Error regularizing expression %s: %s' %
+                              (expression, str(e)))
+            raise
+
     def apply_expression(self, node_id, expression):
         # again, we should probably have a standard namespace for
         # applying expressions
-        return roush.webapp.ast.apply_expression(node_id, expression, self)
+        try:
+            return roush.webapp.ast.apply_expression(
+                node_id, expression, self)
+        except SyntaxError as e:
+            self.logger.error('Error applying %s: %s' %
+                              (expression, str(e)))
+            raise
 
     def concrete_expression(self, expression, ns={}):
         # I think there should be a standard default namespace, including
         # nodes[<id>], self, and other things... this is here so we
         # can determine a regular namespace for evaluating expressions.  Right
         # now, there is no real reason for it to be here.
-        return roush.webapp.ast.concrete_expression(expression, ns)
+        try:
+            return roush.webapp.ast.concrete_expression(expression, ns)
+        except SyntaxError as e:
+            self.logger.error('Error concreteing %s: %s' %
+                              (expression, str(e)))
+            raise
 
     def _get_models(self):
         return self.model_list.keys()

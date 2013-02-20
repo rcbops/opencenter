@@ -2,6 +2,7 @@
 
 import copy
 import json
+import sys
 
 from util import RoushTestCase
 from roush.webapp import ast
@@ -15,8 +16,13 @@ api = db_api.api_from_models()
 
 class SolverTestCase(RoushTestCase):
     def setUp(self):
+        sys.setrecursionlimit(1000)
+
         if roush.backends.primitive_by_name('test.set_test_fact') is None:
             roush.backends.load_specific_backend('tests.test', 'TestBackend')
+
+        if roush.backends.primitive_by_name('test2.add_backend') is None:
+            roush.backends.load_specific_backend('tests.test2', 'Test2Backend')
 
         self._clean_all()
 
@@ -46,6 +52,7 @@ class SolverTestCase(RoushTestCase):
         self.assertEquals(len(self._model_get_all('tasks')), 0)
 
     def tearDown(self):
+        sys.setrecursionlimit(1000)
         self._clean_all()
 
     def _make_adventurator(self):
@@ -227,6 +234,55 @@ class SolverTestCase(RoushTestCase):
         self.assertEquals(len(entry['args']), 1)
 
         # here, we should pump in another thing.
+
+    def test_pre_applied_consequences(self):
+        # make sure that when we do a subsolver for additional constraints,
+        # we apply the consequence of the primitive for which we are
+        # subsolving in the ephemeral.  That is, we assume that the
+        # condition we are solving for will be successful, something
+        # like a disproof by counterexample, I guess.
+
+        import logging
+        solver = logging.getLogger('roush.webapp.solver')
+        solver.setLevel(logging.INFO)
+
+        newcontainer = self._model_create('nodes', name='newcontainer')
+        self._model_create('facts', node_id=newcontainer['id'], key='backends',
+                           value=['node', 'container', 'test2'])
+        self._model_create('facts', node_id=newcontainer['id'],
+                           key='test2_otherfact',
+                           value='force_inherit_backend')
+        self._model_create('facts', node_id=self.node['id'],
+                           key='parent_id', value=self.container['id'])
+        self._model_create('facts', node_id=self.node['id'],
+                           key='backends', value=['node', 'agent'])
+
+        self._make_adventurator()
+
+        self.logger.debug('Current limit: %s' % sys.getrecursionlimit())
+
+        sys.setrecursionlimit(200)
+
+        # without rolling forward consequences, this loops
+        resp = self._model_create('facts', node_id=self.node['id'],
+                                  key='parent_id', value=newcontainer['id'],
+                                  please=True, raw=True, expect_code=202)
+
+        self.assertTrue('plan' in resp)
+
+        self.logger.debug('plan is: %s' % resp['plan'])
+
+        self._run_plan_safe(resp['plan'], self.node['id'])
+
+        node = self._model_get_by_id('nodes', self.node['id'])
+        self.assertEquals(int(node['facts']['parent_id']),
+                          int(newcontainer['id']))
+
+        # This asserts that the consequences were pre-applied on the
+        # subsolve
+        self.assertEquals(int(node['facts']['test2_fact']),
+                          int(newcontainer['id']))
+
 
     # def test_nova_backend(self):
     #     # make sure adding a nova backend pulls in chef-client
