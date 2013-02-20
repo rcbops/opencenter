@@ -45,12 +45,12 @@ class NovaBackend(roush.backends.Backend):
     def create_az(self, state_data, api, node_id, **kwargs):
         if not 'az_name' in kwargs:
             return self._fail(msg='AZ Name is required')
-        
-        self._make_subcontainer(
-                api, 'AZ %s' % kwargs['az_name'],
-                node_id,
-                {'nova_az': kwargs['value']},
-                ['node', 'container', 'nova'])
+
+        self._make_subcontainer(api,
+                                'AZ %s' % kwargs['az_name'],
+                                node_id,
+                                {'nova_az': kwargs['value']},
+                                ['node', 'container', 'nova'])
 
         return self._ok()
 
@@ -95,7 +95,7 @@ class NovaBackend(roush.backends.Backend):
 
         comp = self._make_subcontainer(
             api, 'Compute', cluster['id'],
-            {'nova_role': 'nova-compute'}, ['node', 'container', 'nova', 
+            {'nova_role': 'nova-compute'}, ['node', 'container', 'nova',
                                             'nova-compute'])
 
         if comp is None:
