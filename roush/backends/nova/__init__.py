@@ -93,7 +93,7 @@ class NovaBackend(roush.backends.Backend):
             return self._fail(msg='cannot create nova cluster container')
 
         infra = self._make_subcontainer(
-            api, 'Infrastructure', cluster['id'], {},
+            api, 'Infrastructure', cluster['id'], {'nova_role': 'nova-infra'},
             ['node', 'container', 'nova', 'nova-controller'])
 
         if infra is None:
