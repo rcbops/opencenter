@@ -15,7 +15,7 @@
     {
         "primitive": "download_cookbooks",
         "ns": {
-            "chef_server": "{id}"
+            "CHEF_SERVER_COOKBOOK_CHANNELS": "current"
         }
     }
 ]
