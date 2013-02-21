@@ -1,5 +1,0 @@
-[
-    {"nova_ha_enabled": {"type": "string",
-                         "settable": false,
-                         "converge": false}}
-]
