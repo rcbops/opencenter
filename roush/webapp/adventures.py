@@ -18,6 +18,7 @@
 import flask
 
 from roush.db.api import api_from_models
+from roush.db import exceptions
 from roush.webapp import generic
 # from roush.webapp import solver
 # from roush.webapp import utility
@@ -45,10 +46,15 @@ def execute_adventure(adventure_id):
         return generic.http_badrequest(msg='node not specified')
 
     api = api_from_models()
-    adventure = api._model_get_by_id('adventures', int(adventure_id))
+    try:
+        adventure = api._model_get_by_id('adventures', int(adventure_id))
+    except exceptions.IdNotFound:
+        message = 'Not Found: Adventure %s' % adventure_id
+        return generic.http_notfound(msg=message)
 
-    if adventure is None:
-        return generic.http_notfound()
-
-    return generic.http_solver_request(data['node'], [],
-                                       api=api, plan=adventure['dsl'])
+    try:
+        return generic.http_solver_request(data['node'], [],
+                                           api=api, plan=adventure['dsl'])
+    except exceptions.IdNotFound:
+        #Can IdNotFound be raised for any other reason?
+        return generic.http_notfound(msg='Not Found: Node %s' % data['node'])
