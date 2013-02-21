@@ -310,7 +310,6 @@ class ChefClientBackend(roush.backends.Backend):
         #         chef_node.chef_environment != chef_environment or\
         #         chef_node.run_list != self._map_roles(nova_role):
         self.logger.debug('Updating chef node')
-        #need_node_converge = True
         self.logger.debug('Setting environment to %s' % chef_environment)
         chef_node.chef_environment = chef_environment
         chef_node.override = node_attrs
@@ -330,6 +329,7 @@ class ChefClientBackend(roush.backends.Backend):
             env.save()
 
         if need_node_converge:
+            return self._fail()
             # first run converge on the node in question
             self.logger.debug('chef updating node: %s' % node_id)
             dsl = [{'primitive': 'run_chef', 'ns': {}}]
