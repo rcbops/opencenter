@@ -5,16 +5,17 @@
         }
     },
     {
-        "primitive": "download_cookbooks",
-        "ns": {
-        }
-    },
-    {
         "primitive": "node.add_backend",
         "ns": {"backend": "chef-server"}
     },
     {
         "primitive": "node.set_parent",
         "ns": { "parent": 3 }
+    },
+    {
+        "primitive": "download_cookbooks",
+        "ns": {
+            "chef_server": "{id}"
+        }
     }
 ]
