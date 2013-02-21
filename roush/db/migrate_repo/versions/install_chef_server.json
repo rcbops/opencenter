@@ -1,9 +1,12 @@
 [
     {
-        "primitive": "agent.run_task",
+        "primitive": "install_chef_server",
         "ns": {
-            "action": "install_chef_server",
-            "payload": {}
+        }
+    },
+    {
+        "primitive": "download_cookbooks",
+        "ns": {
         }
     },
     {
