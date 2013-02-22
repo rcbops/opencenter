@@ -1,4 +1,3 @@
-
 import json
 
 from util import ScaffoldedTestCase
@@ -141,6 +140,27 @@ class HappyPathTestCase(ScaffoldedTestCase):
         return result
 
     def test_install_chef_server_no_adventurator(self):
+        agent_actions = json.loads("""
+{
+  "download_cookbooks": {
+        "args": {"CHEF_SERVER_COOKBOOK_CHANNELS": {
+                    "type": "evaluated",
+                     "expression": "true"}},
+        "consequences": [],
+        "constraints": [],
+        "timeout": 300
+  },
+  "install_chef_server": {
+        "args": {},
+        "consequences": [],
+        "constraints": []
+  }
+}""")
+        self._model_create(
+            'attrs', node_id=self.server['id'],
+            key='roush_agent_actions',
+            value=agent_actions)
+
         chef_adventure = self._model_filter(
             'adventures', '"chef server" in name')
 
@@ -168,6 +188,26 @@ class HappyPathTestCase(ScaffoldedTestCase):
 
     def test_install_chef_server(self):
         self._make_adventurator()
+        agent_actions = json.loads("""
+{
+  "download_cookbooks": {
+        "args": {"CHEF_SERVER_COOKBOOK_CHANNELS": {
+                    "type": "evaluated",
+                     "expression": "true"}},
+        "consequences": [],
+        "constraints": [],
+        "timeout": 300
+  },
+  "install_chef_server": {
+        "args": {},
+        "consequences": [],
+        "constraints": []
+  }
+}""")
+        self._model_create(
+            'attrs', node_id=self.server['id'],
+            key='roush_agent_actions',
+            value=agent_actions)
 
         chef_adventure = self._model_filter(
             'adventures', '"chef server" in name')
@@ -183,12 +223,9 @@ class HappyPathTestCase(ScaffoldedTestCase):
         result = self._execute_adventure(
             chef_adventure, self.server['id'])
 
-        # this should fail, with no adventurator
         self.assertTrue('status' in result)
         self.assertEqual(result['status'], 202)
-
         self.assertTrue('plan' in result)
-
         # we don't really care what the plan is -- it's
         # in the scaffolding.  We're good
 
