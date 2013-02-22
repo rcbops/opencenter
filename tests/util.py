@@ -6,7 +6,7 @@ import unittest2
 import logging
 
 from opencenter import webapp
-from opencenter.db.database import init_db, _memorydb_migrate_db, engine
+from opencenter.db.database import init_db, _memorydb_migrate_db
 
 
 class OpenCenterTestCase(unittest2.TestCase):
@@ -298,6 +298,25 @@ def _test_missing_create_field(self, missing_field, expected_code):
 
     _test_request_returns(self, 'post', '/admin/%s/' % bop, data,
                           expected_code)
+
+
+def _add_test_data(self, model):
+    schema = self._model_get_schema(model)
+    all_fields = [x for x in schema]
+    all_fields.remove('id')
+
+    data = dict(zip(all_fields,
+                    [self._valid_rand(schema[x]['type'])
+                     for x in all_fields]))
+    self._client_request('post', '/admin/%s/' % self._pluralize(model), **data)
+
+
+def _test_seed_data_request_returns(self, method, url, data,
+                                    expected_code, seed_data):
+    for model, num in seed_data.viewitems():
+        for each in range(num):
+            _add_test_data(self, model)
+    _test_request_returns(self, method, url, data, expected_code)
 
 
 def _test_request_returns(self, method, url, data, expected_code):
