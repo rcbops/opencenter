@@ -5,17 +5,17 @@ import string
 import unittest2
 import logging
 
-from roush import webapp
-from roush.db.database import init_db, _memorydb_migrate_db, engine
+from opencenter import webapp
+from opencenter.db.database import init_db, _memorydb_migrate_db, engine
 
 
-class RoushTestCase(unittest2.TestCase):
+class OpenCenterTestCase(unittest2.TestCase):
     @classmethod
     def setUpClass(cls, *args, **kwargs):
-        ast_logger = logging.getLogger('roush.webapp.ast')
+        ast_logger = logging.getLogger('opencenter.webapp.ast')
         ast_logger.setLevel(logging.INFO)
 
-        cls.app = webapp.WebServer('roush',
+        cls.app = webapp.WebServer('opencenter',
                                    configfile='tests/test.conf',
                                    debug=True)
         init_db(cls.app.config['database_uri'], migrate=False)
@@ -27,7 +27,7 @@ class RoushTestCase(unittest2.TestCase):
         pass
 
     def __init__(self, *args, **kwargs):
-        super(RoushTestCase, self).__init__(*args, **kwargs)
+        super(OpenCenterTestCase, self).__init__(*args, **kwargs)
 
     def _clean_all(self):
         for what in ['tasks', 'nodes', 'facts', 'filters', 'attrs']:
@@ -243,13 +243,13 @@ class RoushTestCase(unittest2.TestCase):
         return out['schema']
 
 
-class ScaffoldedTestCase(RoushTestCase):
+class ScaffoldedTestCase(OpenCenterTestCase):
     @classmethod
     def setUpClass(cls, *args, **kwargs):
-        ast_logger = logging.getLogger('roush.webapp.ast')
+        ast_logger = logging.getLogger('opencenter.webapp.ast')
         ast_logger.setLevel(logging.INFO)
 
-        cls.app = webapp.WebServer('roush',
+        cls.app = webapp.WebServer('opencenter',
                                    configfile='tests/test.conf',
                                    debug=True)
         init_db(cls.app.config['database_uri'], migrate=False)
@@ -319,7 +319,9 @@ def inject(cls):
     test.__name__ = 'test_get_primitive_schema'
     setattr(cls, test.__name__, test)
 
-    app = webapp.WebServer('roush', configfile='tests/test.conf', debug=True)
+    app = webapp.WebServer('opencenter',
+                           configfile='tests/test.conf',
+                           debug=True)
 
     init_db(app.config['database_uri'], migrate=False)
     client = app.test_client()

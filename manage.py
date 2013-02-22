@@ -20,15 +20,19 @@ import sys
 
 from migrate.versioning.shell import main
 
-from roush.db.database import init_db
-from roush.webapp import Thing
+from opencenter.db.database import init_db
+from opencenter.webapp import Thing
 
-foo = Thing("roush", argv=sys.argv[1:], configfile='local.conf', debug=True)
+foo = Thing("opencenter",
+            argv=sys.argv[1:],
+            configfile='local.conf',
+            debug=True)
+
 init_db(foo.config['database_uri'])
 # try multiple repo paths, for when devving locally versus package
 for prefixes in ['/usr/share/pyshared', '.']:
     repo = os.path.join(*(prefixes.split('/') +
-                          ['roush', 'db', 'migrate_repo']))
+                          ['opencenter', 'db', 'migrate_repo']))
     if os.path.exists(repo):
         break
 

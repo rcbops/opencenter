@@ -6,9 +6,9 @@ import string
 import time
 import unittest2
 
-from roush import webapp
+from opencenter import webapp
 
-from util import RoushTestCase
+from util import OpenCenterTestCase
 from util import inject
 
 
@@ -28,7 +28,7 @@ def _gen_result_obj():
     return ret
 
 
-class TestTaskPruning(RoushTestCase):
+class TestTaskPruning(OpenCenterTestCase):
     def setUp(self):
         self._clean_all()
 
@@ -80,7 +80,7 @@ class TestTaskPruning(RoushTestCase):
         self.assertTrue(len(all_tasks) == 1)
 
 
-class TaskGenericTests(RoushTestCase):
+class TaskGenericTests(OpenCenterTestCase):
     base_object = 'task'
 
 
@@ -90,7 +90,7 @@ TaskGenericTests = inject(TaskGenericTests)
 class TaskCreateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.WebServer('roush',
+        self.foo = webapp.WebServer('opencenter',
                                     configfile='tests/test.conf',
                                     debug=True)
         self.app = self.foo.test_client()
@@ -150,7 +150,7 @@ class TaskCreateTests(unittest2.TestCase):
 class TaskUpdateTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.WebServer('roush',
+        self.foo = webapp.WebServer('opencenter',
                                     configfile='tests/test.conf',
                                     debug=True)
         self.app = self.foo.test_client()
@@ -339,7 +339,7 @@ class TaskUpdateTests(unittest2.TestCase):
 class TaskInvalidHTTPMethodTests(unittest2.TestCase):
     @classmethod
     def setUpClass(self):
-        self.foo = webapp.WebServer('roush',
+        self.foo = webapp.WebServer('opencenter',
                                     configfile='tests/test.conf',
                                     debug=True)
         self.app = self.foo.test_client()

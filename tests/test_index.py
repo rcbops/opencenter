@@ -2,13 +2,13 @@
 import json
 import random
 
-from roush.db.database import init_db
-from roush import webapp
+from opencenter.db.database import init_db
+from opencenter import webapp
 
-from util import RoushTestCase, ScaffoldedTestCase
+from util import OpenCenterTestCase, ScaffoldedTestCase
 
 
-class IndexTest(RoushTestCase):
+class IndexTest(OpenCenterTestCase):
     def setUp(self):
         self.content_type = 'application/json'
 

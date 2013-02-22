@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from roush import backends
+from opencenter import backends
 
 
 class TestBackend(backends.Backend):
@@ -18,5 +18,5 @@ class TestBackend(backends.Backend):
         return []
 
     def set_test_fact(self, state_data, api, node_id, **kwargs):
-        return roush.backends.primitive_by_name('node.set_fact')(
+        return opencenter.backends.primitive_by_name('node.set_fact')(
             state_data, api, node_id, **kwargs)
