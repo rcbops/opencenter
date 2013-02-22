@@ -52,8 +52,8 @@ class NovaBackend(opencenter.backends.Backend):
         if not test_valid:
             return self._fail(msg='Name cannot contain spaces or special'
                                   'characters')
-        r = api.nodes_query('(facts.parent_id = %s) and'
-                            '(facts.nova_az = %s)' % (
+        r = api.nodes_query('(facts.parent_id = %s) and '
+                            '(facts.nova_az = "%s")' % (
                                 node_id, kwargs['az_name']))
         if len(r) > 0:
             return self._fail(msg='AZ Name should be unique within a cluster.')
