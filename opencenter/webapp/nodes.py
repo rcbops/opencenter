@@ -22,7 +22,6 @@ import flask
 from opencenter.db.api import api_from_models
 from opencenter.webapp import ast
 # from opencenter.webapp import auth
-from opencenter.webapp import errors
 from opencenter.webapp import generic
 from opencenter.webapp import utility
 from opencenter.webapp.utility import unprovisioned_container
