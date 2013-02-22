@@ -40,5 +40,6 @@
                  "converge": true}},
     {"nova_role": {"type": "string",
                    "settable": false,
+		   "inheritance": "child_clobber",
                    "converge": true}}
 ]

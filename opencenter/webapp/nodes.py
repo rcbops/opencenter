@@ -16,13 +16,13 @@
 #
 
 import time
+import socket
 
 import flask
 
 from opencenter.db.api import api_from_models
 from opencenter.webapp import ast
 # from opencenter.webapp import auth
-from opencenter.webapp import errors
 from opencenter.webapp import generic
 from opencenter.webapp import utility
 from opencenter.webapp.utility import unprovisioned_container
@@ -92,7 +92,7 @@ def adventures_by_node_id(node_id):
     api = api_from_models()
     node = api.node_get_by_id(node_id)
     if not node:
-        return errors.http_not_found()
+        return generic.http_notfound()
     else:
         all_adventures = api.adventures_get_all()
         available_adventures = []
@@ -132,11 +132,21 @@ def whoami():
                           {"node_id": node['id'],
                            "key": "backends",
                            "value": ["node", "agent"]})
-        unprovisioned_id = unprovisioned_container()['id']
-        api._model_create('facts',
-                          {"node_id": node['id'],
-                           "key": "parent_id",
-                           "value": unprovisioned_id})
+        if hostname == socket.gethostname():
+            api._model_create('facts',
+                              {"node_id": node['id'],
+                               "key": "parent_id",
+                               "value": 3})
+            api._model_create('attrs',
+                              {"node_id": node['id'],
+                              "key": "server-agent",
+                              "value": True})
+        else:
+            unprovisioned_id = unprovisioned_container()['id']
+            api._model_create('facts',
+                              {"node_id": node['id'],
+                               "key": "parent_id",
+                               "value": unprovisioned_id})
         node = api._model_get_by_id('nodes', node['id'])
     else:
         node = nodes[0]

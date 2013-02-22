@@ -576,56 +576,6 @@ class Solver:
             if new_constraints is None:
                 self.logger.info(' - abandoning solution %s -- unsolvable' %
                                  solution['primitive']['name'])
-            elif new_constraints and len(new_constraints) > 0:
-                # do a subsolve on this
-                self.logger.info(' - running subsolver for %s' %
-                                 new_constraints)
-
-                # concrete-ize the current primitive consequences
-                # and roll them into the current applied consequences
-                # for the purpose of the solve
-
-                assumed_consequences = []
-                for consequence in solution['primitive']['consequences']:
-                    conc = ast.concrete_expression(consequence, solution['ns'])
-                    assumed_consequences.append(conc)
-
-                subsolve = Solver(
-                    self.base_api, self.node_id, new_constraints,
-                    applied_consequences=applied_consequences +
-                    assumed_consequences)
-
-                sub_success, _, sub_plan = subsolve.solve()
-                if sub_success:
-                    self.logger.info(' - SOLVED WITH PLAN: %s' % sub_plan)
-
-                    new_solver = subsolve.children[0]
-                    new_solver.parent = self
-
-                    last_solver = new_solver
-                    while(len(last_solver.children) != 0):
-                        last_solver = last_solver.children[0]
-
-                    # at this point, we can consider this primitive successful.
-                    # throw it at the end.
-
-                    if solution['solves'] in constraints:
-                        constraints.remove(solution['solves'])
-
-                    this_primitive = Solver(self.base_api, self.node_id,
-                                            constraints, last_solver,
-                                            solution['primitive'],
-                                            ns=solution['ns'],
-                                            applied_consequences=
-                                            applied_consequences +
-                                            assumed_consequences)
-
-                    last_solver.children.append(this_primitive)
-
-                    self.children.append(new_solver)
-
-                    if this_primitive.constraints == []:
-                        return this_primitive
             else:
                 # find the concrete consequence so we can roll forward
                 # the cluster api representation
@@ -662,7 +612,7 @@ class Solver:
                 self.logger.info(' - Implementing as new solve step: %s' %
                                  constraints)
                 new_solver = Solver(self.base_api, self.node_id,
-                                    constraints, self,
+                                    constraints + new_constraints, self,
                                     solution['primitive'], ns=solution['ns'],
                                     applied_consequences=applied_consequences)
 
@@ -703,6 +653,22 @@ class Solver:
         return False
 
     def solve(self):
+        """
+        Try to solve a set of constraints.  This sets up the
+        initial constraint set, then splays all the possible
+        primitives that move us close to solution.  Then it
+        walks through all those in series to bring another
+        solution generation, so on until one of the solution
+        plans is successful, or there are no more primitives
+        to consider moving us toward the goal.
+
+        It returns (is_solvable, requires_input, plan), where
+        solvable is the ability to solve the plan without any
+        input, requires_input describes the ability to solve
+        the plan if given some additional input, and plan is
+        the considered solve plan
+        """
+
         top_level = self
         current_leaves = [self]
         solution_node = None

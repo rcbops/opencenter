@@ -21,47 +21,53 @@ import os
 from sqlalchemy import *
 from migrate import *
 
-from migrate.changeset import schema
-
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, object_mapper
-
-from opencenter.db.models import Adventures, Nodes, Tasks
 from opencenter.db.api import api_from_models
 
 
-# Base = declarative_base()
-meta = MetaData()
+adventures = [
+    {'name': 'Run Chef',
+     'dsl': 'run_chef.json',
+     'criteria': 'run_chef.criteria'},
+    {'name': 'Install Chef Server',
+     'dsl':  'install_chef_server.json',
+     'criteria': 'install_chef_server.criteria'},
+    {'name': 'Create Nova Cluster',
+     'dsl': 'create_nova_cluster.json',
+     'criteria': 'create_nova_cluster.criteria'},
+    {'name': 'Download Chef Cookbooks',
+     'dsl': 'download_cookbooks.json',
+     'criteria': 'download_cookbooks.criteria'},
+    {'name': 'Subscribe Cookbook Channel',
+     'dsl': 'subscribe_cookbook_channel.json',
+     'criteria': 'subscribe_cookbook_channel.criteria'},
+    {'name': 'Sleep',
+     'dsl': 'sleep.json',
+     'criteria': 'sleep.criteria'},
+    {'name': 'Update Agent',
+     'dsl': 'update_agent.json',
+     'criteria': 'update_agent.criteria'},
+    {'name': 'Restart Agent',
+     'dsl': 'restart_agent.json',
+     'criteria': 'restart_agent.criteria'},
+    {'name': 'Create Availability Zone',
+     'dsl': 'create_az.json',
+     'criteria': 'create_az.criteria'},
+    {'name': 'Disable Scheduling on this Host',
+     'dsl': 'openstack_disable_host.json',
+     'criteria': 'openstack_disable_host.criteria'},
+    {'name': 'Enable Scheduling on this Host',
+     'dsl': 'openstack_enable_host.json',
+     'criteria': 'openstack_enable_host.criteria'},
+    {'name': 'Evacuate Host',
+     'dsl': 'openstack_evacuate_host.json',
+     'criteria': 'openstack_evacuate_host.criteria'},
+    {'name': 'Upload Initial Glance Images',
+     'dsl': 'openstack_upload_images.json',
+     'criteria': 'openstack_upload_images.criteria'}]
 
 
 def upgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
-
-    adventures = [
-        {'name': 'run chef',
-         'dsl': 'run_chef.json',
-         'criteria': 'run_chef.criteria',
-         'args': 'run_chef.args'},
-        {'name': 'install chef server',
-         'dsl':  'install_chef_server.json',
-         'criteria': 'install_chef_server.criteria',
-         'args': 'install_chef_server.args'},
-        {'name': 'create nova cluster',
-         'dsl': 'create_nova_cluster.json',
-         'criteria': 'create_nova_cluster.criteria',
-         'args': 'create_nova_cluster.args'},
-        {'name': 'download chef cookbooks',
-         'dsl': 'download_cookbooks.json',
-         'criteria': 'download_cookbooks.criteria',
-         'args': 'download_cookbooks.args'},
-        {'name': 'subscribe cookbook channel',
-         'dsl': 'subscribe_cookbook_channel.json',
-         'criteria': 'subscribe_cookbook_channel.criteria',
-         'args': 'subscribe_cookbook_channel.args'},
-        {'name': 'sleep',
-         'dsl': 'sleep.json',
-         'criteria': 'sleep.criteria',
-         'args': 'sleep.args'}]
 
     api = api_from_models()
     for adventure in adventures:
@@ -69,12 +75,9 @@ def upgrade(migrate_engine):
             os.path.dirname(__file__), adventure['dsl'])
         criteria_path = os.path.join(
             os.path.dirname(__file__), adventure['criteria'])
-        args_path = os.path.join(
-            os.path.dirname(__file__), adventure['args'])
 
         adventure['dsl'] = json.loads(open(json_path).read())
         adventure['criteria'] = open(criteria_path).read()
-        adventure['args'] = json.loads(open(args_path).read())
         adv = api.adventure_create(adventure)
 
     canned_filters = [{'name': 'unprovisioned nodes',
@@ -91,9 +94,46 @@ def upgrade(migrate_engine):
     for new_filter in canned_filters:
         api._model_create('filters', new_filter)
 
+    workspace = api.node_create({'name': 'workspace'})
+    api._model_create('attrs', {'node_id': workspace['id'],
+                                'key': 'json_schema_version',
+                                'value': 1})
+    unprov = api.node_create({'name': 'unprovisioned'})
+    api._model_create('facts', {'node_id': unprov['id'],
+                                'key': 'parent_id',
+                                'value': workspace['id']})
+    support = api.node_create({'name': 'support'})
+    api._model_create('facts', {'node_id': support['id'],
+                                'key': 'parent_id',
+                                'value': workspace['id']})
+
+    # Add default fact to the default nodes
+    node_list = [workspace, unprov, support]
+    for node in node_list:
+        api.fact_create({'node_id': node['id'],
+                         'key': 'backends',
+                         'value': ["container", "node"]})
+        api.attr_create({'node_id': node['id'],
+                         'key': 'display_name',
+                         'value': node['name'].capitalize()})
+
 
 def downgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
 
-    types = Table('types', meta, autoload=True)
-    types.delete().where(types.c.name == 'Unprovisioned').execute()
+    api = api_from_models()
+
+    adventure_names = [x['name'] for x in adventures]
+
+    for name in adventure_names:
+        adventure_list = api._query('adventures', 'name="%s"' % name)
+        for adv in adventure_list:
+            api._model_delete('adventures', adv['id'])
+
+    node_list = ['"support"', '"unprovisioned"', '"workspace"']
+    for node in node_list:
+        tmp = api.nodes_query('name = %s' % node)
+        fact_list = api.facts_query('node_id = %s' % tmp['id'])
+        for fact in fact_list:
+            api.fact_delete_by_id(fact['id'])
+        api.node_delete_by_id(tmp['id'])

@@ -1,9 +1,0 @@
-{
-    "value": {
-        "friendly": "Create Availability Zone",
-        "description": "The name of the availability zone to create",
-        "default": "nova",
-        "type": "string",
-        "required": true
-    }
-}

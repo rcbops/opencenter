@@ -226,24 +226,23 @@ def http_solver_request(node_id, constraints,
     if api is None:
         api = api_from_models()
     try:
-        task, solution_plan = utility.solve_and_run(node_id,
-                                                    constraints,
-                                                    api=api,
-                                                    plan=plan)
+        task, is_solvable, requires_input, solution_plan = \
+            utility.solve_and_run(node_id,
+                                  constraints,
+                                  api=api,
+                                  plan=plan)
     except ValueError as e:
         # no adventurator, or the generated ast was broken somehow
         return http_response(403, msg=str(e))
 
     if task is None:
-        is_solvable, requires_input, solution_plan = utility.solve_for_node(
-            node_id, constraints, api, plan=plan)
-
         if ((not is_solvable) and requires_input):
             return http_response(409, msg='need additional input',
-                                 plan=solution_plan)
+                                 plan=solution_plan,
+                                 friendly='Please supply additional info')
         if not is_solvable:
             return http_response(403, msg='cannot be solved',
-                                 friendly='sorry about that')
+                                 friendly='Cannot solve action')
 
     # here we need to return the object (node/fact),
     # but should consequence be applied?!?

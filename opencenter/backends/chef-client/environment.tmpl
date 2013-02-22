@@ -4,6 +4,27 @@
         "procmon_provider" : "monit",
         "metric_provider" : "collectd"
     },
+    "vips": {
+% if 'nova_mysql_vip' in facts:
+        "mysql-db": "${facts['nova_mysql_vip']}",
+% endif
+% if 'nova_rabbitmq_vip' in facts:
+        "rabbitmq-queue": "${facts['nova_rabbitmq_vip']}",
+% endif
+% if 'nova_api_vip' in facts:
+        "nova-api": "${facts['nova_api_vip']}",
+        "nova-ec2-public": "${facts['nova_api_vip']}",
+        "keystone-admin-api": "${facts['nova_api_vip']}",
+        "keystone-service-api": "${facts['nova_api_vip']}",
+        "cinder-api": "${facts['nova_api_vip']}",
+        "glance-api": "${facts['nova_api_vip']}",
+        "glance-registry": "${facts['nova_api_vip']}",
+        "nova-novnc-proxy": "${facts['nova_api_vip']}",
+        "nova-xvpvnc-proxy": "${facts['nova_api_vip']}",
+        "horizon-dash": "${facts['nova_api_vip']}",
+        "horizon-dash_ssl": "${facts['nova_api_vip']}"
+% endif
+    },
     "keystone" : {
         "tenants" : [ "admin", "service" ],
         "admin_user" : "admin",

@@ -24,9 +24,89 @@ class NovaControllerBackend(opencenter.backends.Backend):
     def __init__(self):
         super(NovaControllerBackend, self).__init__(__file__)
 
+    #def _find_chef_environment_node(self, api, node):
+    #    if 'parent_id' not in node['facts']:
+    #        self.logger.debug('Parent_ID not found in facts')
+    #        self._fail(msg='Parent_ID not found in facts')
+    #    parent_id = node['facts']['parent_id']
+    #    parent_node = api.node_get_by_id(parent_id)
+    #    if 'chef-environment' not in parent_node['facts']['backends']:
+    #        ret = node
+    #    else:
+    #        ret = self._find_chef_environment_node(parent_node)
+    #    return ret
+
+    def _parent_list(self, api, starting_node):
+        ret = list()
+        node = starting_node
+        while 'parent_id' in node['facts']:
+            ret.append(node['facts']['parent_id'])
+            node = api.node_get_by_id(node['facts']['parent_id'])
+        return ret
+
+    def _find_chef_environment_node(self, api, node):
+        # need to build a list of parent_ids
+        parent_list = self._parent_list(api, node)
+        self.logger.debug('*** PARENT_LIST: %s' % parent_list)
+        # revers the list inplace
+        parent_list.reverse()
+        self.logger.debug('*** REVERSE_PARENT_LIST: %s' % parent_list)
+        ret = None
+        for p_id in parent_list:
+            parent_node = api.node_get_by_id(p_id)
+            self.logger.debug('****** INSPECTING NODE: %s' % parent_node)
+            if 'backends' in parent_node['facts']:
+                if 'chef-environment' in parent_node['facts']['backends']:
+                    ret = parent_node
+                    break
+        self.logger.debug('*** RETURNING NODE: %s' % ret)
+        return ret
+
     def additional_constraints(self, api, node_id, action, ns):
-        return []
+        if action == "add_backend":
+            node = api.node_get_by_id(node_id)
+            parent_id = node['facts']['parent_id']
+            count = len(api.nodes_query(
+                'int(facts.parent_id) = %s' % parent_id))
+            if count > 1:
+                return ['facts.ha_infra = true']
+            else:
+                return []
+        else:
+            return []
 
     def add_backend(self, state_data, api, node_id, **kwargs):
         return opencenter.backends.primitive_by_name('node.add_backend')(
             state_data, api, node_id, backend='nova-controller')
+
+    def make_infra_ha(self, state_data, api, node_id, **kwargs):
+        self.logger.debug('*** INIT KWARGS: %s' % kwargs)
+        self.logger.debug('*** INIT STATE_DATA: %s' % state_data)
+        if 'nova_api_vip' not in kwargs:
+            return self._fail(msg='Nova API VIP (nova_api_vip) required')
+
+        if 'nova_mysql_vip' not in kwargs:
+            return self._fail(msg='Nova MySQL VIP (nova_mysql_vip) required')
+
+        if 'nova_rabbitmq_vip' not in kwargs:
+            return self._fail(
+                msg='Nova RabbitMQ VIP (nova_rabbitmq_vip) required')
+
+        api.apply_expression(node_id,
+                             'facts.nova_role := "%s"' % 'ha-controller2')
+
+        node = api.node_get_by_id(node_id)
+        api.apply_expression(node['facts']['parent_id'],
+                             'facts.ha_infra := true')
+        # Need to find my environment
+        chef_env_node = self._find_chef_environment_node(api, node)
+        if chef_env_node is not None:
+            self.logger.debug('MY CHEF NODE: %s' % chef_env_node)
+            vips = ['nova_api_vip', 'nova_rabbitmq_vip', 'nova_mysql_vip']
+            for vip in vips:
+                api.apply_expression(
+                    chef_env_node['id'],
+                    'facts.%s := "%s"' % (vip, kwargs[vip]))
+            return self._ok()
+        else:
+            return self._fail(msg='Unable to determine Chef Environment Node')
