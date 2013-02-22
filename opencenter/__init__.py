@@ -26,7 +26,9 @@ from opencenter.webapp.auth import is_allowed, authenticate
 
 
 def main():
-    server = WebServer("opencenter", argv=sys.argv[1:], configfile='local.conf',
+    server = WebServer("opencenter",
+                       argv=sys.argv[1:],
+                       configfile='local.conf',
                        debug=True)
 
     @server.after_request

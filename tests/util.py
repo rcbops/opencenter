@@ -319,7 +319,9 @@ def inject(cls):
     test.__name__ = 'test_get_primitive_schema'
     setattr(cls, test.__name__, test)
 
-    app = webapp.WebServer('opencenter', configfile='tests/test.conf', debug=True)
+    app = webapp.WebServer('opencenter',
+                           configfile='tests/test.conf',
+                           debug=True)
 
     init_db(app.config['database_uri'], migrate=False)
     client = app.test_client()

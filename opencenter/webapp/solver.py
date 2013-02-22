@@ -147,8 +147,9 @@ class Solver:
             return []
         else:
             return opencenter.backends.additional_constraints(self.api,
-                                                         self.node_id,
-                                                         primitive_id, ns)
+                                                              self.node_id,
+                                                              primitive_id,
+                                                              ns)
 
     def _build_constraints(self, constraints):
         """

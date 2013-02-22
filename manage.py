@@ -23,7 +23,11 @@ from migrate.versioning.shell import main
 from opencenter.db.database import init_db
 from opencenter.webapp import Thing
 
-foo = Thing("opencenter", argv=sys.argv[1:], configfile='local.conf', debug=True)
+foo = Thing("opencenter",
+            argv=sys.argv[1:],
+            configfile='local.conf',
+            debug=True)
+
 init_db(foo.config['database_uri'])
 # try multiple repo paths, for when devving locally versus package
 for prefixes in ['/usr/share/pyshared', '.']:

@@ -62,7 +62,8 @@ class MiscTests(OpenCenterTestCase):
         self._model_create('facts', node_id=node3a['id'],
                            key='backends', value=['node'])
 
-        nodelist = opencenter.webapp.utility.expand_nodelist([container1['id']])
+        nodelist = opencenter.webapp.utility.expand_nodelist([container1
+                                                              ['id']])
 
         self.logger.debug('Expanded nodelist: %s' % nodelist)
         #node list should contain ids of node1, node2a, node2b, and node3a
@@ -119,7 +120,8 @@ class MiscTests(OpenCenterTestCase):
         self._model_create('facts', node_id=node3a['id'],
                            key='backends', value=['node'])
 
-        nodelist = opencenter.webapp.utility.get_direct_children(container1['id'])
+        nodelist = opencenter.webapp.utility.get_direct_children(container1
+                                                                 ['id'])
 
         self.logger.debug('Expanded nodelist: %s' % nodelist)
         #nodelist should contain full records for node1, container2a, and

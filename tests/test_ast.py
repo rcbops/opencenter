@@ -7,7 +7,8 @@ import opencenter.backends
 class AstTests(OpenCenterTestCase):
     def setUp(self):
         if opencenter.backends.primitive_by_name('test.set_test_fact') is None:
-            opencenter.backends.load_specific_backend('tests.test', 'TestBackend')
+            opencenter.backends.load_specific_backend('tests.test',
+                                                      'TestBackend')
 
         self.container = self._model_create('nodes', name='container')
         self.node1 = self._model_create('nodes', name='node1')

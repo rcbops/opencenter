@@ -116,8 +116,11 @@ class NodeBackend(backends.Backend):
 
                 ephemeral_api = opencenter.db.api.ephemeral_api_from_api(api)
                 opencenter.webapp.ast.apply_expression(existing_node,
-                                                  'facts.parent_id := "%s"' %
-                                                  parent['id'], ephemeral_api)
+                                                       'facts.parent_id :='
+                                                       '"%s"' %
+                                                       parent['id'],
+                                                       ephemeral_api)
+
                 proposed_node = ephemeral_api._model_get_by_id('nodes',
                                                                node_id)
 
@@ -193,8 +196,9 @@ class NodeBackend(backends.Backend):
 
         parent = kwargs['parent']
         opencenter.webapp.ast.apply_expression(node_id,
-                                          'facts.parent_id := %s' % parent,
-                                          api)
+                                               'facts.parent_id := %s'
+                                               % parent,
+                                               api)
 
         return self._ok(data=reply_data)
 

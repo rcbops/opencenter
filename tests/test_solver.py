@@ -19,10 +19,12 @@ class SolverTestCase(OpenCenterTestCase):
         sys.setrecursionlimit(1000)
 
         if opencenter.backends.primitive_by_name('test.set_test_fact') is None:
-            opencenter.backends.load_specific_backend('tests.test', 'TestBackend')
+            opencenter.backends.load_specific_backend('tests.test',
+                                                      'TestBackend')
 
         if opencenter.backends.primitive_by_name('test2.add_backend') is None:
-            opencenter.backends.load_specific_backend('tests.test2', 'Test2Backend')
+            opencenter.backends.load_specific_backend('tests.test2',
+                                                      'Test2Backend')
 
         self._clean_all()
 
