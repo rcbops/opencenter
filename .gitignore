@@ -2,6 +2,7 @@
 *.db
 *.pyc
 *.swp
+*bak
 run_tests.err.log
 local.conf
 .coverage

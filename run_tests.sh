@@ -2,7 +2,7 @@
 
 function usage {
   echo "Usage: $0 [OPTION]..."
-  echo "Run the Roush test suite(s)"
+  echo "Run the OpenCenter test suite(s)"
   echo ""
   echo "  -V, --virtual-env        Always use virtualenv.  Install automatically if not present"
   echo "  -N, --no-virtual-env     Don't use virtualenv.  Run tests in local environment"
@@ -33,7 +33,7 @@ function process_option {
   esac
 }
 
-venv=.roush-venv
+venv=.opencenter-venv
 with_venv=tools/with_venv.sh
 always_venv=0
 never_venv=0
@@ -54,7 +54,7 @@ done
 
 # If enabled, tell nose to collect coverage data
 if [ $coverage -eq 1 ]; then
-    noseopts="$noseopts --with-coverage --cover-package=roush"
+    noseopts="$noseopts --with-coverage --cover-package=opencenter"
 fi
 
 function run_tests {
@@ -81,7 +81,7 @@ function run_tests {
 
 function run_pep8 {
   echo "Running pep8 ..."
-  PEP8_EXCLUDE=".roush-venv"
+  PEP8_EXCLUDE=".opencenter-venv"
   PEP8_OPTIONS="--exclude=$PEP8_EXCLUDE --repeat --show-pep8 --show-source"
   PEP8_INCLUDE="."
   ${wrapper} pep8 $PEP8_OPTIONS $PEP8_INCLUDE || exit 1
@@ -131,6 +131,6 @@ run_tests
 if [ $coverage -eq 1 ]; then
     echo "Generating coverage report in coverage/"
     # Don't compute coverage for common code, which is tested elsewhere
-    [ $html -eq 1 ] && ${wrapper} coverage html --include='roush/*' -d coverage -i
-    ${wrapper} coverage xml --include='roush/*' -i
+    [ $html -eq 1 ] && ${wrapper} coverage html --include='opencenter/*' -d coverage -i
+    ${wrapper} coverage xml --include='opencenter/*' -i
 fi

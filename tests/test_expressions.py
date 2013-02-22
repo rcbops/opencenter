@@ -1,15 +1,15 @@
 #
 
-from util import RoushTestCase
+from util import OpenCenterTestCase
 
-import roush.db.api as db_api
-from roush.webapp import ast
+import opencenter.db.api as db_api
+from opencenter.webapp import ast
 
 
 api = db_api.api_from_models()
 
 
-class ExpressionTestCase(RoushTestCase):
+class ExpressionTestCase(OpenCenterTestCase):
     def setUp(self):
         self.nodes = {}
         self.interfaces = {}

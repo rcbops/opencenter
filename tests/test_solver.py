@@ -4,25 +4,25 @@ import copy
 import json
 import sys
 
-from util import RoushTestCase
-from roush.webapp import ast
-from roush.webapp import solver
-from roush.db import api as db_api
+from util import OpenCenterTestCase
+from opencenter.webapp import ast
+from opencenter.webapp import solver
+from opencenter.db import api as db_api
 
-import roush.backends
+import opencenter.backends
 
 api = db_api.api_from_models()
 
 
-class SolverTestCase(RoushTestCase):
+class SolverTestCase(OpenCenterTestCase):
     def setUp(self):
         sys.setrecursionlimit(1000)
 
-        if roush.backends.primitive_by_name('test.set_test_fact') is None:
-            roush.backends.load_specific_backend('tests.test', 'TestBackend')
+        if opencenter.backends.primitive_by_name('test.set_test_fact') is None:
+            opencenter.backends.load_specific_backend('tests.test', 'TestBackend')
 
-        if roush.backends.primitive_by_name('test2.add_backend') is None:
-            roush.backends.load_specific_backend('tests.test2', 'Test2Backend')
+        if opencenter.backends.primitive_by_name('test2.add_backend') is None:
+            opencenter.backends.load_specific_backend('tests.test2', 'Test2Backend')
 
         self._clean_all()
 
@@ -57,7 +57,7 @@ class SolverTestCase(RoushTestCase):
 
     def _make_adventurator(self):
         self._model_create('attrs', node_id=self.adv['id'],
-                           key='roush_agent_output_modules',
+                           key='opencenter_agent_output_modules',
                            value=['adventurator'])
 
     def _plan_includes(self, plan, primitive):
@@ -87,7 +87,7 @@ class SolverTestCase(RoushTestCase):
             if not '.' in primitive:
                 continue
 
-            f = roush.backends.primitive_by_name(primitive)
+            f = opencenter.backends.primitive_by_name(primitive)
 
             f({}, self.api, node_id, **ns)
 
@@ -243,7 +243,7 @@ class SolverTestCase(RoushTestCase):
         # like a disproof by counterexample, I guess.
 
         import logging
-        solver = logging.getLogger('roush.webapp.solver')
+        solver = logging.getLogger('opencenter.webapp.solver')
         solver.setLevel(logging.INFO)
 
         newcontainer = self._model_create('nodes', name='newcontainer')

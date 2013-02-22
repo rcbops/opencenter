@@ -1,11 +1,11 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
-import roush.webapp.utility
+import opencenter.webapp.utility
 
-from util import RoushTestCase
+from util import OpenCenterTestCase
 
 
-class MiscTests(RoushTestCase):
+class MiscTests(OpenCenterTestCase):
     def __init__(self, *args, **kwargs):
         super(MiscTests, self).__init__(*args, **kwargs)
 
@@ -62,7 +62,7 @@ class MiscTests(RoushTestCase):
         self._model_create('facts', node_id=node3a['id'],
                            key='backends', value=['node'])
 
-        nodelist = roush.webapp.utility.expand_nodelist([container1['id']])
+        nodelist = opencenter.webapp.utility.expand_nodelist([container1['id']])
 
         self.logger.debug('Expanded nodelist: %s' % nodelist)
         #node list should contain ids of node1, node2a, node2b, and node3a
@@ -119,7 +119,7 @@ class MiscTests(RoushTestCase):
         self._model_create('facts', node_id=node3a['id'],
                            key='backends', value=['node'])
 
-        nodelist = roush.webapp.utility.get_direct_children(container1['id'])
+        nodelist = opencenter.webapp.utility.get_direct_children(container1['id'])
 
         self.logger.debug('Expanded nodelist: %s' % nodelist)
         #nodelist should contain full records for node1, container2a, and
@@ -180,7 +180,7 @@ class MiscTests(RoushTestCase):
         self._model_create('facts', node_id=node3a['id'],
                            key='backends', value=['node'])
 
-        nodelist = roush.webapp.utility.fully_expand_nodelist(
+        nodelist = opencenter.webapp.utility.fully_expand_nodelist(
             [container1['id']])
 
         self.logger.debug('Expanded nodelist: %s' % nodelist)
@@ -195,9 +195,9 @@ class MiscTests(RoushTestCase):
         self._clean_table('facts')
 
     def test_unprovisioned_container(self):
-        n = roush.webapp.utility.unprovisioned_container()
+        n = opencenter.webapp.utility.unprovisioned_container()
         self.assertTrue(n is not None)
-        n2 = roush.webapp.utility.unprovisioned_container()
+        n2 = opencenter.webapp.utility.unprovisioned_container()
         self.assertTrue(n['id'] == n2['id'])
         self._clean_table('nodes')
         self._clean_table('facts')

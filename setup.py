@@ -22,12 +22,12 @@ requirements = ['flask', 'sqlalchemy==0.7.4', 'sqlalchemy-migrate', 'gevent',
 excludes = ['test_runner.py', 'tests', 'tests.*']
 
 
-setup(name='python-roush',
+setup(name='python-opencenter',
       version='1.0.0',
-      description='Roush Orchestration server',
+      description='OpenCenter Orchestration server',
       author='rcbops',
       author_email='rcb-deploy@lists.rackspace.com',
-      url='https://github.com/rcbops/roush',
+      url='https://github.com/rcbops/opencenter',
       license='Apache',
       classifiers=['Development Status :: 4 - Beta',
                    'Environment :: Console',
@@ -40,5 +40,5 @@ setup(name='python-roush',
       include_package_data=True,
       packages=find_packages(exclude=excludes),
       install_requires=requirements,
-      entry_points={'console_scripts': ['roush = roush:main']},
+      entry_points={'console_scripts': ['opencenter = roush:main']},
       )

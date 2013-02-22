@@ -4,10 +4,10 @@ import random
 import string
 import unittest2
 
-from roush.db.database import init_db
-from roush import webapp
+from opencenter.db.database import init_db
+from opencenter import webapp
 
-from util import RoushTestCase, ScaffoldedTestCase
+from util import OpenCenterTestCase, ScaffoldedTestCase
 
 
 def _randomStr(size):
@@ -15,7 +15,7 @@ def _randomStr(size):
 
 
 # class NodeRegister(unittest2.TestCase):
-class NodeRegister(RoushTestCase):
+class NodeRegister(OpenCenterTestCase):
     def setUp(self):
         self.content_type = 'application/json'
         self.name = _randomStr(10)
@@ -77,7 +77,7 @@ class NodeRegister(RoushTestCase):
 #         self.assertTrue(adventure_install_chef_server)
 
 
-class NodeCreateTests(RoushTestCase):
+class NodeCreateTests(OpenCenterTestCase):
     def setUp(self):
         self.name = _randomStr(10)
         self.desc = _randomStr(30)
@@ -129,7 +129,7 @@ class NodeCreateTests(RoushTestCase):
         self.assertEquals(resp.status_code, code)
 
 
-class NodeInvalidHTTPMethodTests(RoushTestCase):
+class NodeInvalidHTTPMethodTests(OpenCenterTestCase):
     def setUp(self):
         pass
 
@@ -166,7 +166,7 @@ class NodeInvalidHTTPMethodTests(RoushTestCase):
         self._execute_method('patch', '/nodes/1', 405)
 
 
-class NodeTransactionTests(RoushTestCase):
+class NodeTransactionTests(OpenCenterTestCase):
     def setUp(self):
         self.container = self._model_create('nodes', name='test_container')
         self._model_create('facts', node_id=self.container['id'],
