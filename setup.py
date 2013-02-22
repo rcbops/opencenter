@@ -40,5 +40,5 @@ setup(name='python-opencenter',
       include_package_data=True,
       packages=find_packages(exclude=excludes),
       install_requires=requirements,
-      entry_points={'console_scripts': ['opencenter = roush:main']},
+      entry_points={'console_scripts': ['opencenter = opencenter:main']},
       )

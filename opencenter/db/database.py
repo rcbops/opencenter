@@ -24,7 +24,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, create_session
 from sqlalchemy.ext.declarative import declarative_base
 
-from opencenter.db import migrate_repo as roush_repo
+from opencenter.db import migrate_repo as opencenter_repo
 
 # engine = create_engine('sqlite:///opencenter.db', convert_unicode=True)
 engine = None

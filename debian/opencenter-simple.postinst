@@ -21,8 +21,8 @@ case "$1" in
     configure)
         /bin/true
 	# Dont need this anymore, since the opencenter daemon does it on startup
-        #   python /usr/share/opencenter/manage.py -c /etc/roush/roush.conf version_control || /bin/true
-        #   python /usr/share/opencenter/manage.py -c /etc/roush/roush.conf upgrade || /bin/true
+        #   python /usr/share/opencenter/manage.py -c /etc/opencenter/opencenter.conf version_control || /bin/true
+        #   python /usr/share/opencenter/manage.py -c /etc/opencenter/opencenter.conf upgrade || /bin/true
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

@@ -18,7 +18,7 @@ PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="restish web server for opencenter"
 NAME=opencenter
 DAEMON=/usr/bin/$NAME
-DAEMON_ARGS="-c /etc/opencenter/roush.conf -d"
+DAEMON_ARGS="-c /etc/opencenter/opencenter.conf -d"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 

@@ -11,8 +11,8 @@ respawn limit 10 5
 umask 022
 
 script
-    DAEMON_ARGS="-c /etc/opencenter/roush.conf"
-    [ -e /etc/default/opencenter ] && . /etc/default/roush
+    DAEMON_ARGS="-c /etc/opencenter/opencenter.conf"
+    [ -e /etc/default/opencenter ] && . /etc/default/opencenter
 
     /usr/bin/opencenter ${DAEMON_ARGS}
 end script
