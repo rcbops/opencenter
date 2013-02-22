@@ -9,3 +9,4 @@ local.conf
 coverage.xml
 nosetests.xml
 *.egg-info
+build
