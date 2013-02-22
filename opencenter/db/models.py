@@ -213,7 +213,7 @@ class Nodes(JsonRenderer, Base):
             return value
 
         def fact_parent_clobber(fact, value, parent_value):
-            if parent_value:
+            if parent_value is not None:
                 return parent_value
             return value
 
