@@ -259,7 +259,7 @@ class ChefClientBackend(opencenter.backends.Backend):
                 return self._fail(msg=msg)
 
         chef_node = chef.Node(node['name'], chef_api)
-        old_node_overrides = self._serialize_node_blob(chef_node.override)
+        old_node_overrides = self._serialize_node_blob(chef_node.normal)
 
         self.logger.debug('Old node overrides: %s' % old_node_overrides)
 
@@ -282,7 +282,7 @@ class ChefClientBackend(opencenter.backends.Backend):
         need_node_converge = True
         self.logger.debug('Setting environment to %s' % chef_environment)
         chef_node.chef_environment = chef_environment
-        chef_node.override = node_attrs
+        chef_node.normal = node_attrs
         old_runlist = chef_node.run_list
         chef_node.run_list = self._map_roles(nova_role)
         chef_node.save()
