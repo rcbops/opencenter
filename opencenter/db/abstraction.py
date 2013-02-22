@@ -611,6 +611,9 @@ class EphemeralAbstraction(DbAbstraction):
         for obj in self.base.get_all():
             new_obj = self._update_object(obj)
             if new_obj is not None:
+                r = self.model(**(self._sanitize_for_create(new_obj)))
+                r.id = new_obj['id']
+                new_obj = r.jsonify(api=self.api)
                 result.append(new_obj)
 
         for id, obj in self.new_obj.items():
