@@ -16,6 +16,7 @@
 #
 
 import roush
+import string
 
 
 class NovaBackend(roush.backends.Backend):
@@ -41,6 +42,24 @@ class NovaBackend(roush.backends.Backend):
             api._model_create('facts', data)
 
         return subcontainer
+
+    def create_az(self, state_data, api, node_id, **kwargs):
+        if not 'az_name' in kwargs:
+            return self._fail(msg='AZ Name is required')
+
+        valid = string.letters + string.digits + "_"
+        test_valid = all([c in valid for c in kwargs['az_name']])
+        if not test_valid:
+            return self._fail(msg='Name cannot contain spaces or special'
+                                  'characters')
+
+        self._make_subcontainer(api,
+                                'AZ %s' % kwargs['az_name'],
+                                node_id,
+                                {'nova_az': kwargs['az_name']},
+                                ['node', 'container', 'nova'])
+
+        return self._ok()
 
     def create_cluster(self, state_data, api, node_id, **kwargs):
         if not 'cluster_name' in kwargs:
@@ -74,15 +93,16 @@ class NovaBackend(roush.backends.Backend):
             return self._fail(msg='cannot create nova cluster container')
 
         infra = self._make_subcontainer(
-            api, 'Infrastructure', cluster['id'],
-            {'nova_role': 'nova-infra'}, ['node', 'container', 'nova'])
+            api, 'Infrastructure', cluster['id'], {'nova_role': 'nova-infra'},
+            ['node', 'container', 'nova', 'nova-controller'])
 
         if infra is None:
             return self._fail(msg='cannot create "Infra" container')
 
         comp = self._make_subcontainer(
             api, 'Compute', cluster['id'],
-            {'nova_role': 'nova-compute'}, ['node', 'container', 'nova'])
+            {'nova_role': 'nova-compute'}, ['node', 'container', 'nova',
+                                            'nova-compute'])
 
         if comp is None:
             return self._fail(msg='cannot create "Compute" container')

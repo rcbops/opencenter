@@ -1,9 +1,7 @@
 [
     {
-        "primitive": "agent.run_task",
+        "primitive": "run_chef",
         "ns": {
-            "action": "run_chef",
-            "payload": {}
         }
     }
 ]

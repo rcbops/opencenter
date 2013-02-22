@@ -1,9 +1,7 @@
 [
     {
-        "primitive": "agent.run_task",
+        "primitive": "install_chef_server",
         "ns": {
-            "action": "install_chef_server",
-            "payload": {}
         }
     },
     {
@@ -13,5 +11,11 @@
     {
         "primitive": "node.set_parent",
         "ns": { "parent": 3 }
+    },
+    {
+        "primitive": "download_cookbooks",
+        "ns": {
+            "CHEF_SERVER_COOKBOOK_CHANNELS": "current"
+        }
     }
 ]

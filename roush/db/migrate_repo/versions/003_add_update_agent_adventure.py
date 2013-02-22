@@ -44,14 +44,18 @@ def upgrade(migrate_engine):
                      'value': 1})
 
     adventures = [
-        {'name': 'update roush agent',
+        {'name': 'update agent',
          'dsl': 'update_agent.json',
          'criteria': 'update_agent.criteria',
          'args': 'update_agent.args'},
-        {'name': 'restart roush agent',
+        {'name': 'restart agent',
          'dsl': 'restart_agent.json',
          'criteria': 'restart_agent.criteria',
-         'args': 'restart_agent.args'}]
+         'args': 'restart_agent.args'},
+        {'name': 'Create Availability Zone',
+         'dsl': 'create_az.json',
+         'criteria': 'create_az.criteria',
+         'args': 'create_az.args'}]
 
     for adventure in adventures:
         json_path = os.path.join(
@@ -71,5 +75,5 @@ def downgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
 
     api = api_from_models()
-    adv = api.adventures_query('name = "update roush agent"')
+    adv = api.adventures_query('name = "update agent"')
     rc = api.adventure_delete_by_id(adv['id'])
