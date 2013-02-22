@@ -44,11 +44,11 @@ def upgrade(migrate_engine):
                      'value': 1})
 
     adventures = [
-        {'name': 'update agent',
+        {'name': 'Update Agent',
          'dsl': 'update_agent.json',
          'criteria': 'update_agent.criteria',
          'args': 'update_agent.args'},
-        {'name': 'restart agent',
+        {'name': 'Restart Agent',
          'dsl': 'restart_agent.json',
          'criteria': 'restart_agent.criteria',
          'args': 'restart_agent.args'},
@@ -91,5 +91,5 @@ def downgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
 
     api = api_from_models()
-    adv = api.adventures_query('name = "update agent"')
+    adv = api.adventures_query('name = "Update Agent"')
     rc = api.adventure_delete_by_id(adv['id'])
