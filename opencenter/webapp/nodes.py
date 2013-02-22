@@ -92,7 +92,7 @@ def adventures_by_node_id(node_id):
     api = api_from_models()
     node = api.node_get_by_id(node_id)
     if not node:
-        return errors.http_not_found()
+        return generic.http_notfound()
     else:
         all_adventures = api.adventures_get_all()
         available_adventures = []
