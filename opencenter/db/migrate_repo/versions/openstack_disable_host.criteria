@@ -1,0 +1,1 @@
+(attrs.maintenance_mode = none) and (facts.nova_role = 'nova-compute') and ('agent' in facts.backends)
