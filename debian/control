@@ -17,7 +17,7 @@ Build-Depends: debhelper (>= 7.0.50~),
  python-netifaces
 Standards-Version: 3.9.1
 XS-Python-Version: >= 2.6
-Homepage: https://github.com/galstrom21/opencenter
+Homepage: https://github.com/rcbops/opencenter
 XCBS-RCB-Component: rcb-utils
 
 Package: python-opencenter
@@ -35,9 +35,9 @@ Depends: ${python:Depends}, ${misc:Depends},
  python-mako,
  python-netifaces
 Provides: ${python:Provides}
-Description: opencenter web API
+Description: opencenter python libraries
 
-Package: opencenter-simple
+Package: opencenter-server
 Architecture: all
 Section: python
 Depends: ${python:Depends}, ${misc:Depends},
@@ -45,5 +45,3 @@ Depends: ${python:Depends}, ${misc:Depends},
 Provides: ${python:Provides}
 Description: init scripts for running opencenter in self-hosted flask.
  These init scripts run opencenter out of the flask built-in web server.
- This is something of a fail.  Do not do this in practice. DO WHAT I
- SAY NOT WHAT I DO.
