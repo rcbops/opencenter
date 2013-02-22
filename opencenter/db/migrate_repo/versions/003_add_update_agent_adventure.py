@@ -55,7 +55,23 @@ def upgrade(migrate_engine):
         {'name': 'Create Availability Zone',
          'dsl': 'create_az.json',
          'criteria': 'create_az.criteria',
-         'args': 'create_az.args'}]
+         'args': 'create_az.args'},
+        {'name': 'Disable Scheduling on this Host',
+         'dsl': 'openstack_disable_host.json',
+         'criteria': 'openstack_disable_host.criteria',
+         'args': 'openstack_disable_host.args'},
+        {'name': 'Enable Scheduling on this Host',
+         'dsl': 'openstack_enable_host.json',
+         'criteria': 'openstack_enable_host.criteria',
+         'args': 'openstack_enable_host.args'},
+        {'name': 'Evacuate Host',
+         'dsl': 'openstack_evacuate_host.json',
+         'criteria': 'openstack_evacuate_host.criteria',
+         'args': 'openstack_evacuate_host.args'},
+        {'name': 'Upload Initial Glance Images',
+         'dsl': 'openstack_evacuate_host.json',
+         'criteria': 'openstack_evacuate_host.criteria',
+         'args': 'openstack_evacuate_host.args'}]
 
     for adventure in adventures:
         json_path = os.path.join(
