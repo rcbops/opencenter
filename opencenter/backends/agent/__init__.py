@@ -116,8 +116,8 @@ class AgentBackend(opencenter.backends.Backend):
             node = api._model_get_by_id('nodes', node_id)
             if 'opencenter_agent_actions' in node['attrs']:
                 if action in node['attrs']['opencenter_agent_actions']:
-                    action_info =
-                    node['attrs']['opencenter_agent_actions'][action]
+                    agent_actions = 'opencenter_agent_actions'
+                    action_info = node['attrs'][agent_actions][action]
 
                     direct_cons = action_info.get('consequences', [])
 
