@@ -67,12 +67,19 @@ class NovaBackend(opencenter.backends.Backend):
 
     # README(shep): part of happy path, not excluding from code coverage
     def create_cluster(self, state_data, api, node_id, **kwargs):
+        # make sure we have good inputs
         if not 'cluster_name' in kwargs:
             return self._fail(msg='Cluster Name (cluster_name) required')
+        valid = string.letters + string.digits + "_-"
+        test_valid = all([c in valid for c in kwargs['cluster_name']])
+        if not test_valid:
+            return self._fail(msg='Cluster name must be entirely composed of'
+                              ' alphanumeric characters, -s, or _s')
         r = api.nodes_query('facts.chef_environment = "%s"' % (
             kwargs['cluster_name'],))
         if len(r) > 0:
             return self._fail(msg='Cluster Name should be unique')
+
         cluster_facts = ["nova_public_if",
                          "keystone_admin_pw",
                          "nova_dmz_cidr",
