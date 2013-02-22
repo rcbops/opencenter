@@ -52,7 +52,6 @@ class NovaBackend(opencenter.backends.Backend):
         if not test_valid:
             return self._fail(msg='Name cannot contain spaces or special'
                                   'characters')
-
         self._make_subcontainer(api,
                                 'AZ %s' % kwargs['az_name'],
                                 node_id,
@@ -65,7 +64,10 @@ class NovaBackend(opencenter.backends.Backend):
     def create_cluster(self, state_data, api, node_id, **kwargs):
         if not 'cluster_name' in kwargs:
             return self._fail(msg='Cluster Name (cluster_name) required')
-
+        r = api.nodes_query('facts.chef_environment = "%s"' % (
+            kwargs['cluster_name'],))
+        if len(r) > 0:
+            return self._fail(msg='Cluster Name should be unique')
         cluster_facts = ["nova_public_if",
                          "keystone_admin_pw",
                          "nova_dmz_cidr",
