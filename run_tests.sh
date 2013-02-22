@@ -33,7 +33,7 @@ function process_option {
   esac
 }
 
-venv=.opencenter-venv
+venv=.venv
 with_venv=tools/with_venv.sh
 always_venv=0
 never_venv=0
@@ -81,7 +81,7 @@ function run_tests {
 
 function run_pep8 {
   echo "Running pep8 ..."
-  PEP8_EXCLUDE=".opencenter-venv"
+  PEP8_EXCLUDE=".venv"
   PEP8_OPTIONS="--exclude=$PEP8_EXCLUDE --repeat --show-pep8 --show-source"
   PEP8_INCLUDE="."
   ${wrapper} pep8 $PEP8_OPTIONS $PEP8_INCLUDE || exit 1

@@ -1,4 +1,4 @@
-.roush-venv
+.venv
 *.db
 *.pyc
 *.swp
