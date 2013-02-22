@@ -38,27 +38,27 @@ def upgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
 
     adventures = [
-        {'name': 'run chef',
+        {'name': 'Run Chef',
          'dsl': 'run_chef.json',
          'criteria': 'run_chef.criteria',
          'args': 'run_chef.args'},
-        {'name': 'install chef server',
+        {'name': 'Install Chef Server',
          'dsl':  'install_chef_server.json',
          'criteria': 'install_chef_server.criteria',
          'args': 'install_chef_server.args'},
-        {'name': 'create nova cluster',
+        {'name': 'Create Nova Cluster',
          'dsl': 'create_nova_cluster.json',
          'criteria': 'create_nova_cluster.criteria',
          'args': 'create_nova_cluster.args'},
-        {'name': 'download chef cookbooks',
+        {'name': 'Download Chef Cookbooks',
          'dsl': 'download_cookbooks.json',
          'criteria': 'download_cookbooks.criteria',
          'args': 'download_cookbooks.args'},
-        {'name': 'subscribe cookbook channel',
+        {'name': 'Subscribe Cookbook Channel',
          'dsl': 'subscribe_cookbook_channel.json',
          'criteria': 'subscribe_cookbook_channel.criteria',
          'args': 'subscribe_cookbook_channel.args'},
-        {'name': 'sleep',
+        {'name': 'Sleep',
          'dsl': 'sleep.json',
          'criteria': 'sleep.criteria',
          'args': 'sleep.args'}]
@@ -96,4 +96,4 @@ def downgrade(migrate_engine):
     meta = MetaData(bind=migrate_engine)
 
     types = Table('types', meta, autoload=True)
-    types.delete().where(types.c.name == 'Unprovisioned').execute()
+    types.delete().where(types.c.name == 'unprovisioned').execute()

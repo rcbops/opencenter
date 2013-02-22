@@ -162,7 +162,7 @@ class HappyPathTestCase(ScaffoldedTestCase):
             value=agent_actions)
 
         chef_adventure = self._model_filter(
-            'adventures', '"chef server" in name')
+            'adventures', '"Chef Server" in name')
 
         self.assertEqual(len(chef_adventure), 1)
         chef_adventure = chef_adventure[0]['id']
@@ -210,7 +210,7 @@ class HappyPathTestCase(ScaffoldedTestCase):
             value=agent_actions)
 
         chef_adventure = self._model_filter(
-            'adventures', '"chef server" in name')
+            'adventures', '"Chef Server" in name')
 
         self.assertEqual(len(chef_adventure), 1)
         chef_adventure = chef_adventure[0]['id']
@@ -233,7 +233,7 @@ class HappyPathTestCase(ScaffoldedTestCase):
         self._make_adventurator()
 
         nca = self._model_filter('adventures',
-                                 '"nova cluster" in name')
+                                 '"Nova Cluster" in name')
 
         self.assertEqual(len(nca), 1)
         nca = nca[0]['id']
