@@ -171,6 +171,7 @@ class ChefClientBackend(roush.backends.Backend):
                 node_id = node['id']
                 final_nodelist.append(node_id)
 
+        self.logger.debug('final nodelist: %s' % final_nodelist)
         return final_nodelist
 
     def _serialize_node_blob(self, blob):
@@ -329,7 +330,6 @@ class ChefClientBackend(roush.backends.Backend):
             env.save()
 
         if need_node_converge:
-            return self._fail()
             # first run converge on the node in question
             self.logger.debug('chef updating node: %s' % node_id)
             dsl = [{'primitive': 'run_chef', 'ns': {}}]
@@ -339,6 +339,7 @@ class ChefClientBackend(roush.backends.Backend):
                 'node_id': adventurator['id'],
                 'payload': {'nodes': [node_id],
                 'adventure_dsl': dsl}})
+            return self._fail(msg='failing after first task')
 
             # watch for task state
             while node_task['state'] not in ['timeout', 'cancelled', 'done']:
