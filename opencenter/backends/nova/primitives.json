@@ -3,7 +3,7 @@
         "args": {
            "az_name": {
                "friendly": "Create Availability Zone",
-               "description": "The name of the availability zone to create",
+               "description": "The name of the availability zone to create.  This should be unique to the Nova Cluster.",
                "default": "nova",
                "type": "string",
                "required": true
@@ -16,21 +16,21 @@
         "args": {
             "cluster_name": {
                 "friendly": "Nova Cluster Name",
-                "description": "The name of your new nova cluster.  This should be unique.",
+                "description": "The name of your new Nova cluster.  This should be unique.",
                 "default": "Nova Cluster",
                 "type": "string",
                 "required": true
             },
             "nova_public_if": {
-                "friendly": "Nova public network interface",
-                "description": "The network interface that is connected to the public (internet/wan) network on compute nodes.  Compute nodes will NAT instance traffic out from this interface unless a specific floating ip has been assigned to an instance.",
+                "friendly": "Nova Public Network Interface",
+                "description": "The network interface that is connected to the public (Internet/WAN) network on compute nodes.  Compute nodes will NAT instance traffic out from this interface unless a specific floating ip has been assigned to an instance.",
                 "default": "eth0",
                 "type": "string",
                 "required": true
             },
             "keystone_admin_pw": {
                 "friendly": "OpenStack Admin Password",
-                "description": "The password for the OpenStack administrative User",
+                "description": "The password for the OpenStack administrative user",
                 "default": "secret",
                 "type": "string",
                 "required": true
@@ -58,42 +58,42 @@
             },
             "nova_vm_bridge": {
                 "friendly": "Nova VM Bridge Interface",
-                "description": "The bridge device that will be used as the VM bridge on compute nodes.  The default value is usually acceptable here.  This bridge will be created by nova as necessary and does not need to be manually configured on the system.",
+                "description": "The bridge device that will be used as the VM bridge on compute nodes.  The default value is usually acceptable here.  This bridge will be created by Nova as necessary and does not need to be manually configured on the system.",
                 "default": "br100",
                 "type": "string",
                 "required": true
             },
             "osops_mgmt": {
                 "friendly": "Nova Management Network CIDR",
-                "description": "The cidr of network on which internal nova management services such as api services will run.  An IP address from this network should be configured on all hosts in the nova cluster.",
+                "description": "The CIDR of network on which internal Nova management services such as API services will run.  An IP address from this network should be configured on all hosts in the nova cluster.",
                 "default": "192.168.200.0/24",
                 "type": "string",
                 "required": true
             },
             "osops_nova": {
                 "friendly": "Nova Internal Network CIDR",
-                "description": "cidr of network to run services used by nova internally, such as rabbitmq and mysql.  An IP address from this network should be configured on all hosts in the nova cluster.",
+                "description": "The CIDR of network to run services used by Nova internally, such as RabbitMQ and Mysql.  An IP address from this network should be configured on all hosts in the Nova cluster.",
                 "default": "192.168.200.0/24",
                 "type": "string",
                 "required": true
             },
             "osops_public": {
                 "friendly": "Nova Public Network CIDR",
-                "description": "cidr of network to run public nova services on (lb, etc).  An IP address from this network should be configured on all hosts in the nova cluster.",
+                "description": "The CIDR of network to run public Nova services on (lb, etc).  An IP address from this network should be configured on all hosts in the Nova cluster.",
                 "default": "192.168.200.0/24",
                 "type": "string",
                 "required": true
             },
             "nova_az": {
                 "friendly": "Default Availability Zone",
-                "description": "The name of the default availability zone for Nova",
+                "description": "The name of the default availability zone for Nova.",
                 "default": "nova",
                 "type": "string",
                 "required": true
             },
             "chef_server": {
                 "friendly": "Chef Server",
-                "description": "chef server to use",
+                "description": "The chef server to use.",
                 "type": "interface",
                 "name": "chef-server",
                 "required": true
