@@ -69,9 +69,9 @@ def upgrade(migrate_engine):
          'criteria': 'openstack_evacuate_host.criteria',
          'args': 'openstack_evacuate_host.args'},
         {'name': 'Upload Initial Glance Images',
-         'dsl': 'openstack_evacuate_host.json',
-         'criteria': 'openstack_evacuate_host.criteria',
-         'args': 'openstack_evacuate_host.args'}]
+         'dsl': 'openstack_upload_images.json',
+         'criteria': 'openstack_upload_images.criteria',
+         'args': 'openstack_upload_images.args'}]
 
     for adventure in adventures:
         json_path = os.path.join(
