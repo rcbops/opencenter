@@ -595,8 +595,11 @@ class Solver:
                     applied_consequences=applied_consequences +
                     assumed_consequences)
 
-                sub_success, _, sub_plan = subsolve.solve()
-                if sub_success:
+                sub_success, sub_q, sub_plan = subsolve.solve()
+                self.logger.info('Subsolver result: %s, %s' % (sub_success,
+                                                               sub_q))
+
+                if sub_success or sub_q:
                     self.logger.info(' - SOLVED WITH PLAN: %s' % sub_plan)
 
                     new_solver = subsolve.children[0]
@@ -703,6 +706,22 @@ class Solver:
         return False
 
     def solve(self):
+        """
+        Try to solve a set of constraints.  This sets up the
+        initial constraint set, then splays all the possible
+        primitives that move us close to solution.  Then it
+        walks through all those in series to bring another
+        solution generation, so on until one of the solution
+        plans is successful, or there are no more primitives
+        to consider moving us toward the goal.
+
+        It returns (is_solvable, requires_input, plan), where
+        solvable is the ability to solve the plan without any
+        input, requires_input describes the ability to solve
+        the plan if given some additional input, and plan is
+        the considered solve plan
+        """
+
         top_level = self
         current_leaves = [self]
         solution_node = None
