@@ -35,18 +35,6 @@ class ChefClientBackend(opencenter.backends.Backend):
             return None
         return []
 
-    def _dict_merge(self, merge_target, new_dict):
-        for key, value in new_dict.items():
-            if isinstance(value, dict):
-                if not key in merge_target:
-                    merge_target[key] = {}
-                merge_target[key] = self._dict_merge(
-                    merge_target[key], new_dict[key])
-            else:
-                merge_target[key] = value
-
-        return merge_target
-
     def _represent_node_attributes(self, api, node_id):
         node = api._model_get_by_id('nodes', node_id)
 

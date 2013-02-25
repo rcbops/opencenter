@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-# import copy
 import time
 import opencenter
 
@@ -43,45 +42,8 @@ class AgentBackend(opencenter.backends.Backend):
             reply_data['rollback'] = {'primitive': rollback_action,
                                       'ns': {}}
 
-        # payload = dict([(x, kwargs[x]) for x in kwargs if x != 'action'])
-
-        # push global variables
-        # if 'globals' in kwargs:
-        #     adventure_globals = kwargs.pop('globals')
-        #     parent_task_id = adventure_globals.get('parent_task_id', None)
-
         if payload is not None and 'globals' in payload:
             parent_task_id = payload['globals'].get('parent_task_id', None)
-
-        # run through the rest of the args and typecast them
-        # as appropriate.
-        # node = api._model_get_by_id('nodes', node_id)
-
-        # typed_args = {}
-
-        # if 'opencenter_agent_actions' in node['attrs']:
-        #     if action in node['attrs']['opencenter_agent_actions']:
-        #         action_info =
-        #           node['attrs']['opencenter_agent_actions'][action]
-        #         typed_args = action_info['args']
-
-        # ns = copy.deepcopy(payload)
-        # ns.update(copy.deepcopy(adventure_globals))
-
-        # for k, v in kwargs.items():
-        #     # we'll type these, if we know them, and cast them
-        #     # appropriately.
-        #     if k in typed_args:
-        #         arg_info = typed_args[k]
-        #         if arg_info['type'] == 'interface':  # make full node
-        #             v = api._model_get_by_id('nodes', v)
-        #     ns[k] = v
-
-        # for k, v in payload.items():
-        #     payload[k] = opencenter.webapp.ast.apply_expression(ns, v, api)
-
-        # for k, v in kwargs.items():
-        #     payload[k] = v
 
         for k, v in adventure_globals.items():
             if not k in payload:
