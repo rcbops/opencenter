@@ -113,35 +113,6 @@ class ChefClientBackend(opencenter.backends.Backend):
             return ['role[ha-controller2]']
         return []
 
-    def _expand_nodelist(self, nodelist, api):
-        """
-        given a list of nodes (including containers),
-        generate a fully expanded list of non-container-y
-        nodes
-        """
-
-        final_nodelist = []
-
-        self.logger.debug('nodelist: %s' % nodelist)
-
-        for node_id in nodelist:
-            node = api.node_get_by_id(node_id)
-            is_container = False
-            if 'backends' in node['facts'] and \
-                    'container' in node['facts']['backends']:
-                is_container = True
-
-            if not is_container:
-                final_nodelist.append(node_id)
-            else:
-                query = 'facts.parent_id = %s' % node_id
-                child_nodes = api.nodes_query(query)
-                child_node_ids = [x['id'] for x in child_nodes]
-
-                final_nodelist += self._expand_nodelist(child_node_ids, api)
-
-        return final_nodelist
-
     def _get_nodes_in_env(self, env):
         """
         given a chef environment, find all nodes with that environment
