@@ -17,7 +17,7 @@
             "cluster_name": {
                 "friendly": "Nova Cluster Name",
                 "description": "The name of your new Nova cluster.  This should be unique and composed of alphanumeric characters, -s, and _s.",
-                "default": "Nova Cluster",
+                "default": "NovaCluster",
                 "type": "string",
                 "required": true
             },

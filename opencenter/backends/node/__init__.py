@@ -241,6 +241,22 @@ class NodeBackend(backends.Backend):
 
         return self._ok(data=reply_data)
 
+    def set_attr(self, state_data, api, node_id, **kwargs):
+        reply_data = {}
+        key, value = kwargs['key'], kwargs['value']
+        oldkeys = api._model_query('facts', 'node_id=%s and key=%s' %
+                                   (node_id, key))
+        _by_key = dict([[x['key'], x['value']] for x in oldkeys])
+        if key in _by_key:
+            reply_data['rollback'] = {'primitive': 'node.set_attr',
+                                      'ns': {'key': key,
+                                             'value': _by_key[key]}}
+        api._model_create('attrs', {"node_id": node_id,
+                                    'key': key,
+                                    'value': value})
+
+        return self._ok(data=reply_data)
+
     def add_backend(self, state_data, api, node_id, **kwargs):
         reply_data = {}
 

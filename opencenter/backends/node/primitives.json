@@ -32,5 +32,19 @@
         },
         "constraints": [],
         "consequences": [ "facts.parent_id := \"{parent}\"" ]
+    },
+    "set_attr": {
+        "args": {
+            "key": {
+                "type": "string",
+                "required": true
+            },
+            "value": {
+                "type": "string",
+                "required": true
+            }
+        },
+        "contraints": [],
+        "consequences": []
     }
 }
