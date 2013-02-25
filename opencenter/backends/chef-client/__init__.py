@@ -153,6 +153,9 @@ class ChefClientBackend(opencenter.backends.Backend):
 
             return True
 
+        # DEBUG
+        # return self._ok()
+
         # we are converging a node.  If the node is a container,
         # that probably implies converging all nodes under it.
         self.logger.info('Converging node %s via chef-client backend' % (
