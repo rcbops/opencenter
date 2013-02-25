@@ -140,7 +140,7 @@ def whoami():
             api._model_create('attrs',
                               {"node_id": node['id'],
                               "key": "server-agent",
-                              "value": true)
+                              "value": True})
         else:
             unprovisioned_id = unprovisioned_container()['id']
             api._model_create('facts',
