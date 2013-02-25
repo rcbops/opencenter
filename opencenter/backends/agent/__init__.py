@@ -31,6 +31,7 @@ class AgentBackend(opencenter.backends.Backend):
     def run_task(self, state_data, api, node_id, **kwargs):
         action = kwargs.pop('action')
         payload = kwargs.pop('payload')
+        timeout = kwargs.get('timeout', 30)
         parent_task_id = None
         reply_data = {}
 
@@ -89,7 +90,8 @@ class AgentBackend(opencenter.backends.Backend):
 
         task_data = {'node_id': node_id,
                      'action': action,
-                     'payload': payload}
+                     'payload': payload,
+                     'expires': int(time.time() + timeout)}
 
         if parent_task_id is not None:
             task_data['parent_id'] = parent_task_id
