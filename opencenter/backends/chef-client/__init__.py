@@ -304,7 +304,6 @@ class ChefClientBackend(opencenter.backends.Backend):
                 'node_id': adventurator['id'],
                 'payload': {'nodes': [node_id],
                 'adventure_dsl': dsl}})
-            return self._fail(msg='failing after first task')
 
             # watch for task state
             while node_task['state'] not in ['timeout', 'cancelled', 'done']:
