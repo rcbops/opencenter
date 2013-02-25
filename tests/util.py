@@ -313,7 +313,7 @@ def _add_test_data(self, model):
 
 def _test_seed_data_request_returns(self, method, url, data,
                                     expected_code, seed_data):
-    for model, num in seed_data.viewitems():
+    for model, num in seed_data.iteritems():
         for each in range(num):
             _add_test_data(self, model)
     _test_request_returns(self, method, url, data, expected_code)
