@@ -1,6 +1,6 @@
 Format-Specification: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=135
-Name: roush
-Source: https://github.com/galstrom21/roush
+Name: opencenter
+Source: https://github.com/galstrom21/opencenter
 Files: *
 Copyright: 2012 Rackspace US, Inc.
 License: Apache-2

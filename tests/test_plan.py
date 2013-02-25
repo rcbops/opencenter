@@ -4,17 +4,17 @@ import random
 import string
 import unittest2
 
-from roush.db.database import init_db
-from roush import webapp
+from opencenter.db.database import init_db
+from opencenter import webapp
 
-from util import RoushTestCase, ScaffoldedTestCase
+from util import OpenCenterTestCase, ScaffoldedTestCase
 
 
 def _randomStr(size):
     return "".join(random.choice(string.ascii_lowercase) for x in range(size))
 
 
-class PlanInvalidPostTests(RoushTestCase):
+class PlanInvalidPostTests(OpenCenterTestCase):
     def setUp(self):
         self.content_type = 'application/json'
 

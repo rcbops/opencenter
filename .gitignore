@@ -1,10 +1,13 @@
-.roush-venv
+.venv
 *.db
 *.pyc
 *.swp
+*bak
 run_tests.err.log
 local.conf
 .coverage
 coverage.xml
 nosetests.xml
 *.egg-info
+build/
+dist/

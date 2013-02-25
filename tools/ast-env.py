@@ -12,21 +12,21 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=logging.DEBUG)
 
-    import roush.db.database
-    from roush.db import api as db_api
-    from roush.db.database import init_db
+    import opencenter.db.database
+    from opencenter.db import api as db_api
+    from opencenter.db.database import init_db
 
     from sqlalchemy.orm import sessionmaker, create_session, scoped_session
     from sqlalchemy.ext.declarative import declarative_base
 
-    from roushclient.client import RoushEndpoint
+    from opencenterclient.client import OpenCenterEndpoint
 
-    from roush.webapp.ast import FilterBuilder, FilterTokenizer
-    from roush.webapp.solver import Solver
+    from opencenter.webapp.ast import FilterBuilder, FilterTokenizer
+    from opencenter.webapp.solver import Solver
 
-    ep = RoushEndpoint()
+    ep = OpenCenterEndpoint()
 
-    init_db('sqlite:///roush.db')
+    init_db('sqlite:///opencenter.db')
     db_session = scoped_session(lambda: create_session(autocommit=False,
                                                        autoflush=False,
                                                        bind=engine))
@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     ##########################
 
-    ast_logger = logging.getLogger('roush.webapp.ast')
+    ast_logger = logging.getLogger('opencenter.webapp.ast')
     ast_logger.setLevel(logging.WARNING)
 
     expr1 = 'facts.woof = "goober"'

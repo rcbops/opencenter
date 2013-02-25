@@ -1,6 +1,0 @@
-[
-    {
-        "primitive": "do_updates",
-        "ns": { "PACKAGE_NAME": "roush-agent" }
-    }
-]

@@ -1,15 +1,15 @@
 import json
 
 from util import ScaffoldedTestCase
-from roush.db import api as db_api
+from opencenter.db import api as db_api
 
-import roush.backends
+import opencenter.backends
 
 
 class HappyPathTestCase(ScaffoldedTestCase):
     def setUp(self):
-        self.server = self._model_create('nodes', name='roush-server')
-        self.agent = self._model_create('nodes', name='roush-client')
+        self.server = self._model_create('nodes', name='opencenter-server')
+        self.agent = self._model_create('nodes', name='opencenter-client')
 
         for node_id in [self.server['id'], self.agent['id']]:
             self._make_facts(node_id,
@@ -59,7 +59,7 @@ class HappyPathTestCase(ScaffoldedTestCase):
 
             if not '.' in primitive:
                 # is a run_task... see if there are any consequences
-                actions = node['attrs'].get('roush_agent_actions', {})
+                actions = node['attrs'].get('opencenter_agent_actions', {})
                 if primitive in actions:
                     consequences = actions[primitive].get('consequences', [])
                     for consequence in consequences:
@@ -70,7 +70,7 @@ class HappyPathTestCase(ScaffoldedTestCase):
 
                 pass
             else:
-                f = roush.backends.primitive_by_name(primitive)
+                f = opencenter.backends.primitive_by_name(primitive)
                 f({}, self.api, node_id, **ns)
 
     def _make_facts(self, node_id, facts):
@@ -88,7 +88,7 @@ class HappyPathTestCase(ScaffoldedTestCase):
 
     def _make_adventurator(self):
         self._model_create('attrs', node_id=self.server['id'],
-                           key='roush_agent_output_modules',
+                           key='opencenter_agent_output_modules',
                            value=['adventurator'])
 
     def _execute_adventure(self, adventure_id, node_id):
@@ -158,11 +158,11 @@ class HappyPathTestCase(ScaffoldedTestCase):
 }""")
         self._model_create(
             'attrs', node_id=self.server['id'],
-            key='roush_agent_actions',
+            key='opencenter_agent_actions',
             value=agent_actions)
 
         chef_adventure = self._model_filter(
-            'adventures', '"chef server" in name')
+            'adventures', '"Chef Server" in name')
 
         self.assertEqual(len(chef_adventure), 1)
         chef_adventure = chef_adventure[0]['id']
@@ -206,11 +206,11 @@ class HappyPathTestCase(ScaffoldedTestCase):
 }""")
         self._model_create(
             'attrs', node_id=self.server['id'],
-            key='roush_agent_actions',
+            key='opencenter_agent_actions',
             value=agent_actions)
 
         chef_adventure = self._model_filter(
-            'adventures', '"chef server" in name')
+            'adventures', '"Chef Server" in name')
 
         self.assertEqual(len(chef_adventure), 1)
         chef_adventure = chef_adventure[0]['id']
@@ -233,7 +233,7 @@ class HappyPathTestCase(ScaffoldedTestCase):
         self._make_adventurator()
 
         nca = self._model_filter('adventures',
-                                 '"nova cluster" in name')
+                                 '"Nova Cluster" in name')
 
         self.assertEqual(len(nca), 1)
         nca = nca[0]['id']
@@ -295,7 +295,7 @@ class HappyPathTestCase(ScaffoldedTestCase):
         # guess we should probably reparent now.
         self._model_create(
             'attrs', node_id=self.agent['id'],
-            key='roush_agent_actions',
+            key='opencenter_agent_actions',
             value=agent_actions)
 
         infra_container = self._model_filter('nodes',

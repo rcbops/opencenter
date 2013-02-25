@@ -1,7 +1,7 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 import unittest2
 
-from util import RoushTestCase
+from util import OpenCenterTestCase
 from util import inject
 
 
@@ -26,7 +26,7 @@ class UnorderedList(list):
             return super(UnorderedList, self).__eq__(x)
 
 
-class FactsTests(RoushTestCase):
+class FactsTests(OpenCenterTestCase):
     base_object = 'fact'
 
     def setUp(self):

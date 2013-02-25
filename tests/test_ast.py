@@ -1,13 +1,14 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
-from util import RoushTestCase
+from util import OpenCenterTestCase
 
-import roush.backends
+import opencenter.backends
 
 
-class AstTests(RoushTestCase):
+class AstTests(OpenCenterTestCase):
     def setUp(self):
-        if roush.backends.primitive_by_name('test.set_test_fact') is None:
-            roush.backends.load_specific_backend('tests.test', 'TestBackend')
+        if opencenter.backends.primitive_by_name('test.set_test_fact') is None:
+            opencenter.backends.load_specific_backend('tests.test',
+                                                      'TestBackend')
 
         self.container = self._model_create('nodes', name='container')
         self.node1 = self._model_create('nodes', name='node1')
