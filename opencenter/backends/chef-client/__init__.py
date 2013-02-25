@@ -30,11 +30,6 @@ class ChefClientBackend(opencenter.backends.Backend):
     def __init__(self):
         super(ChefClientBackend, self).__init__(__file__)
 
-        classname = self.__class__.__name__.lower()
-        self.logger = logging.getLogger('%s.%s' % (__name__, classname))
-        self.logger.setLevel(logging.DEBUG)
-        self.logger.debug('chef-client backend Initializing')
-
     def additional_constraints(self, api, node_id, action, ns):
         if action == 'add_backend':
             return None
