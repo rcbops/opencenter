@@ -63,7 +63,16 @@ adventures = [
      'criteria': 'openstack_evacuate_host.criteria'},
     {'name': 'Upload Initial Glance Images',
      'dsl': 'openstack_upload_images.json',
-     'criteria': 'openstack_upload_images.criteria'}]
+     'criteria': 'openstack_upload_images.criteria'},
+    {'name': 'Install Chef Client',
+     'dsl': 'install_chef.json',
+     'criteria': 'install_chef.criteria'},
+    {'name': 'Uninstall Chef Client',
+     'dsl': 'uninstall_chef.json',
+     'criteria': 'uninstall_chef.criteria'},
+    {'name': 'Uninstall Chef Server',
+     'dsl': 'uninstall_chef_server.json',
+     'criteria': 'uninstall_chef_server.criteria'}]
 
 
 def upgrade(migrate_engine):
