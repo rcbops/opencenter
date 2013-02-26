@@ -202,19 +202,26 @@ def util_childof(context, parent_name_or_id):
         # this is a name
         parent = api._model_query('nodes',
                                   'name="%s"' % parent_name_or_id)
-        if parent is None:
+        try:
+            parent_id = parent[0]['id']
+        except IndexError:
             return False
 
-        parent_id = parent[0]['id']
-
     current_parent = node['facts'].get('parent_id', None)
-    while(current_parent):
+    #checked_nodes prevents infinite loop
+    checked_nodes = set()
+    while current_parent:
         if current_parent == parent_id:
             return True
 
         # otherwise, get parent of this parent
         parent = api._model_get_by_id('nodes', current_parent)
         current_parent = parent['facts'].get('parent_id', None)
+        if current_parent in checked_nodes:
+            #if there's a loop True may be just as accurate as False
+            break
+        else:
+            checked_nodes.add(current_parent)
 
     return False
 
