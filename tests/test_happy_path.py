@@ -116,12 +116,16 @@ class HappyPathTestCase(ScaffoldedTestCase):
         valid_adventures = [x['id'] for x in result['adventures']]
         return valid_adventures
 
-    def _default_plan(self, plan):
+    def _default_plan(self, plan, exceptions={}):
         for step in plan:
             if 'args' in step:
                 for arg in step['args']:
                     self.assertTrue('default' in step['args'][arg])
-                    step['args'][arg]['value'] = step['args'][arg]['default']
+                    if arg in exceptions:
+                        step['args'][arg]['value'] = exceptions[arg]
+                    else:
+                        step['args'][arg]['value'] = \
+                            step['args'][arg]['default']
         return plan
 
     def _plan_submit(self, plan, node_id):
@@ -307,3 +311,55 @@ class HappyPathTestCase(ScaffoldedTestCase):
         resp = self._model_create('facts', node_id=self.agent['id'],
                                   key='parent_id', value=infra_container,
                                   please=True, raw=True, expect_code=202)
+
+        # make a new az.
+        naz = self._model_filter('adventures',
+                                 '"Create Availability Zone" in name')
+
+        self.assertEqual(len(naz), 1)
+        naz = naz[0]['id']
+
+        # find the cluster container based on the
+        # default cluster name
+        cc = self._model_filter('nodes',
+                                'name = "Compute"')
+        self.assertEqual(len(cc), 1)
+        cc = cc[0]['id']
+
+        result = self._execute_adventure(naz, cc)
+
+        # this should 409
+        self.assertTrue('status' in result)
+        self.assertEqual(result['status'], 409)
+
+        self.assertTrue('plan' in result)
+
+        plan = result['plan']
+
+        # should test invalid names as well... plan should
+        # submit, but the safely run will fail.  Maybe those
+        # kinds of tests should be in individual primitive
+        # tests
+        plan = self._default_plan(plan, {'az_name': 'test1'})
+
+        result = self._plan_submit(plan, cc)
+
+        self.assertTrue('status' in result)
+        self.assertEqual(result['status'], 202)
+
+        plan = result['plan']
+
+        # roll the plan forward and make sure it does what we think
+        node_count = len(self._model_get_all('nodes'))
+
+        self._safely_run_plan(plan, cc)
+
+        new_node_count = len(self._model_get_all('nodes'))
+
+        self.assertEqual(node_count + 1, new_node_count)
+
+        az_names = [x['name'] for x in
+                    self._model_filter('nodes', 'facts.parent_id=%s' % cc)]
+
+        self.assertEqual(len(az_names), 2)
+        self.assertTrue('AZ test1' in az_names)
