@@ -113,6 +113,12 @@ class NodeBackend(backends.Backend):
                 new_constraints.append('"node" in facts.backends')
 
                 existing_node = api._model_get_by_id('nodes', node_id)
+                if existing_node.get('attrs', {}).get('locked', False):
+                    # Node is locked, set_parent not allowed.
+                    return None
+                if parent.get('attrs', {}).get('locked', False):
+                    # parent is locked
+                    return None
 
                 ephemeral_api = opencenter.db.api.ephemeral_api_from_api(api)
                 opencenter.webapp.ast.apply_expression(existing_node,
@@ -238,6 +244,22 @@ class NodeBackend(backends.Backend):
             api._model_create('facts', {'node_id': node_id,
                                         'key': key,
                                         'value': value})
+
+        return self._ok(data=reply_data)
+
+    def set_attr(self, state_data, api, node_id, **kwargs):
+        reply_data = {}
+        key, value = kwargs['key'], kwargs['value']
+        oldkeys = api._model_query('facts', 'node_id=%s and key=%s' %
+                                   (node_id, key))
+        _by_key = dict([[x['key'], x['value']] for x in oldkeys])
+        if key in _by_key:
+            reply_data['rollback'] = {'primitive': 'node.set_attr',
+                                      'ns': {'key': key,
+                                             'value': _by_key[key]}}
+        api._model_create('attrs', {"node_id": node_id,
+                                    'key': key,
+                                    'value': value})
 
         return self._ok(data=reply_data)
 

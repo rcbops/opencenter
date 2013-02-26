@@ -13,6 +13,11 @@
         "ns": { "parent": 3 }
     },
     {
+        "primitive": "node.set_attr",
+        "ns": {"key": "locked",
+               "value": true}
+    },
+    {
         "primitive": "download_cookbooks",
         "ns": {
             "CHEF_SERVER_COOKBOOK_CHANNELS": "current"
