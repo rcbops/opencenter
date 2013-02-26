@@ -35,7 +35,8 @@ class ChefClientBackend(opencenter.backends.Backend):
             return None
         return []
 
-    def _represent_node_attributes(self, api, node_id):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _represent_node_attributes(self, api, node_id):  # pragma: no cover
         node = api._model_get_by_id('nodes', node_id)
 
         # walk through all the facts and determine which are
@@ -77,20 +78,26 @@ class ChefClientBackend(opencenter.backends.Backend):
 
         return (json.loads(chef_node_attrs), json.loads(chef_env_attrs))
 
-    def _entity_exists(self, entity_type, key, value, chef_api):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _entity_exists(self, entity_type, key,
+                       value, chef_api):  # pragma: no cover
         result = chef.Search(entity_type, '%s:%s' % (key, value),
                              1, 0, chef_api)
         return len(result) == 1
 
-    def _environment_exists(self, environment_name, chef_api):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _environment_exists(self, environment_name,
+                            chef_api):  # pragma: no cover
         return self._entity_exists('environment', 'name',
                                    environment_name, chef_api)
 
-    def _node_exists(self, node_name, chef_api):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _node_exists(self, node_name, chef_api):  # pragma: no cover
         return self._entity_exists('node', 'name',
                                    node_name, chef_api)
 
-    def _map_roles(self, role):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _map_roles(self, role):  # pragma: no cover
         if role == 'nova-compute':
             return ['role[single-compute]']
         elif role == 'nova-infra':
@@ -101,7 +108,8 @@ class ChefClientBackend(opencenter.backends.Backend):
             return ['role[ha-controller2]']
         return []
 
-    def _expand_nodelist(self, nodelist, api):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _expand_nodelist(self, nodelist, api):  # pragma: no cover
         """
         given a list of nodes (including containers),
         generate a fully expanded list of non-container-y
@@ -130,7 +138,8 @@ class ChefClientBackend(opencenter.backends.Backend):
 
         return final_nodelist
 
-    def _serialize_node_blob(self, blob):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _serialize_node_blob(self, blob):  # pragma: no cover
         result = {}
         for key, value in blob.items():
             if isinstance(value, chef.node.NodeAttributes):
@@ -139,7 +148,9 @@ class ChefClientBackend(opencenter.backends.Backend):
                 result[key] = value
         return result
 
-    def converge_chef(self, state_data, api, node_id, **kwargs):
+    # README(shep): not executed on the server, skipping from code coverage
+    def converge_chef(self, state_data, api,
+                      node_id, **kwargs):  # pragma: no cover
         def safe_get_fact(node, fact):
             if not fact in node['facts']:
                 return None
@@ -152,9 +163,6 @@ class ChefClientBackend(opencenter.backends.Backend):
                     return False
 
             return True
-
-        # DEBUG
-        # return self._ok()
 
         # we are converging a node.  If the node is a container,
         # that probably implies converging all nodes under it.
@@ -315,5 +323,6 @@ class ChefClientBackend(opencenter.backends.Backend):
         # FIXME: should poll for result here
         return self._ok()
 
-    def add_backend(self, api, node_id, **kwargs):
+    # README(shep): not executed on the server, skipping from code coverage
+    def add_backend(self, api, node_id, **kwargs):  # pragma: no cover
         return self._fail(msg='backend added by install_chef')

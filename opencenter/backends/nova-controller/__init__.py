@@ -24,19 +24,21 @@ class NovaControllerBackend(opencenter.backends.Backend):
     def __init__(self):
         super(NovaControllerBackend, self).__init__(__file__)
 
-    #def _find_chef_environment_node(self, api, node):
-    #    if 'parent_id' not in node['facts']:
-    #        self.logger.debug('Parent_ID not found in facts')
-    #        self._fail(msg='Parent_ID not found in facts')
-    #    parent_id = node['facts']['parent_id']
-    #    parent_node = api.node_get_by_id(parent_id)
-    #    if 'chef-environment' not in parent_node['facts']['backends']:
-    #        ret = node
-    #    else:
-    #        ret = self._find_chef_environment_node(parent_node)
-    #    return ret
+    def additional_constraints(self, api, node_id, action, ns):
+        if action == "add_backend":
+            node = api.node_get_by_id(node_id)
+            parent_id = node['facts']['parent_id']
+            count = len(api.nodes_query(
+                'int(facts.parent_id) = %s' % parent_id))
+            if count > 1:
+                return ['facts.ha_infra = true']
+            else:
+                return []
+        else:
+            return []
 
-    def _parent_list(self, api, starting_node):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _parent_list(self, api, starting_node):  # pragma: no cover
         ret = list()
         node = starting_node
         while 'parent_id' in node['facts']:
@@ -44,7 +46,8 @@ class NovaControllerBackend(opencenter.backends.Backend):
             node = api.node_get_by_id(node['facts']['parent_id'])
         return ret
 
-    def _find_chef_environment_node(self, api, node):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _find_chef_environment_node(self, api, node):  # pragma: no cover
         # need to build a list of parent_ids
         parent_list = self._parent_list(api, node)
         self.logger.debug('*** PARENT_LIST: %s' % parent_list)
@@ -62,24 +65,15 @@ class NovaControllerBackend(opencenter.backends.Backend):
         self.logger.debug('*** RETURNING NODE: %s' % ret)
         return ret
 
-    def additional_constraints(self, api, node_id, action, ns):
-        if action == "add_backend":
-            node = api.node_get_by_id(node_id)
-            parent_id = node['facts']['parent_id']
-            count = len(api.nodes_query(
-                'int(facts.parent_id) = %s' % parent_id))
-            if count > 1:
-                return ['facts.ha_infra = true']
-            else:
-                return []
-        else:
-            return []
-
-    def add_backend(self, state_data, api, node_id, **kwargs):
+    # README(shep): not executed on the server, skipping from code coverage
+    def add_backend(self, state_data, api,
+                    node_id, **kwargs):  # pragma: no cover
         return opencenter.backends.primitive_by_name('node.add_backend')(
             state_data, api, node_id, backend='nova-controller')
 
-    def make_infra_ha(self, state_data, api, node_id, **kwargs):
+    # README(shep): not executed on the server, skipping from code coverage
+    def make_infra_ha(self, state_data, api,
+                      node_id, **kwargs):  # pragma: no cover
         self.logger.debug('*** INIT KWARGS: %s' % kwargs)
         self.logger.debug('*** INIT STATE_DATA: %s' % state_data)
         if 'nova_api_vip' not in kwargs:
