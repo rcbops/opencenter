@@ -27,7 +27,8 @@ class AgentBackend(opencenter.backends.Backend):
         # this is probably a bit viscious.
         return []
 
-    def run_task(self, state_data, api, node_id, **kwargs):
+    # README(shep): Not executed by the server, skipping from code coverage
+    def run_task(self, state_data, api, node_id, **kwargs):  # pragma: no cover
         action = kwargs.pop('action')
         payload = kwargs.pop('payload')
         timeout = kwargs.get('timeout', 30)
