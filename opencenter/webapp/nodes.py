@@ -49,8 +49,6 @@ def tasks_blocking_by_node_id(node_id):
     # README(shep): Using last_checkin attr for agent-health
     timestamp = int(time.time())
     args = {'node_id': node_id, 'key': 'last_checkin', 'value': timestamp}
-    attr_id = api.attrs_query(
-        '(key = "last_checkin") and (node_id = %s)' % int(node_id))
     r = api.attr_create(args)
     #DB does not hit updater, so we need to notify
     generic._update_transaction_id('nodes', id_list=[node_id])
@@ -68,7 +66,7 @@ def tasks_blocking_by_node_id(node_id):
         utility.clear(semaphore)
         result = flask.jsonify({'task': task})
     else:
-        result = generic.http_response(404, 'no task found')
+        result = generic.http_notfound(msg='no task found')
     return result
 
 
