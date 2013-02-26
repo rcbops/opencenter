@@ -30,6 +30,7 @@ from database import Base
 import api as db_api
 import inmemory
 import opencenter.backends
+from opencenter.db.database import session
 
 
 # Special Fields
@@ -272,6 +273,16 @@ class Nodes(JsonRenderer, Base):
         return dict([[x['key'], x['value']] for x in
                      self.api._model_query('attrs',
                                            'node_id=%d' % self.id)])
+
+
+@event.listens_for(Nodes, 'after_delete')
+def node_cascade_delete(mapper, connection, target):
+    node_id=target.id
+    for fact in Facts.query.filter_by(node_id=node_id):
+        session.delete(fact)
+
+    for attr in Attrs.query.filter_by(node_id=node_id):
+        session.delete(attr)
 
 
 class Adventures(JsonRenderer, Base):
