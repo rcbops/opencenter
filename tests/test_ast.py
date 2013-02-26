@@ -269,6 +269,11 @@ class AstTests(OpenCenterTestCase):
         #this tests for (gets stuck)  infinite loop
         self.assertEqual(len(result), 0)
 
+    def test_printf(self):
+        query = 'facts.str_fact = printf("azby%s", "cxdw")'
+        result = self._model_filter('nodes', query)
+        self.assertEquals(len(result), 1)
+        self.assertTrue(result[0]['name'] == 'node1')
     # fix this by db abstraction...
     # def test_017_relations(self):
     #     # this should actually work....
