@@ -1,6 +1,6 @@
 [
     {
         "ns": {},
-        "primitive": "evacuate_host"
+        "primitive": "openstack_evacuate_host"
     }
 ]
