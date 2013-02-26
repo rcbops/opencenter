@@ -46,9 +46,6 @@ adventures = [
     {'name': 'Update Agent',
      'dsl': 'update_agent.json',
      'criteria': 'update_agent.criteria'},
-    {'name': 'Restart Agent',
-     'dsl': 'restart_agent.json',
-     'criteria': 'restart_agent.criteria'},
     {'name': 'Create Availability Zone',
      'dsl': 'create_az.json',
      'criteria': 'create_az.criteria'},
@@ -78,7 +75,7 @@ def upgrade(migrate_engine):
 
         adventure['dsl'] = json.loads(open(json_path).read())
         adventure['criteria'] = open(criteria_path).read()
-        adv = api.adventure_create(adventure)
+        api.adventure_create(adventure)
 
     canned_filters = [{'name': 'unprovisioned nodes',
                        'filter_type': 'node',
