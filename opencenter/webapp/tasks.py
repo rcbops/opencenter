@@ -145,7 +145,7 @@ def task_log(task_id):
 
         if len(addrs) == 0:
             s.close()
-            return generic.http_response(400, 'cannot determine interface')
+            return generic.http_badrequest(msg='cannot determine interface')
 
         # try least-to-most interesting
         for iface in ['en1', 'en0', 'eth1', 'eth0']:
