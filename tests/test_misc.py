@@ -4,6 +4,39 @@ import opencenter.webapp.utility
 
 from util import OpenCenterTestCase
 
+from opencenter.db import api as db_api
+
+
+class MiscDBAPITests(OpenCenterTestCase):
+    def __init__(self, *args, **kwargs):
+        super(MiscDBAPITests, self).__init__(*args, **kwargs)
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def test_call_undefined_model(self):
+        api = db_api.api_from_models()
+        with self.assertRaises(KeyError):
+            api._call_model('get_all', 'fakemodel')
+
+    def test_call_bad_model_function(self):
+        api = db_api.api_from_models()
+        with self.assertRaises(ValueError):
+            api._call_model('bad_function', 'nodes')
+
+    def test_bad_concrete_expression_syntax(self):
+        api = db_api.api_from_models()
+        with self.assertRaises(SyntaxError):
+            api.concrete_expression("foo not in 'bar'")
+
+    def test_bad_regularize_expression_syntax(self):
+        api = db_api.api_from_models()
+        with self.assertRaises(SyntaxError):
+            api.regularize_expression("foo not in 'bar'")
+
 
 class MiscTests(OpenCenterTestCase):
     def __init__(self, *args, **kwargs):
