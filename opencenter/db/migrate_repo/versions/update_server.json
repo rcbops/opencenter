@@ -7,7 +7,8 @@
     },
     {
         "ns": {
-            "service": "opencenter-server"
+            "service": "opencenter",
+            "sleep": 30
         },
         "primitive": "service_restart"
     }
