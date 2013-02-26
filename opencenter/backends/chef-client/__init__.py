@@ -170,6 +170,7 @@ class ChefClientBackend(opencenter.backends.Backend):
             node_id,))
 
         node = api._model_get_by_id('nodes', node_id)
+        api.apply_expression(node_id, 'attrs.converged := false')
 
         if not 'chef_server_consumed' in node['facts']:
             return self._fail(msg='missing fact: chef_server_consumed')
@@ -314,6 +315,10 @@ class ChefClientBackend(opencenter.backends.Backend):
         # now converge the affected nodes
         if node_id in nodelist:
             nodelist.remove(node_id)
+
+        for conv_node in nodelist:
+            api.apply_expression(conv_node, 'attrs.converged := false')
+
         if len(nodelist) > 0:
             api._model_create('tasks', {'action': 'adventurate',
                                         'node_id': adventurator['id'],
