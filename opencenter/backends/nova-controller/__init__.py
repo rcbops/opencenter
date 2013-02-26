@@ -86,8 +86,9 @@ class NovaControllerBackend(opencenter.backends.Backend):
             return self._fail(
                 msg='Nova RabbitMQ VIP (nova_rabbitmq_vip) required')
 
-        api.apply_expression(node_id,
-                             'facts.nova_role := "%s"' % 'ha-controller2')
+        api.apply_expression(
+            node_id,
+            'facts.nova_role := "%s"' % 'nova-controller-backup')
 
         node = api.node_get_by_id(node_id)
         api.apply_expression(node['facts']['parent_id'],

@@ -95,7 +95,7 @@ class NovaBackend(opencenter.backends.Backend):
 
         infra = self._make_subcontainer(
             api, 'Infrastructure', cluster['id'],
-            {'nova_role': 'ha-controller1', 'ha_infra': False},
+            {'nova_role': 'nova-controller-master', 'ha_infra': False},
             ['node', 'container', 'nova', 'nova-controller'])
 
         if infra is None:
