@@ -4,3 +4,16 @@ omit =
      tests/*
 
 include = opencenter/*
+
+[report]
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # dont complain about debug code
+    self.logger.debug
+    self.logger.error
+    self.logger.info
+
+    # Dont complain if tests don't hit defensive assertion code:
+    raise NotImplementedError
