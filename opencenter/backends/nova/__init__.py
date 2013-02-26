@@ -38,7 +38,7 @@ class NovaBackend(opencenter.backends.Backend):
 
         facts.update({'parent_id': parent_id,
                       'backends': backends})
-
+        data = {}
         data['facts'] = facts
         data['attrs'] = attrs
         for t in ['facts', 'attrs']:
