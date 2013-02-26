@@ -68,6 +68,8 @@ class NovaControllerBackend(opencenter.backends.Backend):
     # README(shep): not executed on the server, skipping from code coverage
     def add_backend(self, state_data, api,
                     node_id, **kwargs):  # pragma: no cover
+        api.apply_expression(node_id,
+                             'attrs.locked := true')
         return opencenter.backends.primitive_by_name('node.add_backend')(
             state_data, api, node_id, backend='nova-controller')
 
@@ -93,6 +95,8 @@ class NovaControllerBackend(opencenter.backends.Backend):
         node = api.node_get_by_id(node_id)
         api.apply_expression(node['facts']['parent_id'],
                              'facts.ha_infra := true')
+        api.apply_expression(node['facts']['parent_id'],
+                             'attrs.locked := true')
         # Need to find my environment
         chef_env_node = self._find_chef_environment_node(api, node)
         if chef_env_node is not None:
