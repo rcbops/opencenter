@@ -113,7 +113,7 @@ class NodeBackend(backends.Backend):
                 new_constraints.append('"node" in facts.backends')
 
                 existing_node = api._model_get_by_id('nodes', node_id)
-                if existing_node.get('attrs', {}).get('locked', False) == True:
+                if existing_node.get('attrs', {}).get('locked', False):
                     # Node is locked, set_parent not allowed.
                     return None
                 ephemeral_api = opencenter.db.api.ephemeral_api_from_api(api)
