@@ -19,6 +19,8 @@ import copy
 import logging
 import re
 
+import gevent
+
 import opencenter.backends
 from opencenter.db import api as db_api
 from opencenter.webapp import ast
@@ -516,6 +518,9 @@ class Solver:
         self.logger.info('All candidate solutions: %s' % candidate_solutions)
 
         for solution in candidate_solutions:
+            # yield for gevent
+            gevent.sleep(0)
+
             self.logger.info("%s with %s, solving %s" %
                              (solution['primitive']['name'],
                               solution['ns'],
@@ -678,6 +683,8 @@ class Solver:
 
             for leaf in current_leaves:
                 solution_node = leaf.solve_one()
+                # yeild to gevent
+                gevent.sleep(0)
                 if solution_node:
                     break
 
