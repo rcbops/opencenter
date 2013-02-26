@@ -133,7 +133,7 @@ def whoami():
         api._model_create('attrs',
                           {'node_id': node['id'],
                            'key': 'converged',
-                           'value': true})
+                           'value': True})
 
         if hostname == socket.gethostname():
             api._model_create('facts',
