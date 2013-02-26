@@ -112,4 +112,4 @@ def modify_fact(object_id):
 @bp.route('/<object_id>', methods=['DELETE'])
 def delete_object(object_id):
     msg = 'objects of type %s can not be deleted' % object_type
-    return generic.http_notfound(msg=msg)
+    return generic.http_badrequest(msg)
