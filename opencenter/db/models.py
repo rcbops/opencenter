@@ -277,7 +277,7 @@ class Nodes(JsonRenderer, Base):
 
 @event.listens_for(Nodes, 'after_delete')
 def node_cascade_delete(mapper, connection, target):
-    node_id=target.id
+    node_id = target.id
     for fact in Facts.query.filter_by(node_id=node_id):
         session.delete(fact)
 
