@@ -1,0 +1,14 @@
+[
+    {
+        "ns": {
+            "PACKAGE_NAME": "opencenter-server"
+        },
+        "primitive": "do_updates"
+    },
+    {
+        "ns": {
+            "service": "opencenter-server"
+        },
+        "primitive": "service_restart"
+    }
+]
