@@ -1,15 +1,16 @@
 [
     {
         "ns": {
-            "PACKAGE_NAME": "opencenter-server"
-        },
+            "PACKAGE_NAME": "opencenter-server", 
+            "sleep": 30
+        }, 
         "primitive": "do_updates"
-    },
+    }, 
     {
         "ns": {
-            "service": "opencenter",
+            "service": "opencenter", 
             "sleep": 30
-        },
+        }, 
         "primitive": "service_restart"
     }
 ]
