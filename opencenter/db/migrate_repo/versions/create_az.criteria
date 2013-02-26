@@ -1,1 +1,1 @@
-('nova-compute' in facts.backends)
+('nova-compute' in facts.backends) and ('container' in facts.backends)
