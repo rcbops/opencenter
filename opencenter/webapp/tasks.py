@@ -111,7 +111,7 @@ def task_log(task_id):
     try:
         task = api._model_get_by_id('tasks', task_id)
     except exceptions.IdNotFound:
-        return generic.http_response(404, 'not found')
+        return generic.http_notfound(msg='Task %s not found' % task_id)
 
     watching = flask.request.args.get('watch', False) is not False
 
@@ -191,7 +191,7 @@ def task_log(task_id):
         api._model_update_by_id('tasks', new_task['id'],
                                 {'state': 'cancelled'})
 
-        return generic.http_response(404, 'cannot fetch logs')
+        return generic.http_notfound(msg='cannot fetch logs')
 
     if watching:
         watch = str(uuid.uuid1())

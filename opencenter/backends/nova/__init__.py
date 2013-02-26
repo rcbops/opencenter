@@ -61,6 +61,7 @@ class NovaBackend(opencenter.backends.Backend):
 
         return self._ok()
 
+    # README(shep): part of happy path, not excluding from code coverage
     def create_cluster(self, state_data, api, node_id, **kwargs):
         if not 'cluster_name' in kwargs:
             return self._fail(msg='Cluster Name (cluster_name) required')
