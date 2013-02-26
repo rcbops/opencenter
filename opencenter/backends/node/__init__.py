@@ -116,6 +116,10 @@ class NodeBackend(backends.Backend):
                 if existing_node.get('attrs', {}).get('locked', False):
                     # Node is locked, set_parent not allowed.
                     return None
+                if parent.get('attrs', {}).get('locked', False):
+                    # parent is locked
+                    return None
+
                 ephemeral_api = opencenter.db.api.ephemeral_api_from_api(api)
                 opencenter.webapp.ast.apply_expression(existing_node,
                                                        'facts.parent_id :='
