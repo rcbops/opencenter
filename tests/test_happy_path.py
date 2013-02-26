@@ -316,7 +316,6 @@ class HappyPathTestCase(ScaffoldedTestCase):
         naz = self._model_filter('adventures',
                                  '"Create Availability Zone" in name')
 
-
         self.assertEqual(len(naz), 1)
         naz = naz[0]['id']
 
@@ -359,8 +358,8 @@ class HappyPathTestCase(ScaffoldedTestCase):
 
         self.assertEqual(node_count + 1, new_node_count)
 
-        az_names = [x['name'] for x in self._model_filter(
-                'nodes', 'facts.parent_id=%s' % cc)]
+        az_names = [x['name'] for x in
+                    self._model_filter('nodes', 'facts.parent_id=%s' % cc)]
 
         self.assertEqual(len(az_names), 2)
         self.assertTrue('AZ test1' in az_names)
