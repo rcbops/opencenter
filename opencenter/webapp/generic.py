@@ -18,6 +18,7 @@
 import time
 
 import flask
+import gevent
 
 from opencenter.db import exceptions
 from opencenter.db.api import api_from_models
@@ -225,15 +226,24 @@ def http_solver_request(node_id, constraints,
                         api=None, result=None, plan=None):
     if api is None:
         api = api_from_models()
-    try:
-        task, is_solvable, requires_input, solution_plan = \
-            utility.solve_and_run(node_id,
-                                  constraints,
-                                  api=api,
-                                  plan=plan)
-    except ValueError as e:
-        # no adventurator, or the generated ast was broken somehow
-        return http_response(403, msg=str(e))
+
+    subtask = gevent.spawn(
+        gevent.util.wrap_errors(
+            (ValueError, exceptions.IdNotFound),
+            utility.solve_and_run), node_id,
+        constraints, api, plan)
+    gevent.sleep(0)
+
+    st_result = subtask.get(block=True, timeout=None)
+
+    # this will either turn a 4-touple, or an exception.
+    if isinstance(st_result, ValueError):
+        return http_response(403, msg=str(st_result))
+    elif isinstance(st_result, exceptions.IdNotFound):
+        # push up the 404
+        raise exceptions.IdNotFound
+    else:
+        task, is_solvable, requires_input, solution_plan = st_result
 
     if task is None:
         if ((not is_solvable) and requires_input):
