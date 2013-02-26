@@ -168,7 +168,7 @@ class HappyPathTestCase(ScaffoldedTestCase):
         chef_adventure = self._model_filter(
             'adventures', '"Chef Server" in name')
 
-        self.assertEqual(len(chef_adventure), 1)
+        self.assertEqual(len(chef_adventure), 2)
         chef_adventure = chef_adventure[0]['id']
 
         # make sure this is in server adventure list
@@ -216,7 +216,7 @@ class HappyPathTestCase(ScaffoldedTestCase):
         chef_adventure = self._model_filter(
             'adventures', '"Chef Server" in name')
 
-        self.assertEqual(len(chef_adventure), 1)
+        self.assertEqual(len(chef_adventure), 2)
         chef_adventure = chef_adventure[0]['id']
 
         # make sure this is in server's adventure list

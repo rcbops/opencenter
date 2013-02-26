@@ -1,0 +1,1 @@
+('agent' in facts.backends) and (childof('unprovisioned')) and (ifcount('chef-server') > 0) and ('chef-client' in facts.backends) and (attrs.dev = true)
