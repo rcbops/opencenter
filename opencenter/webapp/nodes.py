@@ -16,6 +16,7 @@
 #
 
 import time
+import socket
 
 import flask
 
@@ -131,11 +132,21 @@ def whoami():
                           {"node_id": node['id'],
                            "key": "backends",
                            "value": ["node", "agent"]})
-        unprovisioned_id = unprovisioned_container()['id']
-        api._model_create('facts',
-                          {"node_id": node['id'],
-                           "key": "parent_id",
-                           "value": unprovisioned_id})
+        if hostname == socket.gethostname():
+            api._model_create('facts',
+                              {"node_id": node['id'],
+                               "key": "parent_id",
+                               "value": 3})
+            api._model_create('attrs',
+                              {"node_id": node['id'],
+                              "key": "server-agent",
+                              "value": True})
+        else:
+            unprovisioned_id = unprovisioned_container()['id']
+            api._model_create('facts',
+                              {"node_id": node['id'],
+                               "key": "parent_id",
+                               "value": unprovisioned_id})
         node = api._model_get_by_id('nodes', node['id'])
     else:
         node = nodes[0]
