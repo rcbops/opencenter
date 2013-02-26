@@ -125,28 +125,33 @@ def whoami():
     node = None
     if len(nodes) == 0:
         # register a new node
-        node = api._model_create('nodes', {"name": hostname})
+        node = api._model_create('nodes', {'name': hostname})
         api._model_create('facts',
-                          {"node_id": node['id'],
-                           "key": "backends",
-                           "value": ["node", "agent"]})
+                          {'node_id': node['id'],
+                           'key': 'backends',
+                           'value': ['node', 'agent']})
+        api._model_create('attrs',
+                          {'node_id': node['id'],
+                           'key': 'converged',
+                           'value': True})
+
         if hostname == socket.gethostname():
             api._model_create('facts',
-                              {"node_id": node['id'],
-                               "key": "parent_id",
-                               "value": 3})
+                              {'node_id': node['id'],
+                               'key': 'parent_id',
+                               'value': 3})
             api._model_create('attrs',
-                              {"node_id": node['id'],
-                              "key": "server-agent",
-                              "value": True})
+                              {'node_id': node['id'],
+                              'key': 'server-agent',
+                              'value': True})
         else:
             unprovisioned_id = unprovisioned_container()['id']
             api._model_create('facts',
-                              {"node_id": node['id'],
-                               "key": "parent_id",
-                               "value": unprovisioned_id})
+                              {'node_id': node['id'],
+                               'key': 'parent_id',
+                               'value': unprovisioned_id})
         node = api._model_get_by_id('nodes', node['id'])
     else:
         node = nodes[0]
     return generic.http_response(200, 'success',
-                                 **{"node": node})
+                                 **{'node': node})
