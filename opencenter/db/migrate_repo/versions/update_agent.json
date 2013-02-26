@@ -2,5 +2,9 @@
     {
         "primitive": "do_updates",
         "ns": { "PACKAGE_NAME": "opencenter-agent" }
+    },
+    {
+        "primitive": "agent_restart",
+        "ns": {}
     }
 ]
