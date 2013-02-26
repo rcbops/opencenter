@@ -203,7 +203,7 @@ def object_by_id(object_type, object_id):
                 return http_response(200, '%s deleted' % s_obj.capitalize())
             _notify(None, object_type, object_id)
         except exceptions.IdNotFound:
-            return http_response(404, 'not found')
+            return http_notfound(msg='not found')
     elif flask.request.method == 'GET':
         if 'poll' in flask.request.args:
             # we're polling
@@ -213,7 +213,7 @@ def object_by_id(object_type, object_id):
         try:
             model_object = api._model_get_by_id(object_type, object_id)
         except exceptions.IdNotFound:
-            return http_response(404, 'not found')
+            return http_notfound(msg='not found')
 
         return http_response(200, 'success', **{s_obj: model_object})
     else:
@@ -237,7 +237,7 @@ def http_solver_request(node_id, constraints,
 
     if task is None:
         if ((not is_solvable) and requires_input):
-            return http_response(409, msg='need additional input',
+            return http_conflict(msg='need additional input',
                                  plan=solution_plan,
                                  friendly='Please supply additional info')
         if not is_solvable:
