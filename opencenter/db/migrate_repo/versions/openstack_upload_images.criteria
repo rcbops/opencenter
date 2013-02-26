@@ -1,1 +1,1 @@
-(facts.nova_role = 'nova-infra') and ('agent' in facts.backends)
+(facts.nova_role = 'nova-controller-master') and ('agent' in facts.backends)
