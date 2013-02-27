@@ -113,7 +113,8 @@ class ChefClientBackend(opencenter.backends.Backend):
                          'role[cinder-scheduler]', 'role[nova-cert]',
                          'role[nova-vncproxy]', 'role[horizon-server]',
                          'role[openstack-ha]']
-            return [','.join(role_list)]
+            # return [','.join(role_list)]
+            return role_list
         return []
 
     # README(shep): not executed on the server, skipping from code coverage
