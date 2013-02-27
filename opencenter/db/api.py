@@ -18,7 +18,7 @@
 import logging
 from functools import partial
 
-import abstraction
+from opencenter.db import abstraction
 import opencenter.webapp.ast
 
 _cached_apis = {}
