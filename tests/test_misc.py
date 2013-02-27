@@ -5,6 +5,7 @@ import opencenter.webapp.utility
 from util import OpenCenterTestCase
 
 from opencenter.db import api as db_api
+from opencenter.db import exceptions as exc
 
 
 class MiscDBAPITests(OpenCenterTestCase):
@@ -36,6 +37,11 @@ class MiscDBAPITests(OpenCenterTestCase):
         api = db_api.api_from_models()
         with self.assertRaises(SyntaxError):
             api.regularize_expression("foo not in 'bar'")
+
+    def test_delete_nonexistant_node(self):
+        api = db_api.api_from_models()
+        with self.assertRaises(exc.IdNotFound):
+            api.node_delete_by_id(99)
 
 
 class MiscTests(OpenCenterTestCase):
