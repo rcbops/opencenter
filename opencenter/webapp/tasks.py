@@ -115,6 +115,15 @@ def task_log(task_id):
 
     watching = flask.request.args.get('watch', False) is not False
 
+    offset = flask.request.args.get('offset', 1024)
+    try:
+        offset = int(offset)
+    except ValueError:
+        pass
+    if not isinstance(offset, int) or offset < 0:
+        message = 'Offset must be a non-negative integer'
+        return generic.http_badrequest(msg=message)
+
     s = gevent.socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('', 0))
     s.listen(1)
@@ -162,7 +171,8 @@ def task_log(task_id):
                'action': client_action,
                'payload': {'task_id': task['id'],
                            'dest_ip': addr,
-                           'dest_port': port}}
+                           'dest_port': port,
+                           'offset': offset}}
     if watching:
         payload['payload']['timeout'] = 30
 
@@ -208,12 +218,9 @@ def task_log(task_id):
         return generic.http_response(200, request=watch)
 
     # otherwise, just tail
-    data = conn.recv(1024)
+    data = _generate_data(conn, s)
 
-    conn.close()
-    s.close()
-
-    return generic.http_response(200, log=data)
+    return flask.Response(data, mimetype='text/plain')
 
 
 @bp.route('/<task_id>/logs/<transaction>', methods=['GET'])
@@ -244,6 +251,34 @@ def task_log_tail(task_id, transaction):
                           mimetype='text/plain')
 
 
+def _generate_data(listen_socket, accept_socket, watch=None):
+    logger = logging.getLogger('opencenter.webapp.tasks')
+
+    def generate(sock_in):
+        sock_in.settimeout(30)
+
+        while True:
+            data = sock_in.recv(1024)
+            if not data:
+                # remote disconnected
+                return
+            yield data
+
+        sock_in.close()
+        accept_socket.close()
+
+        try:
+            watched_tasks.pop(watch)
+        except KeyError:
+            pass
+
+    logger.debug('Woke up -- spinning generator')
+    wrapped_socket = gevent.socket.fromfd(listen_socket.fileno(),
+                                          socket.AF_INET,
+                                          socket.SOCK_STREAM)
+    return generate(wrapped_socket)
+
+
 def _serve_connection(api, watch):
     logger = logging.getLogger('opencenter.webapp.tasks')
 
@@ -259,30 +294,9 @@ def _serve_connection(api, watch):
         # we've been woken up -- someone is
         # asking for the file.  We should have
         # a response now.
-        def generate(watch, sock_in, accept_socket):
-            sock_in.settimeout(30)
-
-            while True:
-                data = sock_in.recv(1024)
-                if data == '':
-                    # remote disconnected
-                    return
-                yield data
-
-            sock_in.close()
-            accept_socket.close()
-
-            try:
-                watched_tasks.pop(watch)
-            except KeyError:
-                pass
-
-        logger.debug('Woke up -- spinning generator')
-        wrapped_socket = gevent.socket.fromfd(listen_socket.fileno(),
-                                              socket.AF_INET,
-                                              socket.SOCK_STREAM)
-        watch_info['generator'] = generate(watch, wrapped_socket,
-                                           accept_socket)
+        watch_info['generator'] = _generate_data(listen_socket,
+                                                 accept_socket,
+                                                 watch)
 
         # we'll wait 30 seconds for the other side to pick it up...
         # if it doesn't, we'll just throw away the transaction.
