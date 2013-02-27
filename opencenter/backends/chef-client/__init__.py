@@ -117,34 +117,30 @@ class ChefClientBackend(opencenter.backends.Backend):
             #return role_list
         return []
 
-    # README(shep): not executed on the server, skipping from code coverage
-    def _expand_nodelist(self, nodelist, api):  # pragma: no cover
+    def _get_nodes_in_env(self, env):
         """
-        given a list of nodes (including containers),
-        generate a fully expanded list of non-container-y
-        nodes
+        given a chef environment, find all nodes with that environment
+        in their facts and return a list of node ids. Exclude containers
         """
 
         final_nodelist = []
 
-        self.logger.debug('nodelist: %s' % nodelist)
+        self.logger.debug('environment: %s' % env)
 
-        for node_id in nodelist:
-            node = api.node_get_by_id(node_id)
+        query = 'facts.chef_environment = %s' % env
+        nodelist = api.nodes_query(query)
+
+        for node in nodelist:
             is_container = False
             if 'backends' in node['facts'] and \
                     'container' in node['facts']['backends']:
                 is_container = True
 
             if not is_container:
+                node_id = node['id']
                 final_nodelist.append(node_id)
-            else:
-                query = 'facts.parent_id = %s' % node_id
-                child_nodes = api.nodes_query(query)
-                child_node_ids = [x['id'] for x in child_nodes]
 
-                final_nodelist += self._expand_nodelist(child_node_ids, api)
-
+        self.logger.debug('final nodelist: %s' % final_nodelist)
         return final_nodelist
 
     # README(shep): not executed on the server, skipping from code coverage
@@ -193,7 +189,7 @@ class ChefClientBackend(opencenter.backends.Backend):
         if not verify_facts(cs, ['chef_server_uri',
                                  'chef_server_client_name',
                                  'chef_server_client_pem']):
-            return self._faile(msg='chef server missing chef attrs')
+            return self._fail(msg='chef server missing chef attrs')
 
         chef_server_uri = cs['facts']['chef_server_uri']
         chef_server_client_name = cs['facts']['chef_server_client_name']
@@ -288,7 +284,6 @@ class ChefClientBackend(opencenter.backends.Backend):
         #         chef_node.chef_environment != chef_environment or\
         #         chef_node.run_list != self._map_roles(nova_role):
         self.logger.debug('Updating chef node')
-        need_node_converge = True
         self.logger.debug('Setting environment to %s' % chef_environment)
         chef_node.chef_environment = chef_environment
         chef_node.normal = node_attrs
@@ -297,45 +292,100 @@ class ChefClientBackend(opencenter.backends.Backend):
         chef_node.save()
 
         if old_runlist != chef_node.run_list:
-            # roles changed, refreshing env just in case searches are affected.
-            need_env_converge = True
+            # roles changed, refresh node and then all other nodes in env
+            need_node_converge = True
 
         if old_env_overrides != env_attrs:
+            # refresh entire environment in one go
             self.logger.debug('Updating environment')
             need_env_converge = True
             env.override_attributes = env_attrs
             env.save()
 
-        nodelist = [node_id]
+        if need_node_converge:
+            # first run converge on the node in question
+            self.logger.debug('chef updating node: %s' % node_id)
+            dsl = [{'primitive': 'run_chef', 'ns': {}}]
+            node_task = api._model_create(
+                'tasks',
+                {'action': 'adventurate',
+                'node_id': adventurator['id'],
+                'payload': {'nodes': [node_id],
+                'adventure_dsl': dsl}})
 
-        if need_env_converge:
-            # FIXME: this should be the top-level environment container...
-            nodelist = self._expand_nodelist([node_id], api)
-        elif need_node_converge:
-            nodelist = [node_id]
+            # watch for task state
+            while node_task['state'] not in ['timeout', 'cancelled', 'done']:
+                time.sleep(5)
+                node_task = api._model_get_by_id('tasks', node_task['id'])
 
-        self.logger.debug('chef updating nodelist: %s' % nodelist)
-        dsl = [{'primitive': 'run_chef', 'ns': {}}]
-        # first run converge on the node in question
-        api._model_create('tasks', {'action': 'adventurate',
-                                    'node_id': adventurator['id'],
-                                    'payload': {'nodes': [node_id],
-                                                'adventure_dsl': dsl}})
-        # now converge the affected nodes
-        if node_id in nodelist:
-            nodelist.remove(node_id)
+            if node_task['state'] != 'done':
+                return self._fail(msg='task did not finish successfully')
 
-        for conv_node in nodelist:
-            api.apply_expression(conv_node, 'attrs.converged := false')
+            if 'result_code' in node_task['result'] and \
+                    node_task['result']['result_code'] == 0:
+                # now converge the rest of the nodes in the environment
+                nodelist = self._get_nodes_in_env(chef_environment)
+                if node_id in nodelist:
+                    nodelist.remove(node_id)
+                self.logger.debug('chef updating nodes: %s' % nodelist)
+                # now converge the affected nodes
+                if len(nodelist) > 0:
+                    all_task = api._model_create(
+                        'tasks',
+                        {'action': 'adventurate',
+                        'node_id': adventurator['id'],
+                        'payload': {'nodes': nodelist,
+                        'adventure_dsl': dsl}})
 
-        if len(nodelist) > 0:
-            api._model_create('tasks', {'action': 'adventurate',
-                                        'node_id': adventurator['id'],
-                                        'payload': {'nodes': nodelist,
-                                                    'adventure_dsl': dsl}})
+                    # watch for task state
+                    while all_task['state'] not in \
+                            ['timeout', 'cancelled', 'done']:
+                        time.sleep(5)
+                        all_task = api._model_get_by_id(
+                            'tasks', all_task['id'])
 
-        # FIXME: should poll for result here
-        return self._ok()
+                    if all_task['state'] != 'done':
+                        return self._fail(
+                            msg='task did not finish successfully')
+
+                    if 'result_code' in node_task['result'] and \
+                            node_task['result']['result_code'] == 0:
+                        return self._ok()
+
+            return self._fail(msg='task did not finish successfully')
+
+        elif need_env_converge:
+            # converge ALL of the nodes
+            nodelist = self._get_nodes_in_env(chef_environment)
+            self.logger.debug('chef updating nodes: %s' % nodelist)
+            # now converge the affected nodes
+            if len(nodelist) > 0:
+                all_task = api._model_create(
+                    'tasks',
+                    {'action': 'adventurate',
+                    'node_id': adventurator['id'],
+                    'payload': {'nodes': nodelist,
+                    'adventure_dsl': dsl}})
+
+                # watch for task state
+                while all_task['state'] not in \
+                        ['timeout', 'cancelled', 'done']:
+                    time.sleep(5)
+                    all_task = api._model_get_by_id(
+                        'tasks', all_task['id'])
+
+                if all_task['state'] != 'done':
+                    return self._fail(
+                        msg='task did not finish successfully')
+
+                if 'result_code' in node_task['result'] and \
+                        node_task['result']['result_code'] == 0:
+                    return self._ok()
+
+                return self._fail(msg='task did not finish successfully')
+            else:
+                self.logger.debug('No other nodes in the environment '
+                                  'that need converging')
 
     # README(shep): not executed on the server, skipping from code coverage
     def add_backend(self, api, node_id, **kwargs):  # pragma: no cover
