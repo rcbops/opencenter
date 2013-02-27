@@ -258,7 +258,7 @@ def _generate_data(listen_socket, accept_socket, watch=None):
         sock_in.settimeout(30)
 
         while True:
-            data = socket_in.recv(1024)
+            data = sock_in.recv(1024)
             if not data:
                 # remote disconnected
                 return
