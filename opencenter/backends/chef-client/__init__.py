@@ -302,7 +302,6 @@ class ChefClientBackend(opencenter.backends.Backend):
             env.override_attributes = env_attrs
             env.save()
 
-<<<<<<< HEAD
         if need_node_converge:
             # first run converge on the node in question
             self.logger.debug('chef updating node: %s' % node_id)
@@ -384,38 +383,9 @@ class ChefClientBackend(opencenter.backends.Backend):
                     return self._ok()
 
                 return self._fail(msg='task did not finish successfully')
-=======
-        nodelist = [node_id]
-
-        if need_env_converge:
-            # FIXME: this should be the top-level environment container...
-            nodelist = self._expand_nodelist([node_id], api)
-        elif need_node_converge:
-            nodelist = [node_id]
-
-        self.logger.debug('chef updating nodelist: %s' % nodelist)
-        dsl = [{'primitive': 'run_chef', 'ns': {}}]
-        # first run converge on the node in question
-        api._model_create('tasks', {'action': 'adventurate',
-                                    'node_id': adventurator['id'],
-                                    'payload': {'nodes': [node_id],
-                                                'adventure_dsl': dsl}})
-        # now converge the affected nodes
-        if node_id in nodelist:
-            nodelist.remove(node_id)
-
-        for conv_node in nodelist:
-            api.apply_expression(conv_node, 'attrs.converged := false')
-
-        if len(nodelist) > 0:
-            api._model_create('tasks', {'action': 'adventurate',
-                                        'node_id': adventurator['id'],
-                                        'payload': {'nodes': nodelist,
-                                                    'adventure_dsl': dsl}})
-
-        # FIXME: should poll for result here
-        return self._ok()
->>>>>>> f05fbc115745fcdbda390278d619e78c8cd5cc54
+            else:
+                self.logger.debug('No other nodes in the environment
+                                  that need converging')
 
     # README(shep): not executed on the server, skipping from code coverage
     def add_backend(self, api, node_id, **kwargs):  # pragma: no cover
