@@ -125,6 +125,9 @@ def upgrade(migrate_engine):
         api.attr_create({'node_id': node['id'],
                          'key': 'display_name',
                          'value': node['name'].capitalize()})
+        api.attr_create({'node_id': node['id'],
+                         'key': 'locked',
+                         'value': True})
 
 
 def downgrade(migrate_engine):
