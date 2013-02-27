@@ -212,7 +212,8 @@ class NodeBackend(backends.Backend):
         node = api.node_get_by_id(node_id)
         key, value = kwargs['key'], kwargs['value']
         curval = node['facts'].get(key, None)
-        if key == "chef_environment" and (curval is not None or curval != value):
+        if key == "chef_environment" and (curval is not None
+                                          or curval != value):
             return None
         self.logger.debug("Applying (vs. setting) fact %s->%s" %
                           (key, value))
