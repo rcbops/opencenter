@@ -138,14 +138,14 @@ def downgrade(migrate_engine):
     adventure_names = [x['name'] for x in adventures]
 
     for name in adventure_names:
-        adventure_list = api._query('adventures', 'name="%s"' % name)
+        adventure_list = api._model_query('adventures', 'name="%s"' % name)
         for adv in adventure_list:
-            api._model_delete('adventures', adv['id'])
+            api._model_delete_by_id('adventures', adv['id'])
 
     node_list = ['"support"', '"unprovisioned"', '"workspace"']
     for node in node_list:
         tmp = api.nodes_query('name = %s' % node)
-        fact_list = api.facts_query('node_id = %s' % tmp['id'])
+        fact_list = api.facts_query('node_id = %s' % tmp[0]['id'])
         for fact in fact_list:
             api.fact_delete_by_id(fact['id'])
-        api.node_delete_by_id(tmp['id'])
+        api.node_delete_by_id(tmp[0]['id'])

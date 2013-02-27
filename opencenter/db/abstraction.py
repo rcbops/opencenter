@@ -89,26 +89,22 @@ class DbAbstraction(object):
             return result[0]
         return None
 
-    def _coerce_data(self, data):
-        schema = self.get_schema()
-
-        for field, value in data.items():
-            wanted_type = None
-            type_name = None
-
-            if field in schema:
-                type_name = schema[field]['type']
-            else:
-                raise ValueError('non-schema data in update/create call')
-
-            if type_name == 'INTEGER' or type_name == 'NUMBER':
-                wanted_type = int
-
-            if 'VARCHAR' in type_name:
-                wanted_type = str
-
-            if wanted_type is not None:
-                data[field] = wanted_type(value)
+    # README(shep): this is not being called anywhere
+    #def _coerce_data(self, data):
+    #    schema = self.get_schema()
+    #    for field, value in data.items():
+    #        wanted_type = None
+    #        type_name = None
+    #        if field in schema:
+    #            type_name = schema[field]['type']
+    #        else:
+    #            raise ValueError('non-schema data in update/create call')
+    #        if type_name == 'INTEGER' or type_name == 'NUMBER':
+    #            wanted_type = int
+    #        if 'VARCHAR' in type_name:
+    #            wanted_type = str
+    #        if wanted_type is not None:
+    #            data[field] = wanted_type(value)
 
     def _sanitize_for_update(self, data):
         # should we sanitize, or raise?
@@ -174,8 +170,6 @@ class SqlAlchemyAbstraction(DbAbstraction):
         return field_list
 
     def get_all(self):
-        field_list = self.get_columns()
-
         return [x.jsonify(api=self.api) for x in self.model.query.all()]
 
     def get_schema(self):
