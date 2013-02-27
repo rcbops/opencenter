@@ -1,6 +1,6 @@
 [
     {
         "ns": {},
-        "primitive": "upload_images"
+        "primitive": "openstack_upload_images"
     }
 ]

@@ -251,6 +251,29 @@ class AstTests(OpenCenterTestCase):
         self.assertEquals(len(result), 1)
         self.assertTrue(result[0]['name'] == 'node1')
 
+    def test_childof(self):
+        query = 'childof("container")'
+        result = self._model_filter('nodes', query)
+        self.assertEqual(len(result), 2)
+        query = 'childof("badname")'
+        result = self._model_filter('nodes', query)
+        self.assertEqual(len(result), 0)
+        self.node3 = self._model_create('nodes', name='node3')
+        self.node4 = self._model_create('nodes', name='node4')
+        self._model_create('facts', node_id=self.node3['id'],
+                           key='parent_id', value=self.node4['id'])
+        self._model_create('facts', node_id=self.node4['id'],
+                           key='parent_id', value=self.node3['id'])
+        query = 'childof("node2")'
+        result = self._model_filter('nodes', query)
+        #this tests for (gets stuck)  infinite loop
+        self.assertEqual(len(result), 0)
+
+    def test_printf(self):
+        query = 'facts.str_fact = printf("azby%s", "cxdw")'
+        result = self._model_filter('nodes', query)
+        self.assertEquals(len(result), 1)
+        self.assertTrue(result[0]['name'] == 'node1')
     # fix this by db abstraction...
     # def test_017_relations(self):
     #     # this should actually work....

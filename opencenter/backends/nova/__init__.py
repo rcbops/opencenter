@@ -26,20 +26,27 @@ class NovaBackend(opencenter.backends.Backend):
     def additional_constraints(self, api, node_id, action, ns):
         return []
 
-    def _make_subcontainer(self, api, name, parent_id, facts, backends):
+    def _make_subcontainer(self, api, name, parent_id, facts, backends,
+                           attrs=None):
         subcontainer = api._model_create('nodes', {'name': name})
         if subcontainer is None:
             return None
+        if attrs is None:
+            attrs = {}
+        if facts is None:
+            facts = {}
 
         facts.update({'parent_id': parent_id,
                       'backends': backends})
-
-        for k, v in facts.items():
-            data = {'key': k,
-                    'value': v,
-                    'node_id': subcontainer['id']}
-
-            api._model_create('facts', data)
+        data = {}
+        data['facts'] = facts
+        data['attrs'] = attrs
+        for t in ['facts', 'attrs']:
+            for k, v in data[t].items():
+                d = {'key': k,
+                     'value': v,
+                     'node_id': subcontainer['id']}
+                api._model_create(t, d)
 
         return subcontainer
 
@@ -52,7 +59,11 @@ class NovaBackend(opencenter.backends.Backend):
         if not test_valid:
             return self._fail(msg='Name cannot contain spaces or special'
                                   'characters')
-
+        r = api.nodes_query('(facts.parent_id = %s) and '
+                            '(facts.nova_az = "%s")' % (
+                                node_id, kwargs['az_name']))
+        if len(r) > 0:
+            return self._fail(msg='AZ Name should be unique within a cluster.')
         self._make_subcontainer(api,
                                 'AZ %s' % kwargs['az_name'],
                                 node_id,
@@ -61,9 +72,20 @@ class NovaBackend(opencenter.backends.Backend):
 
         return self._ok()
 
+    # README(shep): part of happy path, not excluding from code coverage
     def create_cluster(self, state_data, api, node_id, **kwargs):
+        # make sure we have good inputs
         if not 'cluster_name' in kwargs:
             return self._fail(msg='Cluster Name (cluster_name) required')
+        valid = string.letters + string.digits + "_-"
+        test_valid = all([c in valid for c in kwargs['cluster_name']])
+        if not test_valid:
+            return self._fail(msg='Cluster name must be entirely composed of'
+                              ' alphanumeric characters, -s, or _s')
+        r = api.nodes_query('facts.chef_environment = "%s"' % (
+            kwargs['cluster_name'],))
+        if len(r) > 0:
+            return self._fail(msg='Cluster Name should be unique')
 
         cluster_facts = ["nova_public_if",
                          "keystone_admin_pw",
@@ -87,13 +109,15 @@ class NovaBackend(opencenter.backends.Backend):
         # facts.
         cluster = self._make_subcontainer(
             api, kwargs['cluster_name'], node_id, environment_hash,
-            ['node', 'container', 'nova', 'chef-environment'])
+            ['node', 'container', 'nova', 'chef-environment'],
+            attrs={"locked": True})
 
         if cluster is None:
             return self._fail(msg='cannot create nova cluster container')
 
         infra = self._make_subcontainer(
-            api, 'Infrastructure', cluster['id'], {'nova_role': 'nova-infra'},
+            api, 'Infrastructure', cluster['id'],
+            {'nova_role': 'nova-controller-master', 'ha_infra': False},
             ['node', 'container', 'nova', 'nova-controller'])
 
         if infra is None:
@@ -101,8 +125,9 @@ class NovaBackend(opencenter.backends.Backend):
 
         comp = self._make_subcontainer(
             api, 'Compute', cluster['id'],
-            {'nova_role': 'nova-compute'}, ['node', 'container', 'nova',
-                                            'nova-compute'])
+            {'nova_role': 'nova-compute'},
+            ['node', 'container', 'nova', 'nova-compute'],
+            {"locked": True})
 
         if comp is None:
             return self._fail(msg='cannot create "Compute" container')

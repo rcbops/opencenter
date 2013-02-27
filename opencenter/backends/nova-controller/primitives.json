@@ -3,5 +3,32 @@
         "args": {},
         "constraints": [],
         "consequences": [ "facts.backends := union(facts.backends, 'nova-controller')" ]
+    },
+    "make_infra_ha": {
+        "args": {
+            "nova_api_vip": {
+                "friendly": "Nova API VIP",
+                "description": "The VIP for nova api endpoints",
+                "default": "192.168.200.254",
+                "type": "string",
+                "required": true
+            },
+            "nova_rabbitmq_vip": {
+                "friendly": "RabbitMQ Service VIP",
+                "description": "The VIP for rabbitmq endpoint",
+                "default": "192.168.200.253",
+                "type": "string",
+                "required": true
+            },
+            "nova_mysql_vip": {
+                "friendly": "MySQL Service VIP",
+                "description": "The VIP for mysql endpoint",
+                "default": "192.168.200.252",
+                "type": "string",
+                "required": true
+            }
+        },
+        "constraints": [],
+        "consequences": [ "facts.ha_infra := true" ]
     }
 }

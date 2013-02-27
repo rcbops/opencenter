@@ -17,6 +17,7 @@
 
 import copy
 import logging
+import time
 
 import gevent.event
 import gevent.coros
@@ -251,12 +252,19 @@ def run_adventure(adventure_dsl=None, nodes=None):
 
     adventure_nodes = api.nodes_query(query)
 
+    # find out how long this should run...
+    max_time = 0
+    for step in adventure_dsl:
+        max_time += step.get('timeout', 30)
+
     if len(adventure_nodes) > 0:
         adventure_node = adventure_nodes.pop(0)['id']
 
         task = api.task_create({'action': 'adventurate',
                                 'node_id': adventure_node,
-                                'payload': payload})
+                                'payload': payload,
+                                'expires': int(time.time() + max_time)})
+
         # FAIL: create a task update -- this should be done
         # via the model...
         task_semaphore = 'task-for-%s' % adventure_node
@@ -298,7 +306,7 @@ def solve_and_run(node_id, constraints, api=None, plan=None):
     if is_solvable:
         task = run_adventure(adventure_dsl=solution_plan, nodes=[node_id])
 
-    return task, solution_plan
+    return task, is_solvable, requires_input, solution_plan
 
 
 def unprovisioned_container():

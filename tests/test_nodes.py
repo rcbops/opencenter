@@ -311,3 +311,32 @@ class NodeTransactionTests(OpenCenterTestCase):
         trans = self._get_txid()
         _, _ = self._model_get_updates('nodes', trans['session_key'],
                                        0, expect_code=410, raw=True)
+
+
+class NodeMiscTests(OpenCenterTestCase):
+    def test_cascading_deletes(self):
+        new_node = self._model_create('nodes', name='test1')
+        new_fact = self._model_create('facts',
+                                      node_id=new_node['id'],
+                                      key='test1',
+                                      value='x')
+        new_attr = self._model_create('attrs',
+                                      node_id=new_node['id'],
+                                      key='test1',
+                                      value='y')
+
+        expanded_node = self._model_get_by_id('nodes', new_node['id'])
+        self.assertTrue('test1' in expanded_node['facts'])
+        self.assertTrue('test1' in expanded_node['attrs'])
+        self.assertEqual(expanded_node['facts']['test1'], 'x')
+        self.assertEqual(expanded_node['attrs']['test1'], 'y')
+
+        self._model_delete('nodes', new_node['id'])
+
+        # now, we make sure that the fact has been deleted
+        # this will assert unless we get a 404.
+        self._model_get_by_id('facts', new_fact['id'],
+                              expect_code=404, raw=True)
+
+        self._model_get_by_id('attrs', new_fact['id'],
+                              expect_code=404, raw=True)

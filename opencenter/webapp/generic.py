@@ -18,6 +18,7 @@
 import time
 
 import flask
+import gevent
 
 from opencenter.db import exceptions
 from opencenter.db.api import api_from_models
@@ -203,7 +204,7 @@ def object_by_id(object_type, object_id):
                 return http_response(200, '%s deleted' % s_obj.capitalize())
             _notify(None, object_type, object_id)
         except exceptions.IdNotFound:
-            return http_response(404, 'not found')
+            return http_notfound(msg='not found')
     elif flask.request.method == 'GET':
         if 'poll' in flask.request.args:
             # we're polling
@@ -213,7 +214,7 @@ def object_by_id(object_type, object_id):
         try:
             model_object = api._model_get_by_id(object_type, object_id)
         except exceptions.IdNotFound:
-            return http_response(404, 'not found')
+            return http_notfound(msg='not found')
 
         return http_response(200, 'success', **{s_obj: model_object})
     else:
@@ -225,25 +226,33 @@ def http_solver_request(node_id, constraints,
                         api=None, result=None, plan=None):
     if api is None:
         api = api_from_models()
-    try:
-        task, solution_plan = utility.solve_and_run(node_id,
-                                                    constraints,
-                                                    api=api,
-                                                    plan=plan)
-    except ValueError as e:
-        # no adventurator, or the generated ast was broken somehow
-        return http_response(403, msg=str(e))
+
+    subtask = gevent.spawn(
+        gevent.util.wrap_errors(
+            (ValueError, exceptions.IdNotFound),
+            utility.solve_and_run), node_id,
+        constraints, api, plan)
+    gevent.sleep(0)
+
+    st_result = subtask.get(block=True, timeout=None)
+
+    # this will either turn a 4-touple, or an exception.
+    if isinstance(st_result, ValueError):
+        return http_response(403, msg=str(st_result))
+    elif isinstance(st_result, exceptions.IdNotFound):
+        # push up the 404
+        raise exceptions.IdNotFound
+    else:
+        task, is_solvable, requires_input, solution_plan = st_result
 
     if task is None:
-        is_solvable, requires_input, solution_plan = utility.solve_for_node(
-            node_id, constraints, api, plan=plan)
-
         if ((not is_solvable) and requires_input):
-            return http_response(409, msg='need additional input',
-                                 plan=solution_plan)
+            return http_conflict(msg='need additional input',
+                                 plan=solution_plan,
+                                 friendly='Please supply additional info')
         if not is_solvable:
             return http_response(403, msg='cannot be solved',
-                                 friendly='sorry about that')
+                                 friendly='Cannot solve action')
 
     # here we need to return the object (node/fact),
     # but should consequence be applied?!?

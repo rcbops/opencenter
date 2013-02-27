@@ -30,6 +30,7 @@ from database import Base
 import api as db_api
 import inmemory
 import opencenter.backends
+from opencenter.db.database import session
 
 
 # Special Fields
@@ -274,21 +275,29 @@ class Nodes(JsonRenderer, Base):
                                            'node_id=%d' % self.id)])
 
 
+@event.listens_for(Nodes, 'after_delete')
+def node_cascade_delete(mapper, connection, target):
+    node_id = target.id
+    for fact in Facts.query.filter_by(node_id=node_id):
+        session.delete(fact)
+
+    for attr in Attrs.query.filter_by(node_id=node_id):
+        session.delete(attr)
+
+
 class Adventures(JsonRenderer, Base):
     __tablename__ = 'adventures'
     id = Column(Integer, primary_key=True)
     name = Column(String(30), nullable=False)
     dsl = Column(JsonBlob, default={}, nullable=False)
     criteria = Column(String(255))
-    args = Column(JsonBlob, default={})
 
     _non_updatable_fields = ['id']
 
-    def __init__(self, name, dsl, criteria='true', args={}):
+    def __init__(self, name, dsl, criteria='true'):
         self.name = name
         self.dsl = dsl
         self.criteria = criteria
-        self.args = args
 
     def __repr__(self):
         return '<Adventures %r>' % (self.name)

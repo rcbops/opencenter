@@ -35,19 +35,8 @@ class ChefClientBackend(opencenter.backends.Backend):
             return None
         return []
 
-    def _dict_merge(self, merge_target, new_dict):
-        for key, value in new_dict.items():
-            if isinstance(value, dict):
-                if not key in merge_target:
-                    merge_target[key] = {}
-                merge_target[key] = self._dict_merge(
-                    merge_target[key], new_dict[key])
-            else:
-                merge_target[key] = value
-
-        return merge_target
-
-    def _represent_node_attributes(self, api, node_id):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _represent_node_attributes(self, api, node_id):  # pragma: no cover
         node = api._model_get_by_id('nodes', node_id)
 
         # walk through all the facts and determine which are
@@ -89,20 +78,26 @@ class ChefClientBackend(opencenter.backends.Backend):
 
         return (json.loads(chef_node_attrs), json.loads(chef_env_attrs))
 
-    def _entity_exists(self, entity_type, key, value, chef_api):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _entity_exists(self, entity_type, key,
+                       value, chef_api):  # pragma: no cover
         result = chef.Search(entity_type, '%s:%s' % (key, value),
                              1, 0, chef_api)
         return len(result) == 1
 
-    def _environment_exists(self, environment_name, chef_api):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _environment_exists(self, environment_name,
+                            chef_api):  # pragma: no cover
         return self._entity_exists('environment', 'name',
                                    environment_name, chef_api)
 
-    def _node_exists(self, node_name, chef_api):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _node_exists(self, node_name, chef_api):  # pragma: no cover
         return self._entity_exists('node', 'name',
                                    node_name, chef_api)
 
-    def _map_roles(self, role):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _map_roles(self, role):  # pragma: no cover
         if role == 'nova-compute':
             return ['role[single-compute]']
         elif role == 'nova-infra':
@@ -111,6 +106,15 @@ class ChefClientBackend(opencenter.backends.Backend):
             return ['role[ha-controller1]']
         elif role == 'nova-controller-backup':
             return ['role[ha-controller2]']
+            # Debug to work around glance ha issue
+            #role_list = ['role[base]', 'role[mysql-master]',
+            #             'role[rabbitmq-server]', 'role[keystone-api]',
+            #             'role[nova-scheduler]', 'role[nova-api-ec2]',
+            #             'role[nova-api-os-compute]', 'role[cinder-api]',
+            #             'role[cinder-scheduler]', 'role[nova-cert]',
+            #             'role[nova-vncproxy]', 'role[horizon-server]',
+            #             'role[openstack-ha]']
+            #return role_list
         return []
 
     def _get_nodes_in_env(self, env):
@@ -139,7 +143,8 @@ class ChefClientBackend(opencenter.backends.Backend):
         self.logger.debug('final nodelist: %s' % final_nodelist)
         return final_nodelist
 
-    def _serialize_node_blob(self, blob):
+    # README(shep): not executed on the server, skipping from code coverage
+    def _serialize_node_blob(self, blob):  # pragma: no cover
         result = {}
         for key, value in blob.items():
             if isinstance(value, chef.node.NodeAttributes):
@@ -148,7 +153,9 @@ class ChefClientBackend(opencenter.backends.Backend):
                 result[key] = value
         return result
 
-    def converge_chef(self, state_data, api, node_id, **kwargs):
+    # README(shep): not executed on the server, skipping from code coverage
+    def converge_chef(self, state_data, api,
+                      node_id, **kwargs):  # pragma: no cover
         def safe_get_fact(node, fact):
             if not fact in node['facts']:
                 return None
@@ -168,6 +175,7 @@ class ChefClientBackend(opencenter.backends.Backend):
             node_id,))
 
         node = api._model_get_by_id('nodes', node_id)
+        api.apply_expression(node_id, 'attrs.converged := false')
 
         if not 'chef_server_consumed' in node['facts']:
             return self._fail(msg='missing fact: chef_server_consumed')
@@ -294,6 +302,7 @@ class ChefClientBackend(opencenter.backends.Backend):
             env.override_attributes = env_attrs
             env.save()
 
+<<<<<<< HEAD
         if need_node_converge:
             # first run converge on the node in question
             self.logger.debug('chef updating node: %s' % node_id)
@@ -375,6 +384,39 @@ class ChefClientBackend(opencenter.backends.Backend):
                     return self._ok()
 
                 return self._fail(msg='task did not finish successfully')
+=======
+        nodelist = [node_id]
 
-    def add_backend(self, api, node_id, **kwargs):
+        if need_env_converge:
+            # FIXME: this should be the top-level environment container...
+            nodelist = self._expand_nodelist([node_id], api)
+        elif need_node_converge:
+            nodelist = [node_id]
+
+        self.logger.debug('chef updating nodelist: %s' % nodelist)
+        dsl = [{'primitive': 'run_chef', 'ns': {}}]
+        # first run converge on the node in question
+        api._model_create('tasks', {'action': 'adventurate',
+                                    'node_id': adventurator['id'],
+                                    'payload': {'nodes': [node_id],
+                                                'adventure_dsl': dsl}})
+        # now converge the affected nodes
+        if node_id in nodelist:
+            nodelist.remove(node_id)
+
+        for conv_node in nodelist:
+            api.apply_expression(conv_node, 'attrs.converged := false')
+
+        if len(nodelist) > 0:
+            api._model_create('tasks', {'action': 'adventurate',
+                                        'node_id': adventurator['id'],
+                                        'payload': {'nodes': nodelist,
+                                                    'adventure_dsl': dsl}})
+
+        # FIXME: should poll for result here
+        return self._ok()
+>>>>>>> f05fbc115745fcdbda390278d619e78c8cd5cc54
+
+    # README(shep): not executed on the server, skipping from code coverage
+    def add_backend(self, api, node_id, **kwargs):  # pragma: no cover
         return self._fail(msg='backend added by install_chef')

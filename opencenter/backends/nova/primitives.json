@@ -16,8 +16,8 @@
         "args": {
             "cluster_name": {
                 "friendly": "Nova Cluster Name",
-                "description": "The name of your new Nova cluster.  This should be unique.",
-                "default": "Nova Cluster",
+                "description": "The name of your new Nova cluster.  This should be unique and composed of alphanumeric characters, -s, and _s.",
+                "default": "NovaCluster",
                 "type": "string",
                 "required": true
             },
@@ -30,7 +30,7 @@
             },
             "keystone_admin_pw": {
                 "friendly": "OpenStack Admin Password",
-                "description": "The password for the OpenStack administrative user",
+                "description": "The password for the OpenStack administrative user.",
                 "default": "secret",
                 "type": "string",
                 "required": true
@@ -51,7 +51,7 @@
             },
             "nova_vm_fixed_if": {
                 "friendly": "VM Network Interface",
-                "description": "The network interface of the VM network on compute nodes",
+                "description": "The network interface of the VM network on compute nodes.",
                 "default": "eth1",
                 "type": "string",
                 "required": true

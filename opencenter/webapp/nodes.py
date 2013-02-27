@@ -16,6 +16,7 @@
 #
 
 import time
+import socket
 
 import flask
 
@@ -48,8 +49,6 @@ def tasks_blocking_by_node_id(node_id):
     # README(shep): Using last_checkin attr for agent-health
     timestamp = int(time.time())
     args = {'node_id': node_id, 'key': 'last_checkin', 'value': timestamp}
-    attr_id = api.attrs_query(
-        '(key = "last_checkin") and (node_id = %s)' % int(node_id))
     r = api.attr_create(args)
     #DB does not hit updater, so we need to notify
     generic._update_transaction_id('nodes', id_list=[node_id])
@@ -67,7 +66,7 @@ def tasks_blocking_by_node_id(node_id):
         utility.clear(semaphore)
         result = flask.jsonify({'task': task})
     else:
-        result = generic.http_response(404, 'no task found')
+        result = generic.http_notfound(msg='no task found')
     return result
 
 
@@ -126,18 +125,33 @@ def whoami():
     node = None
     if len(nodes) == 0:
         # register a new node
-        node = api._model_create('nodes', {"name": hostname})
+        node = api._model_create('nodes', {'name': hostname})
         api._model_create('facts',
-                          {"node_id": node['id'],
-                           "key": "backends",
-                           "value": ["node", "agent"]})
-        unprovisioned_id = unprovisioned_container()['id']
-        api._model_create('facts',
-                          {"node_id": node['id'],
-                           "key": "parent_id",
-                           "value": unprovisioned_id})
+                          {'node_id': node['id'],
+                           'key': 'backends',
+                           'value': ['node', 'agent']})
+        api._model_create('attrs',
+                          {'node_id': node['id'],
+                           'key': 'converged',
+                           'value': True})
+
+        if hostname == socket.gethostname():
+            api._model_create('facts',
+                              {'node_id': node['id'],
+                               'key': 'parent_id',
+                               'value': 3})
+            api._model_create('attrs',
+                              {'node_id': node['id'],
+                              'key': 'server-agent',
+                              'value': True})
+        else:
+            unprovisioned_id = unprovisioned_container()['id']
+            api._model_create('facts',
+                              {'node_id': node['id'],
+                               'key': 'parent_id',
+                               'value': unprovisioned_id})
         node = api._model_get_by_id('nodes', node['id'])
     else:
         node = nodes[0]
     return generic.http_response(200, 'success',
-                                 **{"node": node})
+                                 **{'node': node})

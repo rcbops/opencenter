@@ -1,6 +1,13 @@
 [
     {
-        "primitive": "do_updates",
-        "ns": { "PACKAGE_NAME": "opencenter-agent" }
+        "ns": {
+            "PACKAGE_NAME": "opencenter-agent", 
+            "sleep": 30
+        }, 
+        "primitive": "do_updates"
+    }, 
+    {
+        "ns": {}, 
+        "primitive": "agent_restart"
     }
 ]

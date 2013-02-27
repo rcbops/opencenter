@@ -111,7 +111,7 @@ def task_log(task_id):
     try:
         task = api._model_get_by_id('tasks', task_id)
     except exceptions.IdNotFound:
-        return generic.http_response(404, 'not found')
+        return generic.http_notfound(msg='Task %s not found' % task_id)
 
     watching = flask.request.args.get('watch', False) is not False
 
@@ -145,7 +145,7 @@ def task_log(task_id):
 
         if len(addrs) == 0:
             s.close()
-            return generic.http_response(400, 'cannot determine interface')
+            return generic.http_badrequest(msg='cannot determine interface')
 
         # try least-to-most interesting
         for iface in ['en1', 'en0', 'eth1', 'eth0']:
@@ -191,7 +191,7 @@ def task_log(task_id):
         api._model_update_by_id('tasks', new_task['id'],
                                 {'state': 'cancelled'})
 
-        return generic.http_response(404, 'cannot fetch logs')
+        return generic.http_notfound(msg='cannot fetch logs')
 
     if watching:
         watch = str(uuid.uuid1())

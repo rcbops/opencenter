@@ -19,6 +19,8 @@ import copy
 import logging
 import re
 
+import gevent
+
 import opencenter.backends
 from opencenter.db import api as db_api
 from opencenter.webapp import ast
@@ -516,6 +518,9 @@ class Solver:
         self.logger.info('All candidate solutions: %s' % candidate_solutions)
 
         for solution in candidate_solutions:
+            # yield for gevent
+            gevent.sleep(0)
+
             self.logger.info("%s with %s, solving %s" %
                              (solution['primitive']['name'],
                               solution['ns'],
@@ -576,59 +581,6 @@ class Solver:
             if new_constraints is None:
                 self.logger.info(' - abandoning solution %s -- unsolvable' %
                                  solution['primitive']['name'])
-            elif new_constraints and len(new_constraints) > 0:
-                # do a subsolve on this
-                self.logger.info(' - running subsolver for %s' %
-                                 new_constraints)
-
-                # concrete-ize the current primitive consequences
-                # and roll them into the current applied consequences
-                # for the purpose of the solve
-
-                assumed_consequences = []
-                for consequence in solution['primitive']['consequences']:
-                    conc = ast.concrete_expression(consequence, solution['ns'])
-                    assumed_consequences.append(conc)
-
-                subsolve = Solver(
-                    self.base_api, self.node_id, new_constraints,
-                    applied_consequences=applied_consequences +
-                    assumed_consequences)
-
-                sub_success, sub_q, sub_plan = subsolve.solve()
-                self.logger.info('Subsolver result: %s, %s' % (sub_success,
-                                                               sub_q))
-
-                if sub_success or sub_q:
-                    self.logger.info(' - SOLVED WITH PLAN: %s' % sub_plan)
-
-                    new_solver = subsolve.children[0]
-                    new_solver.parent = self
-
-                    last_solver = new_solver
-                    while(len(last_solver.children) != 0):
-                        last_solver = last_solver.children[0]
-
-                    # at this point, we can consider this primitive successful.
-                    # throw it at the end.
-
-                    if solution['solves'] in constraints:
-                        constraints.remove(solution['solves'])
-
-                    this_primitive = Solver(self.base_api, self.node_id,
-                                            constraints, last_solver,
-                                            solution['primitive'],
-                                            ns=solution['ns'],
-                                            applied_consequences=
-                                            applied_consequences +
-                                            assumed_consequences)
-
-                    last_solver.children.append(this_primitive)
-
-                    self.children.append(new_solver)
-
-                    if this_primitive.constraints == []:
-                        return this_primitive
             else:
                 # find the concrete consequence so we can roll forward
                 # the cluster api representation
@@ -665,7 +617,7 @@ class Solver:
                 self.logger.info(' - Implementing as new solve step: %s' %
                                  constraints)
                 new_solver = Solver(self.base_api, self.node_id,
-                                    constraints, self,
+                                    constraints + new_constraints, self,
                                     solution['primitive'], ns=solution['ns'],
                                     applied_consequences=applied_consequences)
 
@@ -731,6 +683,8 @@ class Solver:
 
             for leaf in current_leaves:
                 solution_node = leaf.solve_one()
+                # yeild to gevent
+                gevent.sleep(0)
                 if solution_node:
                     break
 

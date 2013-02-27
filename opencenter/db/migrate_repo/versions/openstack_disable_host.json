@@ -1,6 +1,6 @@
 [
     {
         "ns": {},
-        "primitive": "disable_host"
+        "primitive": "openstack_disable_host"
     }
 ]

@@ -24,5 +24,5 @@ class ChefEnvironmentBackend(opencenter.backends.Backend):
     def __init__(self):
         super(ChefEnvironmentBackend, self).__init__(__file__)
 
-    def additional_constraints(self, api, node_id, actions, ns):
+    def additional_constraints(self, api, node_id, action, ns):
         return []
