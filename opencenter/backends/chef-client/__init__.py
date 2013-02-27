@@ -384,8 +384,8 @@ class ChefClientBackend(opencenter.backends.Backend):
 
                 return self._fail(msg='task did not finish successfully')
             else:
-                self.logger.debug('No other nodes in the environment
-                                  that need converging')
+                self.logger.debug('No other nodes in the environment '
+                                  'that need converging')
 
     # README(shep): not executed on the server, skipping from code coverage
     def add_backend(self, api, node_id, **kwargs):  # pragma: no cover
