@@ -105,16 +105,16 @@ class ChefClientBackend(opencenter.backends.Backend):
         elif role == 'nova-controller-master':
             return ['role[ha-controller1]']
         elif role == 'nova-controller-backup':
-            # return ['role[ha-controller2]']
-            role_list = ['role[base]', 'role[mysql-master]',
-                         'role[rabbitmq-server]', 'role[keystone-api]',
-                         'role[nova-scheduler]', 'role[nova-api-ec2]',
-                         'role[nova-api-os-compute]', 'role[cinder-api]',
-                         'role[cinder-scheduler]', 'role[nova-cert]',
-                         'role[nova-vncproxy]', 'role[horizon-server]',
-                         'role[openstack-ha]']
-            # return [','.join(role_list)]
-            return role_list
+            return ['role[ha-controller2]']
+            # Debug to work around glance ha issue
+            #role_list = ['role[base]', 'role[mysql-master]',
+            #             'role[rabbitmq-server]', 'role[keystone-api]',
+            #             'role[nova-scheduler]', 'role[nova-api-ec2]',
+            #             'role[nova-api-os-compute]', 'role[cinder-api]',
+            #             'role[cinder-scheduler]', 'role[nova-cert]',
+            #             'role[nova-vncproxy]', 'role[horizon-server]',
+            #             'role[openstack-ha]']
+            #return role_list
         return []
 
     # README(shep): not executed on the server, skipping from code coverage
