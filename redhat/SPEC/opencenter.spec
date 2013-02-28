@@ -26,9 +26,6 @@ Requires:       python-chef
 #Requires:       python-gevent
 Requires:       python-mako
 Requires:       python-netifaces
-
-%description -n python-opencenter
-
 BuildArch: noarch
 
 %description
@@ -75,7 +72,7 @@ install -m 755 $RPM_BUILD_DIR/manage.py $RPM_BUILD_ROOT/usr/share/opencenter/man
 /usr/bin/opencenter
 /usr/share/opencenter/manage.py
 
-%files - n python-opencenter
+%files -n python-opencenter
 %defattr(-,root,root)
 %{python_sitelib}/*opencenter*
 
