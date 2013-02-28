@@ -1,4 +1,4 @@
-#               OpenCenter™ is Copyright 2013 by Rackspace US, Inc.
+#               OpenCenter(TM) is Copyright 2013 by Rackspace US, Inc.
 ##############################################################################
 #
 # OpenCenter is licensed under the Apache License, Version 2.0 (the "License");
