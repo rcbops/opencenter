@@ -29,7 +29,7 @@ Requires:       python-migrate
 Requires:       python-daemon
 Requires:       python-chef
 # we don't have python-gevent in epel yet
-#Requires:       python-gevent
+Requires:       python-gevent
 Requires:       python-mako
 Requires:       python-netifaces
 Requires:       opencenter >= %{version}
@@ -49,7 +49,7 @@ Requires: python-migrate
 Requires: python-daemon
 Requires: python-chef
 # we don't have python-gevent in epel yet
-#Requires: python-gevent
+Requires: python-gevent
 Requires: python-mako
 Requires: python-netifaces
 Group: System
