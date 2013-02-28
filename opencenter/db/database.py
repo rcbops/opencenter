@@ -59,6 +59,12 @@ def _memorydb_migrate_db(**kwargs):
         pass
 
     global engine
+
+    Base.metadata.create_all(bind=engine)
+    for table in reversed(Base.metadata.sorted_tables):
+        session.execute(table.delete())
+        session.commit()
+
     old_dispose = engine.dispose
     engine.dispose = dispose_patch
 
