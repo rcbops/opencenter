@@ -1,17 +1,9 @@
 [
     {
         "ns": {
-            "DISABLE_RESTART": true, 
             "PACKAGE_NAME": "opencenter-server", 
             "SLEEP": 30
         }, 
         "primitive": "do_updates"
-    }, 
-    {
-        "ns": {
-            "service": "opencenter", 
-            "sleep": 30
-        }, 
-        "primitive": "service_restart"
-    }
+    } 
 ]
