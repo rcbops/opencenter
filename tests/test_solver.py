@@ -16,8 +16,6 @@ api = db_api.api_from_models()
 
 class SolverTestCase(OpenCenterTestCase):
     def setUp(self):
-        sys.setrecursionlimit(1000)
-
         if opencenter.backends.primitive_by_name('test.set_test_fact') is None:
             opencenter.backends.load_specific_backend('tests.test',
                                                       'TestBackend')
@@ -30,15 +28,15 @@ class SolverTestCase(OpenCenterTestCase):
 
         self.interfaces = {}
 
-        self.adv = self._model_create('nodes', name='adventurator')
-        self._model_create('facts', node_id=self.adv['id'],
-                           key='backends', value=['node', 'agent'])
+        self.adv = self._stub_node(
+            'adventurator',
+            facts={'backends': ['node', 'agent']})
 
-        self.container = self._model_create('nodes', name='container')
-        self._model_create('facts', node_id=self.container['id'],
-                           key='backends', value=['node', 'container'])
+        self.container = self._stub_node(
+            'container',
+            facts={'backends': ['node', 'container']})
 
-        self.node = self._model_create('nodes', name='node-1')
+        self.node = self._stub_node('node-1')
 
         chef_expr = '(facts.chef_server_uri != None) and ' \
             '(facts.chef_server_pem != None)'
@@ -54,7 +52,6 @@ class SolverTestCase(OpenCenterTestCase):
         self.assertEquals(len(self._model_get_all('tasks')), 0)
 
     def tearDown(self):
-        sys.setrecursionlimit(1000)
         self._clean_all()
 
     def _make_adventurator(self):
@@ -263,9 +260,8 @@ class SolverTestCase(OpenCenterTestCase):
 
         self.logger.debug('Current limit: %s' % sys.getrecursionlimit())
 
-        sys.setrecursionlimit(200)
-
-        # without rolling forward consequences, this loops
+        # without rolling forward consequences, this loops and
+        # crashes with max recursion
         resp = self._model_create('facts', node_id=self.node['id'],
                                   key='parent_id', value=newcontainer['id'],
                                   please=True, raw=True, expect_code=202)

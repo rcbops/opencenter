@@ -80,14 +80,16 @@ def upgrade(migrate_engine):
 
     api = api_from_models()
     for adventure in adventures:
+        new_adventure = {'name': adventure['name']}
+
         json_path = os.path.join(
             os.path.dirname(__file__), adventure['dsl'])
         criteria_path = os.path.join(
             os.path.dirname(__file__), adventure['criteria'])
 
-        adventure['dsl'] = json.loads(open(json_path).read())
-        adventure['criteria'] = open(criteria_path).read()
-        api.adventure_create(adventure)
+        new_adventure['dsl'] = json.loads(open(json_path).read())
+        new_adventure['criteria'] = open(criteria_path).read()
+        api.adventure_create(new_adventure)
 
     canned_filters = [{'name': 'unprovisioned nodes',
                        'filter_type': 'node',
