@@ -125,7 +125,7 @@ class ChefClientBackend(opencenter.backends.Backend):
             #return role_list
         return []
 
-    def _get_nodes_in_env(self, env):
+    def _get_nodes_in_env(self, env, api):
         """
         given a chef environment, find all nodes with that environment
         in their facts and return a list of node ids. Exclude containers
@@ -332,7 +332,7 @@ class ChefClientBackend(opencenter.backends.Backend):
             if 'result_code' in node_task['result'] and \
                     node_task['result']['result_code'] == 0:
                 # now converge the rest of the nodes in the environment
-                nodelist = self._get_nodes_in_env(chef_environment)
+                nodelist = self._get_nodes_in_env(chef_environment, api)
                 if node_id in nodelist:
                     nodelist.remove(node_id)
                 self.logger.debug('chef updating nodes: %s' % nodelist)
@@ -364,7 +364,7 @@ class ChefClientBackend(opencenter.backends.Backend):
 
         elif need_env_converge:
             # converge ALL of the nodes
-            nodelist = self._get_nodes_in_env(chef_environment)
+            nodelist = self._get_nodes_in_env(chef_environment, api)
             self.logger.debug('chef updating nodes: %s' % nodelist)
             # now converge the affected nodes
             if len(nodelist) > 0:
