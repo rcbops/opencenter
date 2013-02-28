@@ -32,6 +32,8 @@ Requires:       python-chef
 #Requires:       python-gevent
 Requires:       python-mako
 Requires:       python-netifaces
+Requires:       opencenter >= %{version}
+Requires:       python-opencenter >= %{version}
 
 %description server
 The server description
