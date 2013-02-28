@@ -3,16 +3,22 @@
 # disable python byte compiling
 %global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 
-Name:       opencenter-server
+Name:       opencenter
 Version:    0.1.0
 Release:    %{ver}%{?dist}
 Summary:        Pluggable, modular OpenCenter server
-
 Group:          System
 License:        Apache2
 URL:            https://github.com/rcbops/opencenter
-Source0:        opencenter.conf
+Source0:        opencenter-%{version}.tgz
+Source1:        opencenter.conf
+BuildArch: noarch
 
+%description
+some description
+
+%package server
+Summary:        Some summary
 BuildRequires:  python-setuptools
 Requires:       python-requests
 Requires:       python >= 2.6
@@ -26,11 +32,9 @@ Requires:       python-chef
 #Requires:       python-gevent
 Requires:       python-mako
 Requires:       python-netifaces
-BuildArch: noarch
 
-%description
-Pluggable, modular host-based agent.  See the output and input
-managers for docs on how to write plugins.
+%description server
+The server description
 
 %package -n python-opencenter
 Summary: The Python bindings for OpenCenter
@@ -63,11 +67,13 @@ mkdir -p $RPM_BUILD_ROOT/etc/init.d
 mkdir -p $RPM_BUILD_ROOT/etc/opencenter
 mkdir -p $RPM_BUILD_ROOT/usr/share/opencenter
 install -m 600 $RPM_SOURCE_DIR/opencenter.conf $RPM_BUILD_ROOT/etc/opencenter/opencenter.conf
-install -m 755 $RPM_BUILD_DIR/manage.py $RPM_BUILD_ROOT/usr/share/opencenter/manage.py
+install -m 755 $RPM_BUILD_DIR/opencenter-%{version}/manage.py $RPM_BUILD_ROOT/usr/share/opencenter/manage.py
 %{__python} -B setup.py install --skip-build --root $RPM_BUILD_ROOT
 
-%files
+%files 
 %config(noreplace) /etc/opencenter
+
+%files server
 %defattr(-,root,root)
 /usr/bin/opencenter
 /usr/share/opencenter/manage.py
