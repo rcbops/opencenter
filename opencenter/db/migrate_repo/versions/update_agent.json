@@ -1,10 +1,14 @@
 [
     {
         "ns": {
-            "DISABLE_RESTART": true, 
+            "DISABLE_RESTART": "true", 
             "PACKAGE_NAME": "opencenter-agent", 
             "SLEEP": 30
         }, 
-        "primitive": "upgrade_agent"
+        "primitive": "do_updates"
+    }, 
+    {
+        "ns": {}, 
+        "primitive": "agent_restart"
     }
 ]
