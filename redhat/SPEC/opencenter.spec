@@ -24,7 +24,7 @@ Requires:       python-requests
 Requires:       python >= 2.6
 Requires:       python-requests
 Requires:       python-flask
-Requires:       python-sqlalchemy
+Requires:       python-sqlalchemy0.7
 Requires:       python-migrate
 Requires:       python-daemon
 Requires:       python-chef
@@ -68,6 +68,7 @@ mkdir -p $RPM_BUILD_ROOT/usr/bin
 mkdir -p $RPM_BUILD_ROOT/etc/init.d
 mkdir -p $RPM_BUILD_ROOT/etc/opencenter
 mkdir -p $RPM_BUILD_ROOT/usr/share/opencenter
+mkdir -p $RPM_BUILD_ROOT/var/log/opencenter
 install -m 600 $RPM_SOURCE_DIR/opencenter.conf $RPM_BUILD_ROOT/etc/opencenter/opencenter.conf
 install -m 755 $RPM_BUILD_DIR/opencenter-%{version}/manage.py $RPM_BUILD_ROOT/usr/share/opencenter/manage.py
 %{__python} -B setup.py install --skip-build --root $RPM_BUILD_ROOT

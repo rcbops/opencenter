@@ -27,7 +27,10 @@ import os
 
 from migrate.versioning import api as migrate_api
 from migrate.versioning import repository as repo
-from migrate.exceptions import DatabaseNotControlledError
+try:
+  from migrate.exceptions import DatabaseNotControlledError
+except ImportError:
+  from migrate.versioning.exceptions import DatabaseNotControlledError
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, create_session
 from sqlalchemy.ext.declarative import declarative_base
