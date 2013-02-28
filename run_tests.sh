@@ -11,6 +11,7 @@ function usage {
   echo "  -c, --coverage           Generate coverage report"
   echo "  -H, --html               Generate coverage report html, if -c"
   echo "  -h, --help               Print this usage message"
+  echo "  -F, --full               Run full tests"
   echo ""
   echo "Note: with no options specified, the script will try to run the tests in a virtual environment,"
   echo "      If no virtualenv is found, the script will ask if you would like to create one.  If you "
@@ -24,6 +25,7 @@ function process_option {
     -V|--virtual-env) always_venv=1; never_venv=0;;
     -N|--no-virtual-env) always_venv=0; never_venv=1;;
     -f|--force) force=1;;
+    -F|--full) full=1;;
     -p|--pep8) just_pep8=1;;
     -c|--coverage) coverage=1;;
     -H|--html) html=1;;
@@ -87,7 +89,11 @@ function run_pep8 {
   ${wrapper} pep8 $PEP8_OPTIONS $PEP8_INCLUDE || exit 1
 }
 
-NOSETESTS="nosetests --with-xunit $noseopts $noseargs tests/*.py"
+NOSETESTS="nosetests --with-xunit $noseopts $noseargs tests/*test*.py"
+
+if [ ! -z $full ]; then
+    NOSETESTS="${NOSETESTS} tests/*full*.py"
+fi
 
 if [ $never_venv -eq 0 ]
 then
