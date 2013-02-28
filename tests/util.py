@@ -30,7 +30,8 @@ class OpenCenterTestCase(unittest2.TestCase):
         super(OpenCenterTestCase, self).__init__(*args, **kwargs)
 
     def _clean_all(self):
-        for what in ['tasks', 'nodes', 'facts', 'filters', 'attrs']:
+        for what in ['tasks', 'nodes', 'facts', 'filters',
+                     'attrs', 'adventures']:
             self._clean_table(what)
 
     def _clean_table(self, what):
@@ -64,6 +65,14 @@ class OpenCenterTestCase(unittest2.TestCase):
         return "".join(random.choice(string.ascii_lowercase)
                        for x in range(size))
 
+    def _delete_items(self, to_delete=None):
+        if to_delete is None:
+            to_delete = {}
+
+        for model in to_delete:
+            for model_id in to_delete[model]:
+                self._model_delete(model, model_id)
+
     def _pluralize(self, what):
         return what + 's'
 
@@ -84,6 +93,26 @@ class OpenCenterTestCase(unittest2.TestCase):
             return out
 
         return out['transaction']
+
+    def _stub_node(self, name, facts=None, attrs=None):
+        # we do this so much, we might as well just
+        # make it a helper
+        node = self._model_create('nodes', name=name)
+        if facts is None:
+            facts = {}
+
+        if attrs is None:
+            attrs = {}
+
+        for k, v in facts.items():
+            self._model_create('facts', node_id=node['id'],
+                               key=k, value=v)
+
+        for k, v in attrs.items():
+            self._model_create('attrs', node_id=node['id'],
+                               key=k, value=v)
+
+        return node
 
     def _client_request(self, method, uri, **kwargs):
         fn = getattr(self.client, method)
@@ -253,7 +282,6 @@ class ScaffoldedTestCase(OpenCenterTestCase):
                                    configfile='tests/test.conf',
                                    debug=True)
         init_db(cls.app.config['database_uri'], migrate=False)
-        # run the memory migrator
         _memorydb_migrate_db()
 
         cls.client = cls.app.test_client()
