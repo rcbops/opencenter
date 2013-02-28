@@ -5,10 +5,6 @@
             "PACKAGE_NAME": "opencenter-agent", 
             "SLEEP": 30
         }, 
-        "primitive": "do_updates"
-    }, 
-    {
-        "ns": {}, 
-        "primitive": "agent_restart"
+        "primitive": "upgrade_agent"
     }
 ]
