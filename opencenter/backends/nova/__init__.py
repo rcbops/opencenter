@@ -82,6 +82,8 @@ class NovaBackend(opencenter.backends.Backend):
 
     # README(shep): part of happy path, not excluding from code coverage
     def create_cluster(self, state_data, api, node_id, **kwargs):
+        kwargs['nova_az'] = 'nova'
+
         # make sure we have good inputs
         if not 'cluster_name' in kwargs:
             return self._fail(msg='Cluster Name (cluster_name) required')
@@ -140,9 +142,7 @@ class NovaBackend(opencenter.backends.Backend):
         if comp is None:
             return self._fail(msg='cannot create "Compute" container')
 
-        az = 'nova'
-        if 'nova_az' in kwargs:
-            az = kwargs['nova_az']
+        az = kwargs['nova_az']
 
         self._make_subcontainer(
             api, 'AZ %s' % az, comp['id'], {'nova_az': az},

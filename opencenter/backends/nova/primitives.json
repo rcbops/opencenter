@@ -84,13 +84,6 @@
                 "type": "string",
                 "required": true
             },
-            "nova_az": {
-                "friendly": "Default Availability Zone",
-                "description": "The name of the default availability zone for Nova.",
-                "default": "nova",
-                "type": "string",
-                "required": true
-            },
             "chef_server": {
                 "friendly": "Chef Server",
                 "description": "The chef server to use.",
