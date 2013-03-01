@@ -1,6 +1,13 @@
 [
     {
-        "primitive": "nova-controller.make_infra_ha",
-        "ns": {}
+        "ns": {
+            "key": "locked", 
+            "value": false
+        }, 
+        "primitive": "nodes.set_attr"
+    }, 
+    {
+        "ns": {}, 
+        "primitive": "nova-controller.make_infra_ha"
     }
 ]
