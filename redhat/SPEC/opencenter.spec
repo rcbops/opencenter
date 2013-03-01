@@ -92,8 +92,6 @@ install -m 755 $RPM_BUILD_DIR/opencenter-%{version}/manage.py $RPM_BUILD_ROOT/us
 rm -rf $RPM_BUILD_ROOT
 
 %post
-chkconfig --add opencenter
-chkconfig opencenter on
 
 %changelog
 * Mon Sep 10 2012 Joseph W. Breu (joseph.breu@rackspace.com) - 0.1.0
