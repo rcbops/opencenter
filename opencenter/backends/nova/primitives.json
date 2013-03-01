@@ -35,7 +35,7 @@
                 "description": "The password for the OpenStack administrative user.",
                 "default": "",
                 "placeholder": "secret",
-                "type": "string",
+                "type": "password",
                 "required": true
             },
             "nova_dmz_cidr": {
@@ -43,7 +43,7 @@
                 "description": "A comma separated list of CIDR network ranges that will be excluded from NAT rules.  This is useful for allowing direct communication to and from instances from other network ranges without the use of floating ips.",
                 "default": "",
                 "placeholder": "172.16.0.0/24",
-                "type": "string",
+                "type": "cidr",
                 "required": true
             },
             "nova_vm_fixed_range": {
@@ -51,7 +51,7 @@
                 "description": "IP addresses will be allocated from this network by Nova to instances and compute hosts as necessary.  This network should be dedicated to OpenStack and not shared with other services.",
                 "default": "",
                 "placeholder": "192.168.0.0/24",
-                "type": "string",
+                "type": "cidr",
                 "required": true
             },
             "nova_vm_fixed_if": {
@@ -75,7 +75,7 @@
                 "description": "The CIDR of network on which internal Nova management services such as API services will run.  An IP address from this network should be configured on all hosts in the nova cluster.",
                 "default": "",
                 "placeholder": "192.168.200.0/24",
-                "type": "string",
+                "type": "cidr",
                 "required": true
             },
             "osops_nova": {
@@ -83,7 +83,7 @@
                 "description": "The CIDR of network to run services used by Nova internally, such as RabbitMQ and Mysql.  An IP address from this network should be configured on all hosts in the Nova cluster.",
                 "default": "",
                 "placeholder": "192.168.200.0/24",
-                "type": "string",
+                "type": "cidr",
                 "required": true
             },
             "osops_public": {
@@ -91,7 +91,7 @@
                 "description": "The CIDR of network to run public Nova services on (lb, etc).  An IP address from this network should be configured on all hosts in the Nova cluster.",
                 "default": "",
                 "placeholder": "192.168.200.0/24",
-                "type": "string",
+                "type": "cidr",
                 "required": true
             },
             "chef_server": {
