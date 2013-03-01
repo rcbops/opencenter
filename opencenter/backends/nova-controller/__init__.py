@@ -77,7 +77,10 @@ class NovaControllerBackend(opencenter.backends.Backend):
     # README(shep): not executed on the server, skipping from code coverage
     def add_backend(self, state_data, api,
                     node_id, **kwargs):  # pragma: no cover
+        node = api.node_get_by_id(node_id)
         api.apply_expression(node_id,
+                             'attrs.locked := true')
+        api.apply_expression(node['facts']['parent_id'],
                              'attrs.locked := true')
         return opencenter.backends.primitive_by_name('node.add_backend')(
             state_data, api, node_id, backend='nova-controller')
