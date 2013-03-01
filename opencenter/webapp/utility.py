@@ -132,8 +132,9 @@ def clear(what):
 def wait(what, timeout=30):
     event = _get_or_make_event(what)
     LOG.debug('waiting on %s' % what)
-    event.wait(timeout)
+    result = event.wait(timeout)
     event.clear()
+    return result
 
 
 def sleep(how_long):
