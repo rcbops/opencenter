@@ -25,7 +25,7 @@
 
 from setuptools import setup, find_packages
 
-requirements = ['flask', 'sqlalchemy==0.7.4', 'sqlalchemy-migrate', 'gevent',
+requirements = ['flask', 'sqlalchemy>=0.7.4', 'sqlalchemy-migrate', 'gevent',
                 'python-daemon', 'pychef']
 excludes = ['test_runner.py', 'tests', 'tests.*']
 
