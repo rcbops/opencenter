@@ -17,8 +17,8 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="host-based modular python server"
 NAME=opencenter
-DAEMON=/usr/bin/$NAME.py
-DAEMON_ARGS="-c /etc/opencenter.conf -d"
+DAEMON=/usr/bin/$NAME
+DAEMON_ARGS="-c /etc/opencenter/opencenter.conf -d"
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 lockfile=/var/lock/subsys/opencenter
