@@ -1,0 +1,6 @@
+[
+    {
+        "primitive": "nova-controller.make_infra_ha",
+        "ns": {}
+    }
+]
