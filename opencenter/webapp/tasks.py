@@ -59,7 +59,7 @@ def _clean_tasks():
     api = api_from_models()
 
     reaping_threshold = flask.current_app.config['task_reaping_threshold']
-    expiration_threshold = current_time - reaping_threshold
+    expiration_threshold = current_time - int(reaping_threshold)
 
     expired_tasks = api._model_query(
         object_type,
@@ -192,8 +192,8 @@ def task_log(task_id):
                                    task_semaphore)
     utility.notify(task_semaphore)
 
-    # force the wake
-    utility.sleep(0.1)
+    # # force the wake
+    # utility.sleep(0.1)
 
     # now wait for a few seconds to see if we get the
     # connection
