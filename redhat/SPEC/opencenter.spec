@@ -12,6 +12,7 @@ License:        Apache2
 URL:            https://github.com/rcbops/opencenter
 Source0:        opencenter-%{version}.tgz
 Source1:        opencenter.conf
+Source2:        opencenter.init
 BuildArch: noarch
 
 %description
@@ -80,6 +81,7 @@ install -m 755 $RPM_BUILD_DIR/opencenter-%{version}/manage.py $RPM_BUILD_ROOT/us
 %files server
 %defattr(-,root,root)
 /usr/bin/opencenter
+/etc/init.d/opencenter
 /usr/share/opencenter/manage.py
 
 %files -n python-opencenter
