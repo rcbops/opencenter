@@ -37,7 +37,8 @@ class NovaControllerBackend(opencenter.backends.Backend):
             node = api.node_get_by_id(node_id)
             parent_id = node['facts']['parent_id']
             count = len(api.nodes_query(
-                'int(facts.parent_id) = %s' % parent_id))
+                'facts.parent_id = %s or facts.parent_id = "%s"' % (
+                    parent_id, parent_id)))
             if count > 1:
                 return ['facts.ha_infra = true']
             else:
