@@ -61,21 +61,33 @@ def tasks_blocking_by_node_id(node_id):
     #DB does not hit updater, so we need to notify
     generic._update_transaction_id('nodes', id_list=[node_id])
     generic._update_transaction_id('attrs', id_list=[r['id']])
-    task = api.task_get_first_by_query("node_id=%d and state='pending'" %
-                                       int(node_id))
 
-    # README(shep): moving this out of a while loop, to let agent-health work
-    semaphore = 'task-for-%s' % node_id
-    flask.current_app.logger.debug('waiting on %s' % semaphore)
-    utility.wait(semaphore)
-    task = api.task_get_first_by_query("node_id=%d and state='pending'" %
-                                       int(node_id))
-    if task:
-        utility.clear(semaphore)
-        result = flask.jsonify({'task': task})
-    else:
-        result = generic.http_notfound(msg='no task found')
-    return result
+    while True:
+        task = api.task_get_first_by_query("node_id=%d and state='pending'" %
+                                           int(node_id))
+        if task is None:
+            semaphore = 'task-for-%s' % node_id
+            flask.current_app.logger.debug('waiting on %s' % semaphore)
+            if not utility.wait(semaphore):
+                flask.current_app.logger.error("ERROR ON WAIT")
+                # utility.clear(semaphore)
+                return generic.http_notfound(msg='no task found')
+            else:
+                flask.current_app.logger.error("SUCCESS ON WAIT")
+        else:
+            # utility.clear(semaphore)
+            return generic.http_response(task=task)
+
+    #         utility.wait(semaphore)
+
+    # task = api.task_get_first_by_query("node_id=%d and state='pending'" %
+    #                                    int(node_id))
+    # if task:
+    #     utility.clear(semaphore)
+    #     result = flask.jsonify({'task': task})
+    # else:
+    #     result = generic.http_notfound(msg='no task found')
+    # return result
 
 
 @bp.route('/<node_id>/tasks', methods=['GET'])
