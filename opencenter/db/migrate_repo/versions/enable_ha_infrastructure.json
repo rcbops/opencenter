@@ -4,7 +4,7 @@
             "key": "locked", 
             "value": false
         }, 
-        "primitive": "nodes.set_attr"
+        "primitive": "node.set_attr"
     }, 
     {
         "ns": {}, 
