@@ -77,11 +77,12 @@ class NovaControllerBackend(opencenter.backends.Backend):
     # README(shep): not executed on the server, skipping from code coverage
     def add_backend(self, state_data, api,
                     node_id, **kwargs):  # pragma: no cover
-        node = api.node_get_by_id(node_id)
         api.apply_expression(node_id,
                              'attrs.locked := true')
-        api.apply_expression(node['facts']['parent_id'],
-                             'attrs.locked := true')
+        # DELETE(shep): dont think we need this any more
+        #node = api.node_get_by_id(node_id)
+        #api.apply_expression(node['facts']['parent_id'],
+        #                     'attrs.locked := true')
         return opencenter.backends.primitive_by_name('node.add_backend')(
             state_data, api, node_id, backend='nova-controller')
 
@@ -100,15 +101,24 @@ class NovaControllerBackend(opencenter.backends.Backend):
             return self._fail(
                 msg='Nova RabbitMQ VIP (nova_rabbitmq_vip) required')
 
-        api.apply_expression(
-            node_id,
-            'facts.nova_role := "%s"' % 'nova-controller-backup')
+        # Update/Set facts.nova_role for the container
+        key = 'nova_role'
+        value = 'nova-controller-backup'
+        api.apply_expression(node_id, 'facts.%s := "%s"' % (key, value))
 
+        # Set facts.ha_infra := true on my parent node
         node = api.node_get_by_id(node_id)
-        api.apply_expression(node['facts']['parent_id'],
-                             'facts.ha_infra := true')
-        api.apply_expression(node['facts']['parent_id'],
-                             'attrs.locked := true')
+        container_list = [node['facts']['parent_id'], node_id]
+        for container_id in container_list:
+            api.apply_expression(container_id, 'facts.ha_infra := true')
+
+        # DELETE(shep): dont think we need this any more
+        #api.apply_expression(node['facts']['parent_id'],
+        #                     'attrs.locked := true')
+
+        # README(shep): This could be simplified now that we are running
+        #   an adventure to enable ha on the infrastructure container.
+        #   Going to leave it this way for now.
         # Need to find my environment
         chef_env_node = self._find_chef_environment_node(api, node)
         if chef_env_node is not None:
