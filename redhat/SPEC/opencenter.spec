@@ -12,7 +12,7 @@ License:        Apache2
 URL:            https://github.com/rcbops/opencenter
 Source0:        opencenter-%{version}.tgz
 Source1:        opencenter.conf
-Source2:        opencenter.init
+Source2:        opencenter.upstart
 BuildArch: noarch
 
 %description
@@ -66,12 +66,12 @@ CFLAGS="$RPM_OPT_FLAGS" %{__python} -B setup.py build
 
 %install
 mkdir -p $RPM_BUILD_ROOT/usr/bin
-mkdir -p $RPM_BUILD_ROOT/etc/init.d
+mkdir -p $RPM_BUILD_ROOT/etc/init
 mkdir -p $RPM_BUILD_ROOT/etc/opencenter
 mkdir -p $RPM_BUILD_ROOT/usr/share/opencenter
 mkdir -p $RPM_BUILD_ROOT/var/log/opencenter
 install -m 600 $RPM_SOURCE_DIR/opencenter.conf $RPM_BUILD_ROOT/etc/opencenter/opencenter.conf
-install -m 755 $RPM_SOURCE_DIR/opencenter.init $RPM_BUILD_ROOT/etc/init.d/opencenter
+install -m 755 $RPM_SOURCE_DIR/opencenter.upstart $RPM_BUILD_ROOT/etc/init/opencenter.conf
 install -m 755 $RPM_BUILD_DIR/opencenter-%{version}/manage.py $RPM_BUILD_ROOT/usr/share/opencenter/manage.py
 %{__python} -B setup.py install --skip-build --root $RPM_BUILD_ROOT
 
@@ -81,7 +81,7 @@ install -m 755 $RPM_BUILD_DIR/opencenter-%{version}/manage.py $RPM_BUILD_ROOT/us
 %files server
 %defattr(-,root,root)
 /usr/bin/opencenter
-/etc/init.d/opencenter
+/etc/init/opencenter.conf
 /usr/share/opencenter/manage.py
 
 %files -n python-opencenter
@@ -92,8 +92,6 @@ install -m 755 $RPM_BUILD_DIR/opencenter-%{version}/manage.py $RPM_BUILD_ROOT/us
 rm -rf $RPM_BUILD_ROOT
 
 %post
-chkconfig --add opencenter
-chkconfig opencenter on
 
 %changelog
 * Mon Sep 10 2012 Joseph W. Breu (joseph.breu@rackspace.com) - 0.1.0
