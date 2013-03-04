@@ -96,7 +96,7 @@ class NovaControllerBackend(opencenter.backends.Backend):
             output = opencenter.backends.primitive_by_name(
                 'node.set_attr')(state_data, api, node_id,
                                  key='locked', value=True)
-            rollback.append(output['result_data'])
+            rollback.append(output['result_data']['rollback'])
 
             # Check if I am the second node in this container
             count = len(api.nodes_query(
@@ -109,12 +109,12 @@ class NovaControllerBackend(opencenter.backends.Backend):
                 output = opencenter.backends.primitive_by_name(
                     'node.set_fact')(state_data, api, node_id,
                                      key=key, value=value)
-                rollback.append(output['result_data'])
+                rollback.append(output['result_data']['rollback'])
 
         # Add Backend: nova-controller
         output = opencenter.backends.primitive_by_name('node.add_backend')(
             state_data, api, node_id, backend='nova-controller')
-        rollback.append(output['result_data'])
+        rollback.append(output['result_data']['rollback'])
         return self._ok(data=reply_data)
 
     # README(shep): not executed on the server, skipping from code coverage
