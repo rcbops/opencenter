@@ -20,6 +20,13 @@ set -e
 case "$1" in
     configure)
         /bin/true
+        # Source debconf library.
+        . /usr/share/debconf/confmodule
+        db_get opencenter/password
+        PASSWORD=$RET
+        sed -d "admin_pass *=.*" /etc/opencenter/opencenter.conf
+        echo "admin_pass = ${PASSWORD}" >> /etc/opencenter/opencenter.conf
+
 	# Dont need this anymore, since the opencenter daemon does it on startup
         #   python /usr/share/opencenter/manage.py -c /etc/opencenter/opencenter.conf version_control || /bin/true
         #   python /usr/share/opencenter/manage.py -c /etc/opencenter/opencenter.conf upgrade || /bin/true
