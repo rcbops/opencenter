@@ -200,7 +200,7 @@ class NodeBackend(backends.Backend):
             'facts', 'node_id = %s and key="parent_id"' % node_id)
 
         # it's possible we have unparented things
-        curent_parent = 1
+        current_parent = 1
         if current:
             current_parent = current['value']
 
@@ -229,6 +229,37 @@ class NodeBackend(backends.Backend):
         # something should be done here.
         return self._ok()
 
+    def del_fact(self, state_data, api, node_id, **kwargs):
+        """
+        delete an existing fact.
+
+        required kwargs:
+        key: key of fact to delete
+        """
+
+        if not 'key' in kwargs:
+            return self._fail(msg='need either "key" kwarg')
+
+        old_attr = None
+
+        old_fact = api._model_query(
+            'facts', 'node_id=%d and key="%s"' % (int(node_id),
+                                                  kwargs['key']))
+
+        if old_fact is None:
+            return self._ok()  # no rollback necessary
+
+        api._model_delete_by_id('facts', old_attr['id'])
+
+        reply_data = {
+            'rollback': {
+                'primitive': 'node.set_fact',
+                'ns': {
+                    'key': old_fact['key'],
+                    'value': old_fact['value']}}}
+
+        return self._ok(data=reply_data)
+
     def set_fact(self, state_data, api, node_id, **kwargs):
         reply_data = {}
 
@@ -247,6 +278,9 @@ class NodeBackend(backends.Backend):
             reply_data['rollback'] = {'primitive': 'node.set_fact',
                                       'ns': {'key': key,
                                              'value': _by_key[key]}}
+        else:  # key not in _by_key
+            reply_data['rollback'] = {'primitive': 'node.del_fact',
+                                      'ns': {'key': key}}
 
         if len(oldkeys) > 0:
             # update
@@ -256,6 +290,37 @@ class NodeBackend(backends.Backend):
             api._model_create('facts', {'node_id': node_id,
                                         'key': key,
                                         'value': value})
+
+        return self._ok(data=reply_data)
+
+    def del_attr(self, state_data, api, node_id, **kwargs):
+        """
+        delete an existing node attribute
+
+        required kwargs:
+        key: key of attr to delete
+        """
+
+        if not 'key' in kwargs:
+            return self._fail(msg='need either "key" kwarg')
+
+        old_attr = None
+
+        old_attr = api._model_query(
+            'attrs', 'node_id=%d and key="%s"' % (int(node_id),
+                                                  kwargs['key']))
+
+        if old_attr is None:
+            return self._ok()
+
+        api._model_delete_by_id('attrs', old_attr['id'])
+
+        reply_data = {
+            'rollback': {
+                'primitive': 'node.set_attr',
+                'ns': {
+                    'key': old_attr['key'],
+                    'value': old_attr['value']}}}
 
         return self._ok(data=reply_data)
 
@@ -269,6 +334,10 @@ class NodeBackend(backends.Backend):
             reply_data['rollback'] = {'primitive': 'node.set_attr',
                                       'ns': {'key': key,
                                              'value': _by_key[key]}}
+        else:
+            reply_data['rollback'] = {'primitive': 'node.del_attr',
+                                      'ns': {'key': key}}
+
         api._model_create('attrs', {"node_id": node_id,
                                     'key': key,
                                     'value': value})

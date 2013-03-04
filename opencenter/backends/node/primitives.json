@@ -9,6 +9,16 @@
         "constraints": [],
         "consequences": [ "facts.backends := union(facts.backends, \"{backend}\")" ]
     },
+    "del_fact": {
+        "args": {
+            "key": {
+                "type": "string",
+                "required": true
+            }
+        },
+        "constraints": [],
+        "consequences": []
+    },
     "set_fact": {
         "args": {
             "key": {
@@ -32,6 +42,16 @@
         },
         "constraints": [],
         "consequences": [ "facts.parent_id := \"{parent}\"" ]
+    },
+    "del_attr": {
+        "args": {
+            "key": {
+                "type": "string",
+                "required": true
+            }
+        },
+        "constraints": [],
+        "consequences": []
     },
     "set_attr": {
         "args": {
