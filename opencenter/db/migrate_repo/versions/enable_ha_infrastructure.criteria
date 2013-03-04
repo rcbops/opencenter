@@ -1,1 +1,1 @@
-(facts.ha_infra = false) and ('container' in facts.backends)
+(count(filter('nodes', 'facts.parent_id = {id}') < 2)) and (facts.ha_infra = false) and ('container' in facts.backends)
