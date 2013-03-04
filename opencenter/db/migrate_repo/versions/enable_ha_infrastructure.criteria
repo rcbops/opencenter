@@ -1,0 +1,1 @@
+(facts.ha_infra = false) and ('container' in facts.backends)

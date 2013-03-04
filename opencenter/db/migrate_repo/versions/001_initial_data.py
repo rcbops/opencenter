@@ -42,6 +42,9 @@ adventures = [
     {'name': 'Create Nova Cluster',
      'dsl': 'create_nova_cluster.json',
      'criteria': 'create_nova_cluster.criteria'},
+    {'name': 'Enable HA Infrastructure',
+     'dsl': 'enable_ha_infrastructure.json',
+     'criteria': 'enable_ha_infrastructure.criteria'},
     {'name': 'Download Chef Cookbooks',
      'dsl': 'download_cookbooks.json',
      'criteria': 'download_cookbooks.criteria'},
@@ -127,14 +130,16 @@ def upgrade(migrate_engine):
                                 'value': workspace['id']})
 
     # Add default fact to the default nodes
-    node_list = [workspace, unprov, support]
-    for node in node_list:
+    node_list = [(workspace, "Workspace"),
+                 (unprov, "Available Nodes"),
+                 (support, "Service Nodes")]
+    for node, display in node_list:
         api.fact_create({'node_id': node['id'],
                          'key': 'backends',
                          'value': ["container", "node"]})
         api.attr_create({'node_id': node['id'],
                          'key': 'display_name',
-                         'value': node['name'].capitalize()})
+                         'value': display})
         api.attr_create({'node_id': node['id'],
                          'key': 'locked',
                          'value': True})
