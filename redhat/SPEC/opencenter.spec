@@ -35,6 +35,7 @@ Requires:       python-mako
 Requires:       python-netifaces
 Requires:       opencenter >= %{version}
 Requires:       python-opencenter >= %{version}
+Requires:       MySQL-python
 
 %description server
 The server description
