@@ -9,23 +9,26 @@
     "make_infra_ha": {
         "args": {
             "nova_api_vip": {
-                "default": "192.168.200.254",
+                "default": "",
                 "description": "The VIP for nova api endpoints",
                 "friendly": "Nova API VIP",
+                "placeholder": "192.168.200.254",
                 "required": true,
                 "type": "string"
             },
             "nova_mysql_vip": {
-                "default": "192.168.200.252",
+                "default": "",
                 "description": "The VIP for mysql endpoint",
                 "friendly": "MySQL Service VIP",
+                "placeholder": "192.168.200.252",
                 "required": true,
                 "type": "string"
             },
             "nova_rabbitmq_vip": {
-                "default": "192.168.200.253",
+                "default": "",
                 "description": "The VIP for rabbitmq endpoint",
                 "friendly": "RabbitMQ Service VIP",
+                "placeholder": "192.168.200.253",
                 "required": true,
                 "type": "string"
             }
