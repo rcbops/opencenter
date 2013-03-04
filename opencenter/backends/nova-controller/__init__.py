@@ -77,15 +77,15 @@ class NovaControllerBackend(opencenter.backends.Backend):
     # README(shep): not executed on the server, skipping from code coverage
     def add_backend(self, state_data, api,
                     node_id, **kwargs):  # pragma: no cover
-        # Set Attr: locked = true
-        api.apply_expression(node_id,
-                             'attrs.locked := true')
 
         # Set Attr: locked = true on parent_id, only if real node
         # TODO(shep): need a real rollback for this action
         node = api.node_get_by_id(node_id)
         if 'agent' in node['facts']['backends']:
             api.apply_expression(node['facts']['parent_id'],
+                                 'attrs.locked := true')
+            # Set Attr: locked = true
+            api.apply_expression(node_id,
                                  'attrs.locked := true')
 
         # Add Backend: nova-controller
