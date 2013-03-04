@@ -128,7 +128,9 @@ class ChefClientBackend(opencenter.backends.Backend):
     def _get_nodes_in_env(self, env, api):
         """
         given a chef environment, find all nodes with that environment
-        in their facts and return a list of node ids. Exclude containers
+        in their facts and return a list of node ids. Exclude containers,
+        nodes without agents, and nodes that don't have the chef output
+        module (just in case they get shoved into a nova cluster wrongly)
         """
 
         final_nodelist = []
@@ -139,12 +141,23 @@ class ChefClientBackend(opencenter.backends.Backend):
         nodelist = api.nodes_query(query)
 
         for node in nodelist:
-            is_container = False
-            if 'backends' in node['facts'] and \
-                    'container' in node['facts']['backends']:
-                is_container = True
+            should_add = True
+            if not 'backends' in node['facts']:
+                should_add = False
+            else:
+                if 'container' in node['facts']['backends']:
+                    should_add = False
 
-            if not is_container:
+                if not 'agent' in node['facts']['backends']:
+                    should_add = False
+                else:  # this is agent, make sure we have chef stuff
+                    ocaom = 'opencenter_agent_output_modules'
+
+                    if not ocaom in node['attrs'] and \
+                            not 'chef' in node['attrs'][ocaom]:
+                        should_add = False
+
+            if should_add is True:
                 node_id = node['id']
                 final_nodelist.append(node_id)
 
