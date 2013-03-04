@@ -118,21 +118,11 @@ class NovaControllerBackend(opencenter.backends.Backend):
             return self._fail(
                 msg='Nova RabbitMQ VIP (nova_rabbitmq_vip) required')
 
-        # Update/Set facts.nova_role on the real node
-        #if 'agent' in node['facts']['backends']:
-        #    key = 'nova_role'
-        #    value = 'nova-controller-backup'
-        #    api.apply_expression(node_id, 'facts.%s := "%s"' % (key, value))
-
         # Set facts.ha_infra := true on my parent node
         node = api.node_get_by_id(node_id)
         container_list = [node['facts']['parent_id'], node_id]
         for container_id in container_list:
             api.apply_expression(container_id, 'facts.ha_infra := true')
-
-        # DELETE(shep): dont think we need this any more
-        #api.apply_expression(node['facts']['parent_id'],
-        #                     'attrs.locked := true')
 
         # README(shep): This could be simplified now that we are running
         #   an adventure to enable ha on the infrastructure container.
