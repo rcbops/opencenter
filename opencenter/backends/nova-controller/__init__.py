@@ -77,20 +77,28 @@ class NovaControllerBackend(opencenter.backends.Backend):
     # README(shep): not executed on the server, skipping from code coverage
     def add_backend(self, state_data, api,
                     node_id, **kwargs):  # pragma: no cover
+        reply_data = {'rollback': []}
+        rollback = reply_data['rollback']
 
         # Set Attr: locked = true on parent_id, only if real node
-        # TODO(shep): need a real rollback for this action
         node = api.node_get_by_id(node_id)
         if 'agent' in node['facts']['backends']:
+            # lookup my parent_id
+            parent_id = node['facts']['parent_id']
+
             # Set Attr: locked = true on parent_id
-            api.apply_expression(node['facts']['parent_id'],
-                                 'attrs.locked := true')
+            api.apply_expression(parent_id, 'attrs.locked := true')
+            rollback.append(
+                {'primitive': 'nova-controller.rollback_unlock_parent',
+                 'ns': {}})
+
             # Set Attr: locked = true
-            api.apply_expression(node_id,
-                                 'attrs.locked := true')
+            output = opencenter.backends.primitive_by_name(
+                'nodes.set_attr')(state_data, api, node_id,
+                                  key='locked', value=True)
+            rollback.append(output['result_data'])
 
             # Check if I am the second node in this container
-            parent_id = node['facts']['parent_id']
             count = len(api.nodes_query(
                 'facts.parent_id = %s or facts.parent_id = "%s"' % (
                     parent_id, parent_id)))
@@ -98,12 +106,24 @@ class NovaControllerBackend(opencenter.backends.Backend):
                 # Set Fact: nova_role = nova-controller-backup
                 key = 'nova_role'
                 value = 'nova-controller-backup'
-                api.apply_expression(node_id,
-                                     'facts.%s := "%s"' % (key, value))
+                output = opencenter.backends.primitive_by_name(
+                    'node.set_fact')(state_data, api, node_id,
+                                     key=key, value=value)
+                rollback.append(output['result_data'])
 
         # Add Backend: nova-controller
-        return opencenter.backends.primitive_by_name('node.add_backend')(
+        output = opencenter.backends.primitive_by_name('node.add_backend')(
             state_data, api, node_id, backend='nova-controller')
+        rollback.append(output['result_data'])
+        return self._ok(data=reply_data)
+
+    # README(shep): not executed on the server, skipping from code coverage
+    def rollback_unlock_parent(self, state_data, api,
+                               node_id, **kwargs):  # pragma: no cover
+        node = api.node_get_by_id(node_id)
+        parent_id = node['facts']['parent_id']
+        api.apply_expression(parent_id, 'attrs.locked := false')
+        return self._ok()
 
     # README(shep): not executed on the server, skipping from code coverage
     def make_infra_ha(self, state_data, api,
