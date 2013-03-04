@@ -137,7 +137,7 @@ class ChefClientBackend(opencenter.backends.Backend):
 
         self.logger.debug('environment: %s' % env)
 
-        query = 'facts.chef_environment = %s' % env
+        query = 'facts.chef_environment = "%s"' % env
         nodelist = api.nodes_query(query)
 
         for node in nodelist:
