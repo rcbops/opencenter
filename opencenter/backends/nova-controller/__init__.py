@@ -77,14 +77,33 @@ class NovaControllerBackend(opencenter.backends.Backend):
     # README(shep): not executed on the server, skipping from code coverage
     def add_backend(self, state_data, api,
                     node_id, **kwargs):  # pragma: no cover
-        api.apply_expression(node_id,
-                             'attrs.locked := true')
-        # DELETE(shep): dont think we need this any more
-        #node = api.node_get_by_id(node_id)
-        #api.apply_expression(node['facts']['parent_id'],
+        reply_data = {'rollback': []}
+        rollback = reply_data['rollback']
+
+        # Set Attr: locked = true
+        #api.apply_expression(node_id,
         #                     'attrs.locked := true')
-        return opencenter.backends.primitive_by_name('node.add_backend')(
-            state_data, api, node_id, backend='nova-controller')
+        _, _, r_plan = opencenter.backends.primitive_by_name(
+            'node.set_attr')(state_data, api, node_id,
+                             key='locked', value=True)
+        rollback.append(r_plan)
+
+        # Set Attr: locked = true on parent_id, only if real node
+        # TODO(shep): need a real rollback for this action
+        node = api.node_get_by_id(node_id)
+        if 'agent' in node['facts']['backends']:
+            api.apply_expression(node['facts']['parent_id'],
+                                 'attrs.locked := true')
+
+        # Add Backend: nova-controller
+        #return opencenter.backends.primitive_by_name('node.add_backend')(
+        #    state_data, api, node_id, backend='nova-controller')
+        _, _, r_plan = opencenter.backends.primitive_by_name(
+            'node.add_backend')(state_data, api, node_id,
+                                backend='nova-controller')
+        rollback.append(r_plan)
+
+        return self._ok(data=reply_data)
 
     # README(shep): not executed on the server, skipping from code coverage
     def make_infra_ha(self, state_data, api,
