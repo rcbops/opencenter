@@ -408,6 +408,8 @@ class ChefClientBackend(opencenter.backends.Backend):
                 self.logger.debug('No other nodes in the environment '
                                   'that need converging')
 
+        return self._ok()
+
     # README(shep): not executed on the server, skipping from code coverage
     def add_backend(self, api, node_id, **kwargs):  # pragma: no cover
         return self._fail(msg='backend added by install_chef')
