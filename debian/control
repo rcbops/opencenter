@@ -41,6 +41,7 @@ Package: opencenter-server
 Architecture: all
 Section: python
 Depends: ${python:Depends}, ${misc:Depends},
+ ssl-cert,
  python-opencenter (= ${binary:Version})
 Provides: ${python:Provides}
 Description: init scripts for running opencenter in self-hosted flask.
