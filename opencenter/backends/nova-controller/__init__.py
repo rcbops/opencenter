@@ -94,8 +94,8 @@ class NovaControllerBackend(opencenter.backends.Backend):
 
             # Set Attr: locked = true
             output = opencenter.backends.primitive_by_name(
-                'nodes.set_attr')(state_data, api, node_id,
-                                  key='locked', value=True)
+                'node.set_attr')(state_data, api, node_id,
+                                 key='locked', value=True)
             rollback.append(output['result_data'])
 
             # Check if I am the second node in this container
