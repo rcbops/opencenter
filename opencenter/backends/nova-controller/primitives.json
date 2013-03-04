@@ -1,34 +1,43 @@
 {
     "add_backend": {
-        "args": {},
-        "constraints": [],
-        "consequences": [ "facts.backends := union(facts.backends, 'nova-controller')" ]
-    },
+        "args": {}, 
+        "consequences": [
+            "facts.backends := union(facts.backends, 'nova-controller')"
+        ], 
+        "constraints": []
+    }, 
     "make_infra_ha": {
         "args": {
             "nova_api_vip": {
-                "friendly": "Nova API VIP",
-                "description": "The VIP for nova api endpoints",
-                "default": "192.168.200.254",
-                "type": "string",
-                "required": true
-            },
-            "nova_rabbitmq_vip": {
-                "friendly": "RabbitMQ Service VIP",
-                "description": "The VIP for rabbitmq endpoint",
-                "default": "192.168.200.253",
-                "type": "string",
-                "required": true
-            },
+                "default": "192.168.200.254", 
+                "description": "The VIP for nova api endpoints", 
+                "friendly": "Nova API VIP", 
+                "required": true, 
+                "type": "string"
+            }, 
             "nova_mysql_vip": {
-                "friendly": "MySQL Service VIP",
-                "description": "The VIP for mysql endpoint",
-                "default": "192.168.200.252",
-                "type": "string",
-                "required": true
+                "default": "192.168.200.252", 
+                "description": "The VIP for mysql endpoint", 
+                "friendly": "MySQL Service VIP", 
+                "required": true, 
+                "type": "string"
+            }, 
+            "nova_rabbitmq_vip": {
+                "default": "192.168.200.253", 
+                "description": "The VIP for rabbitmq endpoint", 
+                "friendly": "RabbitMQ Service VIP", 
+                "required": true, 
+                "type": "string"
             }
-        },
-        "constraints": [],
-        "consequences": [ "facts.ha_infra := true" ]
+        }, 
+        "consequences": [
+            "facts.ha_infra := true"
+        ], 
+        "constraints": []
+    }, 
+    "rollback_unlock_parent": {
+        "args": {}, 
+        "consequences": [], 
+        "constraints": []
     }
 }
