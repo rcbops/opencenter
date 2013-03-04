@@ -24,7 +24,7 @@ case "$1" in
         . /usr/share/debconf/confmodule
         db_get opencenter/password
         PASSWORD=$RET
-        sed -d "admin_pass *=.*" /etc/opencenter/opencenter.conf
+        sed -i "/admin_pass *=.*/ d" /etc/opencenter/opencenter.conf
         echo "admin_pass = ${PASSWORD}" >> /etc/opencenter/opencenter.conf
 
 	# Dont need this anymore, since the opencenter daemon does it on startup
