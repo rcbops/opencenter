@@ -82,11 +82,24 @@ class NovaControllerBackend(opencenter.backends.Backend):
         # TODO(shep): need a real rollback for this action
         node = api.node_get_by_id(node_id)
         if 'agent' in node['facts']['backends']:
+            # Set Attr: locked = true on parent_id
             api.apply_expression(node['facts']['parent_id'],
                                  'attrs.locked := true')
             # Set Attr: locked = true
             api.apply_expression(node_id,
                                  'attrs.locked := true')
+
+            # Check if I am the second node in this container
+            parent_id = node['facts']['parent_id']
+            count = len(api.nodes_query(
+                'facts.parent_id = %s or facts.parent_id = "%s"' % (
+                    parent_id, parent_id)))
+            if count > 1:
+                # Set Fact: nova_role = nova-controller-backup
+                key = 'nova_role'
+                value = 'nova-controller-backup'
+                api.apply_expression(node_id,
+                                     'facts.%s := "%s"' % (key, value))
 
         # Add Backend: nova-controller
         return opencenter.backends.primitive_by_name('node.add_backend')(
@@ -95,8 +108,6 @@ class NovaControllerBackend(opencenter.backends.Backend):
     # README(shep): not executed on the server, skipping from code coverage
     def make_infra_ha(self, state_data, api,
                       node_id, **kwargs):  # pragma: no cover
-        self.logger.debug('*** INIT KWARGS: %s' % kwargs)
-        self.logger.debug('*** INIT STATE_DATA: %s' % state_data)
         if 'nova_api_vip' not in kwargs:
             return self._fail(msg='Nova API VIP (nova_api_vip) required')
 
@@ -107,15 +118,14 @@ class NovaControllerBackend(opencenter.backends.Backend):
             return self._fail(
                 msg='Nova RabbitMQ VIP (nova_rabbitmq_vip) required')
 
-        node = api.node_get_by_id(node_id)
-
         # Update/Set facts.nova_role on the real node
-        if 'agent' in node['facts']['backends']:
-            key = 'nova_role'
-            value = 'nova-controller-backup'
-            api.apply_expression(node_id, 'facts.%s := "%s"' % (key, value))
+        #if 'agent' in node['facts']['backends']:
+        #    key = 'nova_role'
+        #    value = 'nova-controller-backup'
+        #    api.apply_expression(node_id, 'facts.%s := "%s"' % (key, value))
 
         # Set facts.ha_infra := true on my parent node
+        node = api.node_get_by_id(node_id)
         container_list = [node['facts']['parent_id'], node_id]
         for container_id in container_list:
             api.apply_expression(container_id, 'facts.ha_infra := true')
