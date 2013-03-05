@@ -41,5 +41,17 @@
     {"nova_role": {"type": "string",
                    "settable": false,
                    "inheritance": "child_clobber",
-                   "converge": true}}
+                   "converge": true}},
+    {"nova_api_vip": {"type": "string",
+                      "settable": true,
+                      "converge": true,
+                      "cluster_wide": true}},
+    {"nova_rabbitmq_vip": {"type": "string",
+                           "settable": true,
+                           "converge": true,
+                           "cluster_wide": true}},
+    {"nova_mysql_vip": {"type": "string",
+                        "settable": true,
+                        "converge": true,
+                        "cluster_wide": true}}
 ]

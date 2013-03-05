@@ -2,17 +2,5 @@
     {"ha_infra": {"type": "string",
                   "settable": false,
                   "converge": true,
-                  "cluster_wide": true}},
-    {"nova_api_vip": {"type": "string",
-                      "settable": true,
-                      "converge": true,
-                      "cluster_wide": true}},
-    {"nova_rabbitmq_vip": {"type": "string",
-                           "settable": true,
-                           "converge": true,
-                           "cluster_wide": true}},
-    {"nova_mysql_vip": {"type": "string",
-                        "settable": true,
-                        "converge": true,
-                        "cluster_wide": true}}
+                  "cluster_wide": true}}
 ]
