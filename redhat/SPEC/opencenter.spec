@@ -25,7 +25,11 @@ Requires:       python-requests
 Requires:       python >= 2.6
 Requires:       python-requests
 Requires:       python-flask
+%if 0%{?rhel} == 6
 Requires:       python-sqlalchemy0.7
+%else
+Requires:       python-sqlalchemy >= 0.7
+%endif
 Requires:       python-migrate
 Requires:       python-daemon
 Requires:       python-chef
@@ -46,7 +50,11 @@ Requires: python >= 2.6
 Requires: python-requests
 Requires: python-requests
 Requires: python-flask
-Requires: python-sqlalchemy
+%if 0%{?rhel} == 6
+Requires:       python-sqlalchemy0.7
+%else
+Requires:       python-sqlalchemy >= 0.7
+%endif
 Requires: python-migrate
 Requires: python-daemon
 Requires: python-chef
