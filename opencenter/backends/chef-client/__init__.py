@@ -174,6 +174,38 @@ class ChefClientBackend(opencenter.backends.Backend):
                 result[key] = value
         return result
 
+    def _watch_converge_task(self, api, nodelist):
+        """
+        run a converge task on a nodelist.
+
+        returns (success_bool, failure_string)
+        """
+
+        if len(nodelist) == 0:
+            return True, 'Nothing to converge'
+
+        dsl = [{'primitive': 'run_chef', 'ns': {}}]
+        node_task = api._model_create(
+            'tasks',
+            {'action': 'adventurate',
+             'node_id': adventurator['id'],
+             'payload': {'nodes': nodelist,
+                         'adventure_dsl': dsl}})
+
+        # watch for task state
+        while node_task['state'] not in ['timeout', 'cancelled', 'done']:
+            time.sleep(5)
+            node_task = api._model_get_by_id('tasks', node_task['id'])
+
+        if node_task['state'] != 'done':
+            return False, 'Task %s not completed' % node_task['id']
+
+        if 'result_code' in node_task['result'] and \
+                node_task['result']['result_code'] != 0:
+            return False, 'Task %s was unsuccessful' % node_task['id']
+
+        return True, 'Node(s) converged successfully'
+
     # README(shep): not executed on the server, skipping from code coverage
     def converge_chef(self, state_data, api,
                       node_id, **kwargs):  # pragma: no cover
@@ -326,87 +358,28 @@ class ChefClientBackend(opencenter.backends.Backend):
         if need_node_converge:
             # first run converge on the node in question
             self.logger.debug('chef updating node: %s' % node_id)
-            dsl = [{'primitive': 'run_chef', 'ns': {}}]
-            node_task = api._model_create(
-                'tasks',
-                {'action': 'adventurate',
-                'node_id': adventurator['id'],
-                'payload': {'nodes': [node_id],
-                'adventure_dsl': dsl}})
+            result_b, result_s = self._watch_converge_task(
+                api, [node_id])
+            if result_b is not True:
+                return self._fail(msg='First node pass: %s' % result_s)
 
-            # watch for task state
-            while node_task['state'] not in ['timeout', 'cancelled', 'done']:
-                time.sleep(5)
-                node_task = api._model_get_by_id('tasks', node_task['id'])
+            nodelist = self._get_nodes_in_env(chef_environment, api)
+            self.logger.debug('chef updating env: %s: nodes %s' %
+                              chef_environment, nodelist)
+            result_b, result_s = self._watch_converge_task(
+                api, nodelist)
+            if result_b is not True:
+                return self._fail(msg='First env pass: %s' % result_s)
 
-            if node_task['state'] != 'done':
-                return self._fail(msg='task did not finish successfully')
-
-            if 'result_code' in node_task['result'] and \
-                    node_task['result']['result_code'] == 0:
-                # now converge the rest of the nodes in the environment
-                nodelist = self._get_nodes_in_env(chef_environment, api)
-                if node_id in nodelist:
-                    nodelist.remove(node_id)
-                self.logger.debug('chef updating nodes: %s' % nodelist)
-                # now converge the affected nodes
-                if len(nodelist) > 0:
-                    all_task = api._model_create(
-                        'tasks',
-                        {'action': 'adventurate',
-                        'node_id': adventurator['id'],
-                        'payload': {'nodes': nodelist,
-                        'adventure_dsl': dsl}})
-
-                    # watch for task state
-                    while all_task['state'] not in \
-                            ['timeout', 'cancelled', 'done']:
-                        time.sleep(5)
-                        all_task = api._model_get_by_id(
-                            'tasks', all_task['id'])
-
-                    if all_task['state'] != 'done':
-                        return self._fail(
-                            msg='task did not finish successfully')
-
-                    if 'result_code' in node_task['result'] and \
-                            node_task['result']['result_code'] == 0:
-                        return self._ok()
-
-            return self._fail(msg='task did not finish successfully')
-
-        elif need_env_converge:
+        if need_env_converge:
             # converge ALL of the nodes
             nodelist = self._get_nodes_in_env(chef_environment, api)
             self.logger.debug('chef updating nodes: %s' % nodelist)
-            # now converge the affected nodes
-            if len(nodelist) > 0:
-                all_task = api._model_create(
-                    'tasks',
-                    {'action': 'adventurate',
-                    'node_id': adventurator['id'],
-                    'payload': {'nodes': nodelist,
-                    'adventure_dsl': dsl}})
 
-                # watch for task state
-                while all_task['state'] not in \
-                        ['timeout', 'cancelled', 'done']:
-                    time.sleep(5)
-                    all_task = api._model_get_by_id(
-                        'tasks', all_task['id'])
-
-                if all_task['state'] != 'done':
-                    return self._fail(
-                        msg='task did not finish successfully')
-
-                if 'result_code' in node_task['result'] and \
-                        node_task['result']['result_code'] == 0:
-                    return self._ok()
-
-                return self._fail(msg='task did not finish successfully')
-            else:
-                self.logger.debug('No other nodes in the environment '
-                                  'that need converging')
+            result_b, result_s = self._watch_converge_task(
+                api, nodelist)
+            if result_b is not True:
+                return self._fail(msg='First env pass: %s' % result_s)
 
         return self._ok()
 
