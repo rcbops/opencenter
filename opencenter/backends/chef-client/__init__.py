@@ -370,7 +370,7 @@ class ChefClientBackend(opencenter.backends.Backend):
 
             nodelist = self._get_nodes_in_env(chef_environment, api)
             self.logger.debug('chef updating env: %s: nodes %s' %
-                              chef_environment, nodelist)
+                              (chef_environment, nodelist))
             result_b, result_s = self._watch_converge_task(
                 api, nodelist)
             if result_b is not True:
