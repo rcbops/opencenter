@@ -146,7 +146,7 @@ class NovaControllerBackend(opencenter.backends.Backend):
 
         # Set facts.ha_infra := true on my parent node
         parent_id = node['facts']['parent_id']
-        api.apply_expression(parent_id, 'facts.ha_infra := true')
+        api.apply_expression(node_id, 'facts.ha_infra := true')
 
         # README(shep): This could be simplified now that we are running
         #   an adventure to enable ha on the infrastructure container.
