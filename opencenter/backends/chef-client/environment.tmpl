@@ -63,7 +63,7 @@
             {
                 "bridge_dev": "${facts['nova_vm_fixed_if']}",
                 "num_networks": "1",
-                "network_size": "256",
+                "network_size": "${2 ** (32 - int(facts['nova_vm_fixed_range'].split('/')[1]))}",
                 "bridge": "${facts['nova_vm_bridge']}",
                 "ipv4_cidr": "${facts['nova_vm_fixed_range']}",
                 "label": "public",
