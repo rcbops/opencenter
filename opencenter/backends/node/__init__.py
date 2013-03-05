@@ -251,7 +251,7 @@ class NodeBackend(backends.Backend):
 
         old_fact = old_fact[0]
 
-        api._model_delete_by_id('facts', old_fact[0]['id'])
+        api._model_delete_by_id('facts', old_fact['id'])
 
         reply_data = {
             'rollback': {
