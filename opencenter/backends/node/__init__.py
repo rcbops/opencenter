@@ -249,6 +249,8 @@ class NodeBackend(backends.Backend):
         if old_fact is None:
             return self._ok()  # no rollback necessary
 
+        old_fact = old_fact[0]
+
         api._model_delete_by_id('facts', old_fact[0]['id'])
 
         reply_data = {
@@ -313,7 +315,9 @@ class NodeBackend(backends.Backend):
         if old_attr is None:
             return self._ok()
 
-        api._model_delete_by_id('attrs', old_attr[0]['id'])
+        old_attr = old_attr[0]
+
+        api._model_delete_by_id('attrs', old_attr['id'])
 
         reply_data = {
             'rollback': {
