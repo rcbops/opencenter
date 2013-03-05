@@ -33,13 +33,14 @@ Requires:       python-sqlalchemy >= 0.7
 Requires:       python-migrate
 Requires:       python-daemon
 Requires:       python-chef
-# we don't have python-gevent in epel yet
+# we don't have python-gevent in epel yet - so this comes from our repo
 Requires:       python-gevent
 Requires:       python-mako
 Requires:       python-netifaces
 Requires:       opencenter >= %{version}
 Requires:       python-opencenter >= %{version}
 Requires:       MySQL-python
+Requires:       openssl
 
 %description server
 The server description
