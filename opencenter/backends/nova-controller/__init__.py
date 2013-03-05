@@ -139,14 +139,14 @@ class NovaControllerBackend(opencenter.backends.Backend):
                 msg='Nova RabbitMQ VIP (nova_rabbitmq_vip) required')
 
         node = api.node_get_by_id(node_id)
+
         chef_env_node = self._find_chef_environment_node(api, node)
         if chef_env_node is None:
             return self._fail(msg='Unable to determine Chef Environment Node')
 
         # Set facts.ha_infra := true on my parent node
-        container_list = [node['facts']['parent_id'], node_id]
-        for container_id in container_list:
-            api.apply_expression(container_id, 'facts.ha_infra := true')
+        parent_id = node['facts']['parent_id']
+        api.apply_expression(parent_id, 'facts.ha_infra := true')
 
         # README(shep): This could be simplified now that we are running
         #   an adventure to enable ha on the infrastructure container.
