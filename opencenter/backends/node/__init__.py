@@ -238,9 +238,9 @@ class NodeBackend(backends.Backend):
         """
 
         if not 'key' in kwargs:
-            return self._fail(msg='need either "key" kwarg')
+            return self._fail(msg='need "key" kwarg')
 
-        old_attr = None
+        old_fact = None
 
         old_fact = api._model_query(
             'facts', 'node_id=%d and key="%s"' % (int(node_id),
@@ -249,7 +249,9 @@ class NodeBackend(backends.Backend):
         if old_fact is None:
             return self._ok()  # no rollback necessary
 
-        api._model_delete_by_id('facts', old_attr['id'])
+        old_fact = old_fact[0]
+
+        api._model_delete_by_id('facts', old_fact['id'])
 
         reply_data = {
             'rollback': {
@@ -312,6 +314,8 @@ class NodeBackend(backends.Backend):
 
         if old_attr is None:
             return self._ok()
+
+        old_attr = old_attr[0]
 
         api._model_delete_by_id('attrs', old_attr['id'])
 
