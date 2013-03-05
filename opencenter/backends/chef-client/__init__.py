@@ -184,6 +184,9 @@ class ChefClientBackend(opencenter.backends.Backend):
         if len(nodelist) == 0:
             return True, 'Nothing to converge'
 
+        query = '"adventurator" in attrs.opencenter_agent_output_modules'
+        adventurator = api._model_get_first_by_query('nodes', query)
+
         dsl = [{'primitive': 'run_chef', 'ns': {}}]
         node_task = api._model_create(
             'tasks',
