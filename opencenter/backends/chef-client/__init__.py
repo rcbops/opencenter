@@ -186,7 +186,7 @@ class ChefClientBackend(opencenter.backends.Backend):
 
         query = '"adventurator" in attrs.opencenter_agent_output_modules'
         adventurator = api._model_get_first_by_query('nodes', query)
-        if not adventurator:
+        if adventurator is None:
             return False, 'could not find adventurator'
 
         dsl = [{'primitive': 'run_chef', 'ns': {}}]
