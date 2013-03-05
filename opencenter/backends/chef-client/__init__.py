@@ -369,6 +369,9 @@ class ChefClientBackend(opencenter.backends.Backend):
                 return self._fail(msg='First node pass: %s' % result_s)
 
             nodelist = self._get_nodes_in_env(chef_environment, api)
+            if node_id in nodelist:
+                nodelist.remove(node_id)
+
             self.logger.debug('chef updating env: %s: nodes %s' %
                               (chef_environment, nodelist))
             result_b, result_s = self._watch_converge_task(
