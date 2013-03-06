@@ -41,6 +41,7 @@ Requires:       opencenter >= %{version}
 Requires:       python-opencenter >= %{version}
 Requires:       MySQL-python
 Requires:       openssl
+Requires:       mod_ssl
 
 %description server
 The server description
