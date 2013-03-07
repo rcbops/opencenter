@@ -75,7 +75,8 @@ class NovaBackend(opencenter.backends.Backend):
         self._make_subcontainer(api,
                                 'AZ %s' % kwargs['az_name'],
                                 node_id,
-                                {'nova_az': kwargs['az_name']},
+                                {'nova_az': kwargs['az_name'],
+                                 'libvirt_type': kwargs['libvirt_type']},
                                 ['node', 'container', 'nova'])
 
         return self._ok()
@@ -105,7 +106,8 @@ class NovaBackend(opencenter.backends.Backend):
                          "nova_vm_bridge",
                          "osops_mgmt",
                          "osops_nova",
-                         "osops_public"]
+                         "osops_public",
+                         "libvirt_type"]
 
         environment_hash = {}
         for k, v in kwargs.items():
