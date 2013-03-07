@@ -53,5 +53,10 @@
     {"nova_mysql_vip": {"type": "string",
                         "settable": true,
                         "converge": true,
-                        "cluster_wide": true}}
+                        "cluster_wide": true}},
+    {"libvirt_type": {"type": "string",
+                      "settable": true,
+                      "converge": true,
+                      "inheritance": "child_clobber",
+                      "cluster_wide": false}}
 ]
