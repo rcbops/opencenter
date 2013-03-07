@@ -116,6 +116,8 @@ class NovaBackend(opencenter.backends.Backend):
 
         environment_hash['chef_server_consumed'] = kwargs['chef_server']
         environment_hash['chef_environment'] = kwargs['cluster_name']
+        environment_hash['ram_allocation_ratio'] = 1
+        environment_hash['cpu_allocation_ratio'] = 16
 
         # have the attribute map, let's make it an apply the
         # facts.

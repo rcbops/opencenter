@@ -58,5 +58,15 @@
                       "settable": true,
                       "converge": true,
                       "inheritance": "child_clobber",
+                      "cluster_wide": false}},
+    {"ram_allocation_ratio": {"type": "string",
+                      "settable": true,
+                      "converge": true,
+                      "inheritance": "parent_clobber",
+                      "cluster_wide": false}},
+    {"cpu_allocation_ratio": {"type": "string",
+                      "settable": true,
+                      "converge": true,
+                      "inheritance": "parent_clobber",
                       "cluster_wide": false}}
 ]

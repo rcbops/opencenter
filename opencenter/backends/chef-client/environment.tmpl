@@ -52,6 +52,10 @@
         "root_network_acl": "%"
     },
     "nova": {
+        "config": {
+            "ram_allocation_ratio": "${facts['ram_allocation_ratio'] if 'ram_allocation_ratio' in facts else '1'}",
+            "cpu_allocation_ratio": "${facts['cpu_allocation_ratio'] if 'cpu_allocation_ratio' in facts else '16'}"
+        },
         "libvirt": {
             "vncserver_listen": "0.0.0.0"
         },
