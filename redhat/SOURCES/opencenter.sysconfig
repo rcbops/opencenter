@@ -1,0 +1,1 @@
+DAEMON_ARGS="-c /etc/opencenter/opencenter.conf"
