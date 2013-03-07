@@ -48,14 +48,15 @@ def upgrade(migrate_engine):
 
     api = api_from_models()
     for adventure in adventures:
-        db_entries = api._model_query('adventures', 'name="%s"' % adventure['name'])
+        db_entries = api._model_query('adventures',
+                                      'name="%s"' % adventure['name'])
 
         if len(db_entries) == 1:
             db_entry = db_entries[0]
             criteria_path = os.path.join(
                 os.path.dirname(__file__), adventure['criteria']['002'])
             db_entry['criteria'] = open(criteria_path).read()
-    
+
             api.adventure_update_by_id(db_entry['id'], db_entry)
 
 
@@ -64,12 +65,13 @@ def downgrade(migrate_engine):
 
     api = api_from_models()
     for adventure in adventures:
-        db_entries = api._model_query('adventures', 'name="%s"' % adventure['name'])
+        db_entries = api._model_query('adventures',
+                                      'name="%s"' % adventure['name'])
 
         if len(db_entries) == 1:
             db_entry = db_entries[0]
             criteria_path = os.path.join(
                 os.path.dirname(__file__), adventure['criteria']['001'])
             db_entry['criteria'] = open(criteria_path).read()
-    
+
             api.adventure_update_by_id(db_entry['id'], db_entry)
