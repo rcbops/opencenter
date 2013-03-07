@@ -1,0 +1,17 @@
+# opencenter - a web api for cluster orchestration orchestration (aaS!)
+#
+
+[Unit]
+Description=opencenter web api
+After=syslog.target
+
+[Service]
+UMask=022
+Type=simple
+TimeoutSec=0
+EnvironmentFile=-/etc/sysconfig/opencenter
+ExecStart=/usr/bin/opencenter $DAEMON_ARGS
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
