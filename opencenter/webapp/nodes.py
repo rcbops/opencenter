@@ -28,6 +28,7 @@ import socket
 
 import flask
 
+from opencenter.db import exceptions
 from opencenter.db.api import api_from_models
 from opencenter.webapp import ast
 # from opencenter.webapp import auth
@@ -57,7 +58,11 @@ def tasks_blocking_by_node_id(node_id):
     # README(shep): Using last_checkin attr for agent-health
     timestamp = int(time.time())
     args = {'node_id': node_id, 'key': 'last_checkin', 'value': timestamp}
-    r = api.attr_create(args)
+    try:
+        r = api.attr_create(args)
+    except exceptions.NodeNotFound:
+        message = 'Node %s not found.' % args['node_id']
+        return generic.http_notfound(msg=message)
     #DB does not hit updater, so we need to notify
     generic._update_transaction_id('nodes', id_list=[node_id])
     generic._update_transaction_id('attrs', id_list=[r['id']])

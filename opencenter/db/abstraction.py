@@ -228,6 +228,12 @@ class SqlAlchemyAbstraction(DbAbstraction):
         new_data = self._sanitize_for_create(data)
 
         if self.name in ('facts', 'attrs'):
+            try:
+                self.api._model_get_by_id('nodes', new_data['node_id'])
+            except (exceptions.IdNotFound, ValueError):
+                msg = '%s is not a valid node id' % new_data['node_id']
+                raise exceptions.NodeNotFound(message=msg)
+
             existing = self.api._model_query(
                 self.name, 'node_id=%d and key="%s"' % (
                     int(new_data['node_id']), new_data['key']))
