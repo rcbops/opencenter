@@ -99,7 +99,12 @@ install -m 755 $RPM_BUILD_DIR/opencenter-%{version}/manage.py $RPM_BUILD_ROOT/us
 %files server
 %defattr(-,root,root)
 /usr/bin/opencenter
+%if 0%{?rhel} == 6
 /etc/init/opencenter.conf
+%else
+/etc/systemd/system/opencenter.service
+/etc/sysconfig/opencenter
+%endif
 /usr/share/opencenter/manage.py
 
 %files -n python-opencenter
