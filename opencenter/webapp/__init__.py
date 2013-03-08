@@ -317,9 +317,9 @@ class WebServer(Flask):
                 if txid < min(trans.keys()):
                     return generic.http_response(410, 'Expired transaction id')
 
-                retval = set([])
-                for x in [trans[tx] for tx in trans.keys() if tx > txid]:
-                    retval = retval.union(x)
+                retval = set()
+                for x in (trans[tx] for tx in trans.keys() if tx > txid):
+                    retval.update(x)
 
                 return generic.http_response(
                     200, 'Updated %s' % what.title(),
