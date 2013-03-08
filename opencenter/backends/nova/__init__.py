@@ -118,7 +118,7 @@ class NovaBackend(opencenter.backends.Backend):
         environment_hash['chef_environment'] = kwargs['cluster_name']
         environment_hash['ram_allocation_ratio'] = 1
         environment_hash['cpu_allocation_ratio'] = 16
-        environment_hash['nova_use_single_default_gateway'] = False
+        environment_hash['nova_use_single_default_gateway'] = "false"
         environment_hash['nova_network_dhcp_name'] = 'novalocal'
 
         # have the attribute map, let's make it an apply the
