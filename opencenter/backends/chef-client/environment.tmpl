@@ -53,8 +53,9 @@
     },
     "nova": {
         "config": {
-            "ram_allocation_ratio": "${facts['ram_allocation_ratio'] if 'ram_allocation_ratio' in facts else '1'}",
-            "cpu_allocation_ratio": "${facts['cpu_allocation_ratio'] if 'cpu_allocation_ratio' in facts else '16'}"
+            "ram_allocation_ratio": "${facts['ram_allocation_ratio']",
+            "cpu_allocation_ratio": "${facts['cpu_allocation_ratio']",
+            "use_single_default_gateway": ${facts['use_single_default_gateway']}
         },
         "libvirt": {
             "vncserver_listen": "0.0.0.0"
@@ -63,7 +64,8 @@
             "fixed_range": "${facts['nova_vm_fixed_range']}",
             "dmz_cidr": "${facts['nova_dmz_cidr']}",
             "multi_host": true,
-            "public_interface": "${facts['nova_public_if']}"
+            "public_interface": "${facts['nova_public_if']}",
+            "dhcp_domain": "${facts['nova_network_dhcp_name']}"
         },
         "apply_patches": true,
         "networks": [

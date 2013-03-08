@@ -68,5 +68,15 @@
                       "settable": true,
                       "converge": true,
                       "inheritance": "parent_clobber",
-                      "cluster_wide": true}}
+                      "cluster_wide": true}},
+    {"nova_use_single_default_gateway": {"type": "string",
+                      "settable": true,
+                      "converge": true,
+                      "inheritance": "parent_clobber",
+                      "cluster_wide": true}},
+    {"nova_network_dhcp_name": {"type": "string",
+                      "settable": true,
+                      "converge": true,
+                      "inheritance": "child_clobber",
+                      "cluster_wide": false}}
 ]
