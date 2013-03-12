@@ -61,16 +61,23 @@ class ChefClientBackend(opencenter.backends.Backend):
                 if fact_info is None or 'cluster_wide' not in fact_info:
                     self.logger.debug('Invalid fact: %s' % fact)
                 else:
+                    # serialize non-string facts so we can safely embed in
+                    # template which gets de-serialized later
+                    if isinstance(node['facts'][fact], unicode):
+                        fact_serialized = node['facts'][fact]
+                    else:
+                        fact_serialized = json.dumps(node['facts'][fact])
+            
                     if fact_info['cluster_wide'] is True:
                         if fact in cluster_attributes:
                             raise KeyError('fact already exists')
 
-                        cluster_attributes[fact] = node['facts'][fact]
+                        cluster_attributes[fact] = fact_serialized
                     else:
                         if fact in node_attributes:
                             raise KeyError('fact already exists')
 
-                        node_attributes[fact] = node['facts'][fact]
+                        node_attributes[fact] = fact_serialized
 
         # now generate the json from the facts
         environment_template = os.path.join(os.path.dirname(__file__),
