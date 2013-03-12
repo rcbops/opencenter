@@ -62,8 +62,8 @@ class ChefClientBackend(opencenter.backends.Backend):
                     self.logger.debug('Invalid fact: %s' % fact)
                 else:
                     # serialize non-string facts so we can safely embed in
-                    # template which gets de-serialized later
-                    if isinstance(node['facts'][fact], unicode):
+                    # template (which gets de-serialized later)
+                    if isinstance(node['facts'][fact], basestring):
                         fact_serialized = node['facts'][fact]
                     else:
                         fact_serialized = json.dumps(node['facts'][fact])
