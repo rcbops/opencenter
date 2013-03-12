@@ -356,6 +356,7 @@ class NodeTransactionTests(OpenCenterTestCase):
         self.assertEquals(trans['session_key'], session_key)
         self.assertEquals(set(changed_nodes), set([my_node['id']]))
 
+
 class NodeMiscTests(OpenCenterTestCase):
     def test_cascading_deletes(self):
         new_node = self._model_create('nodes', name='test1')
@@ -383,4 +384,3 @@ class NodeMiscTests(OpenCenterTestCase):
 
         self._model_get_by_id('attrs', new_fact['id'],
                               expect_code=404, raw=True)
-        
