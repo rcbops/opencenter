@@ -67,7 +67,7 @@ class ChefClientBackend(opencenter.backends.Backend):
                         fact_serialized = node['facts'][fact]
                     else:
                         fact_serialized = json.dumps(node['facts'][fact])
-            
+
                     if fact_info['cluster_wide'] is True:
                         if fact in cluster_attributes:
                             raise KeyError('fact already exists')
