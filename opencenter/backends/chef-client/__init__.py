@@ -65,14 +65,12 @@ class ChefClientBackend(opencenter.backends.Backend):
                         if fact in cluster_attributes:
                             raise KeyError('fact already exists')
 
-                        cluster_attributes[fact] = json.dumps(
-                            node['facts'][fact])
+                        cluster_attributes[fact] = node['facts'][fact]
                     else:
                         if fact in node_attributes:
                             raise KeyError('fact already exists')
 
-                        node_attributes[fact] = json.dumps(
-                            node['facts'][fact])
+                        node_attributes[fact] = node['facts'][fact]
 
         # now generate the json from the facts
         environment_template = os.path.join(os.path.dirname(__file__),
