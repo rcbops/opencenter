@@ -98,35 +98,36 @@ def _notify(updated_object, object_type, object_id):
 #                utility.notify(semaphore)
 
     # TODO (wilk or rpedde): Use specific notifications for inheritance
-    node_id = None
-    if object_type == 'facts':
+    if object_type not in ('attrs', 'facts', 'nodes'):
+        return
+    try:
         node_id = updated_object['node_id']
-    if object_type == 'nodes':
+        node = None
+    except KeyError:
         node_id = updated_object['id']
-    if node_id is not None:
+        node = updated_object
+    if object_type != "attrs":
         api = api_from_models()
-        node_id = int(node_id)
         # We're just going to notify every child when containers are updated
-        try:
-            node = api._model_get_by_id('nodes', node_id)
-        except exceptions.IdNotFound:
-            return
+        if node is None:
+            try:
+                node = api._model_get_by_id('nodes', node_id)
+            except (exceptions.IdNotFound):
+                return
 
-        if node is not None and 'container' in node['facts'].get(
-                'backends', []):
-            children = utility.get_direct_children(node_id, api)
+        if 'container' in node['facts'].get('backends', []):
+            children = utility.get_direct_children(node, api)
             for child in children:
                 semaphore = 'nodes-id-%s' % child['id']
                 utility.notify(semaphore)
         # Update transaction for node and children
-        id_list = utility.fully_expand_nodelist([node_id], api)
+        id_list = utility.fully_expand_nodelist([node], api)
         # TODO(shep): this needs to be better abstracted
-        _update_transaction_id('nodes', id_list)
     # Need a codepath to update transaction for attr modifications
-    if object_type == "attrs":
-        node_id = updated_object['node_id']
+    else:
         # TODO(shep): this needs to be better abstracted
-        _update_transaction_id('nodes', [node_id])
+        id_list = [node_id]
+    _update_transaction_id('nodes', id_list)
 
 
 def _update_transaction_id(object_model, id_list=None):
@@ -208,9 +209,10 @@ def object_by_id(object_type, object_id):
                              **{s_obj: model_object})
     elif flask.request.method == 'DELETE':
         try:
+            model_object = api._model_get_by_id(object_type, object_id)
             if api._model_delete_by_id(object_type, object_id):
+                _notify(model_object, object_type, object_id)
                 return http_response(200, '%s deleted' % s_obj.capitalize())
-            _notify(None, object_type, object_id)
         except exceptions.IdNotFound:
             return http_notfound(msg='not found')
     elif flask.request.method == 'GET':
