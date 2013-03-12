@@ -335,6 +335,26 @@ class NodeTransactionTests(OpenCenterTestCase):
         _, _ = self._model_get_updates('nodes', trans['session_key'],
                                        0, expect_code=410, raw=True)
 
+    def test_delete_node_updates_transactions(self):
+        my_node = self._model_create('nodes', name='delete_me')
+
+        # Grab starting point info
+        trans = self._get_txid()
+        old_trans_id = trans['txid']
+        session_key = trans['session_key']
+
+        trans, changed_nodes = self._model_get_updates('nodes', session_key,
+                                                       old_trans_id)
+        self.assertEquals(set(changed_nodes), set())
+
+        self._model_delete('nodes', my_node['id'])
+
+        # Now lets look at updates from old_trans_id to latest
+        trans, changed_nodes = self._model_get_updates('nodes', session_key,
+                                                       old_trans_id)
+
+        self.assertEquals(trans['session_key'], session_key)
+        self.assertEquals(set(changed_nodes), set([my_node['id']]))
 
 class NodeMiscTests(OpenCenterTestCase):
     def test_cascading_deletes(self):
@@ -363,3 +383,4 @@ class NodeMiscTests(OpenCenterTestCase):
 
         self._model_get_by_id('attrs', new_fact['id'],
                               expect_code=404, raw=True)
+        
