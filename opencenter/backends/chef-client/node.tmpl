@@ -5,6 +5,9 @@
       },
       "libvirt": {
           "virt_type": "${facts['libvirt_type'] if 'libvirt_type' in facts else 'kvm'}"
+      },
+      "network": {
+        "dhcp_domain": "${facts['nova_network_dhcp_name'] if 'nova_network_dhcp_name' in facts else 'novalocal'}"
       }
     }
 }
