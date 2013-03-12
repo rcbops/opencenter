@@ -103,7 +103,7 @@ class FactsTests(util_facts.OpenCenterTestCase):
         self.assertEquals(n1_facts['node_data'], 'blah')
 
     def test_add_fact_non_existant_node_fails(self):
-        self.assertRaises(exceptions.NodeNotFound, self._model_create, 'facts',
+        self.assertRaises(exceptions.IdNotFound, self._model_create, 'facts',
                           node_id=99999, key='bad_node', value='data')
 
     def inheritance_helper(self, fact, grand_parent,

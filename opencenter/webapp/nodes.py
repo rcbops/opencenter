@@ -60,9 +60,11 @@ def tasks_blocking_by_node_id(node_id):
     args = {'node_id': node_id, 'key': 'last_checkin', 'value': timestamp}
     try:
         r = api.attr_create(args)
-    except exceptions.NodeNotFound:
+    except exceptions.IdNotFound:
         message = 'Node %s not found.' % args['node_id']
         return generic.http_notfound(msg=message)
+    except exceptions.IdInvalid:
+        return generic.http_badrequest()
     #DB does not hit updater, so we need to notify
     generic._update_transaction_id('nodes', id_list=[node_id])
     generic._update_transaction_id('attrs', id_list=[r['id']])

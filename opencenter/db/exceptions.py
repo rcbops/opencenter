@@ -50,3 +50,10 @@ class IdNotFound(Exception):
 
     def __init__(self, message=message):
         self.message = message
+
+
+class IdInvalid(Exception):
+    message = "Invalid id"
+
+    def __init__(self, message=message):
+        self.message = message
