@@ -200,8 +200,13 @@ def object_by_id(object_type, object_id):
     api = api_from_models()
     if flask.request.method == 'PUT':
         # we just updated something, poke any waiters
-        model_object = api._model_update_by_id(object_type, object_id,
-                                               flask.request.json)
+        try:
+            model_object = api._model_update_by_id(object_type, object_id,
+                                                   flask.request.json)
+        except exceptions.IdNotFound:
+            return http_notfound(msg='not found')
+        except exceptions.IdInvalid:
+            return http_badrequest()
 
         _notify(model_object, object_type, object_id)
 
@@ -215,6 +220,8 @@ def object_by_id(object_type, object_id):
                 return http_response(200, '%s deleted' % s_obj.capitalize())
         except exceptions.IdNotFound:
             return http_notfound(msg='not found')
+        except exceptions.IdInvalid:
+            return http_badrequest()
     elif flask.request.method == 'GET':
         if 'poll' in flask.request.args:
             # we're polling
@@ -225,6 +232,8 @@ def object_by_id(object_type, object_id):
             model_object = api._model_get_by_id(object_type, object_id)
         except exceptions.IdNotFound:
             return http_notfound(msg='not found')
+        except exceptions.IdInvalid:
+            return http_badrequest()
 
         return http_response(200, 'success', **{s_obj: model_object})
     else:

@@ -228,15 +228,11 @@ class SqlAlchemyAbstraction(DbAbstraction):
         new_data = self._sanitize_for_create(data)
 
         if self.name in ('facts', 'attrs'):
-            try:
-                self.api._model_get_by_id('nodes', new_data['node_id'])
-            except (exceptions.IdNotFound, ValueError):
-                msg = '%s is not a valid node id' % new_data['node_id']
-                raise exceptions.NodeNotFound(message=msg)
+            #checks that the node exists
+            node = self.api._model_get_by_id('nodes', new_data['node_id'])
 
-            existing = self.api._model_query(
-                self.name, 'node_id=%d and key="%s"' % (
-                    int(new_data['node_id']), new_data['key']))
+            query = 'node_id=%d and key="%s"' % (node['id'], new_data['key'])
+            existing = self.api._model_query(self.name, query)
             if len(existing) != 0:
                 return self.update(existing[0]['id'], data)
 
@@ -276,16 +272,25 @@ class SqlAlchemyAbstraction(DbAbstraction):
             raise RuntimeError(msg)
 
     def get(self, id):
-        id = int(id)
+        try:
+            id = int(id)
+        except ValueError:
+            msg = '%s id must be an integer.' % self.name.title()
+            raise exceptions.IdInvalid(message=msg)
         r = self.model.query.filter_by(id=id).first()
 
         if not r:
-            raise exceptions.IdNotFound(message='id %d does not exist' % id)
+            msg = '%s id %d does not exist' % (self.name.title(), id)
+            raise exceptions.IdNotFound(message=msg)
 
         return r.jsonify(api=self.api)
 
     def update(self, id, data):
-        id = int(id)
+        try:
+            id = int(id)
+        except ValueError:
+            msg = '%s id must be an integer.' % self.name.title()
+            raise exceptions.IdInvalid(message=msg)
 
         new_data = self._sanitize_for_update(data)
         r = self.model.query.filter_by(id=id).first()
