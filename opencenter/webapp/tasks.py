@@ -123,14 +123,17 @@ def task_log(task_id):
 
     watching = flask.request.args.get('watch', False) is not False
 
-    offset = flask.request.args.get('offset', 1024)
+    offset_raw = flask.request.args.get('offset', '1024')
+    offset = {}
     try:
-        offset = int(offset)
+        offset['length'] = int(offset_raw)
     except ValueError:
-        pass
-    if not isinstance(offset, int) or offset < 0:
-        message = 'Offset must be a non-negative integer'
-        return generic.http_badrequest(msg=message)
+        return generic.http_badrequest(msg='Offset must be an integer.')
+
+    if offset_raw.startswith('+'):
+        offset['position'] = 'start'
+    else:
+        offset['position'] = 'end'
 
     s = gevent.socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(('', 0))
