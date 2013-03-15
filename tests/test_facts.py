@@ -24,7 +24,7 @@
 ##############################################################################
 import imp
 import tests
-import unittest2
+import json
 util_facts = imp.load_module('util_facts',
                              *imp.find_module('util', tests.__path__))
 from opencenter.db import exceptions
@@ -90,8 +90,8 @@ class FactsTests(util_facts.OpenCenterTestCase):
         self._model_delete('nodes', self.c2['id'])
         self._model_delete('nodes', self.c1['id'])
 
-        all_facts = self._model_get_all('facts')
-        all_nodes = self._model_get_all('nodes')
+        self._model_get_all('facts')
+        self._model_get_all('nodes')
 
     def test_001_add_fact(self):
         self._model_create('facts', node_id=self.n1['id'],
@@ -201,6 +201,34 @@ class FactsTests(util_facts.OpenCenterTestCase):
                                 UnorderedList(["c2", "n1"]),
                                 UnorderedList(["c2", "c1"]),
                                 f=to_list)
+
+    def test_false_fact_inheritance_default(self):
+        for falsey in ['', False, []]:
+            self.inheritance_helper(
+                'defaulted',
+                falsey, falsey, falsey, falsey, falsey,
+                lambda(x): falsey)
+
+    def test_false_fact_inheritance_parent_clobber(self):
+        for falsey in ['', False, []]:
+            self.inheritance_helper(
+                'parent_clobbered',
+                falsey, falsey, falsey, falsey, falsey,
+                lambda(x): falsey)
+
+    def test_false_fact_inheritance_none(self):
+        for falsey in ['', False, []]:
+            self.inheritance_helper(
+                'noned',
+                falsey, falsey, falsey, falsey, None,
+                lambda(x): falsey)
+
+    def test_false_fact_inheritance_child_clobber(self):
+        for falsey in ['', False, []]:
+            self.inheritance_helper(
+                'child_clobbered',
+                falsey, falsey, falsey, falsey, falsey,
+                lambda(x): falsey)
 
     def test_updating_facts(self):
         self._model_create('facts', node_id=self.n1['id'],
