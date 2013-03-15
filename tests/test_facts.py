@@ -90,9 +90,6 @@ class FactsTests(util_facts.OpenCenterTestCase):
         self._model_delete('nodes', self.c2['id'])
         self._model_delete('nodes', self.c1['id'])
 
-        self._model_get_all('facts')
-        self._model_get_all('nodes')
-
     def test_001_add_fact(self):
         self._model_create('facts', node_id=self.n1['id'],
                            key='node_data',
