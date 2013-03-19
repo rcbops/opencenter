@@ -165,6 +165,13 @@ class DbAbstraction(object):
 
         return retval
 
+    def _validate_id_format(self, id_to_check):
+        try:
+            return int(id_to_check)
+        except (TypeError, ValueError):
+            msg = 'IdInvalid: id must be an integer.'
+            raise exceptions.IdInvalid(message=msg)
+
 
 class SqlAlchemyAbstraction(DbAbstraction):
     def __init__(self, api, model, name):
@@ -254,7 +261,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
             raise exceptions.CreateError(msg)
 
     def delete(self, id):
-        id = int(id)
+        id = self._validate_id_format(id)
         r = self.model.query.filter_by(id=id).first()
         # We need generate an object hash to pass to the backend notification
 
@@ -272,11 +279,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
             raise RuntimeError(msg)
 
     def get(self, id):
-        try:
-            id = int(id)
-        except ValueError:
-            msg = '%s id must be an integer.' % self.name.title()
-            raise exceptions.IdInvalid(message=msg)
+        id = self._validate_id_format(id)
         r = self.model.query.filter_by(id=id).first()
 
         if not r:
@@ -286,11 +289,7 @@ class SqlAlchemyAbstraction(DbAbstraction):
         return r.jsonify(api=self.api)
 
     def update(self, id, data):
-        try:
-            id = int(id)
-        except ValueError:
-            msg = '%s id must be an integer.' % self.name.title()
-            raise exceptions.IdInvalid(message=msg)
+        id = self._validate_id_format(id)
 
         new_data = self._sanitize_for_update(data)
         r = self.model.query.filter_by(id=id).first()
@@ -386,7 +385,7 @@ class APIAbstraction(DbAbstraction):
         return new_node.to_hash()
 
     def delete(self, id):
-        id = int(id)
+        id = self._validate_id_format(id)
 
         try:
             obj = self.objects[id]
@@ -399,7 +398,7 @@ class APIAbstraction(DbAbstraction):
     def get(self, id):
         # This sort of naively assumes that the id
         # is an integer.  That's probably mostly right though.
-        id = int(id)
+        id = self._validate_id_format(id)
 
         try:
             obj = self.objects[id]
@@ -418,7 +417,7 @@ class APIAbstraction(DbAbstraction):
         return json_object
 
     def update(self, id, data):
-        id = int(id)
+        id = self._validate_id_format(id)
 
         new_data = self._sanitize_for_update(data)
 
@@ -493,7 +492,7 @@ class InMemoryAbstraction(DbAbstraction):
         return retval
 
     def delete(self, id):
-        id = int(id)
+        id = self._validate_id_format(id)
 
         if not id in self.dictionary:
             raise exceptions.IdNotFound(message='id %d does not exist' % id)
@@ -504,14 +503,14 @@ class InMemoryAbstraction(DbAbstraction):
     def get(self, id):
         # This sort of naively assumes that the id
         # is an integer.  That's probably mostly right though.
-        id = int(id)
+        id = self._validate_id_format(id)
 
         if id in self.dictionary:
             return self.dictionary[id]
         return None
 
     def update(self, id, data):
-        id = int(id)
+        id = self._validate_id_format(id)
 
         new_data = self._sanitize_for_update(data)
         self.dictionary[id].update(new_data)
@@ -560,7 +559,7 @@ class CachedAbstraction(DbAbstraction):
         return result
 
     def get(self, id):
-        id = int(id)
+        id = self._validate_id_format(id)
 
         if self.cache is None:
             return self.base.get(id)
@@ -572,7 +571,7 @@ class CachedAbstraction(DbAbstraction):
                 return self.cache[int(id)]
 
     def update(self, id, data):
-        id = int(id)
+        id = self._validate_id_format(id)
         result = self.base.update(id, data)
         self.api.destroy_cache()
         return result
@@ -658,7 +657,7 @@ class EphemeralAbstraction(DbAbstraction):
         return new_data
 
     def delete(self, id):
-        id = int(id)
+        id = self._validate_id_format(id)
 
         if id in self.del_obj:
             raise exceptions.IdNotFound(message='id %d does not exist' % id)
@@ -671,7 +670,7 @@ class EphemeralAbstraction(DbAbstraction):
         return True
 
     def get(self, id):
-        id = int(id)
+        id = self._validate_id_format(id)
 
         new_obj = None
 
@@ -693,7 +692,7 @@ class EphemeralAbstraction(DbAbstraction):
         return result
 
     def update(self, id, data):
-        id = int(id)
+        id = self._validate_id_format(id)
         new_data = self._sanitize_for_update(data)
 
         if id in self.del_obj:
