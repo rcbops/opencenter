@@ -54,9 +54,13 @@ class NodeRegister(OpenCenterTestCase):
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.logger.debug(out)
-        self.assertEquals(out['node']['name'], self.name)
+        try:
+            node_id = int(out['node_id'])
+        except:
+            node_id = out['node_id']
+        self.assertIsInstance(node_id, int)
         self.assertEquals(out['status'], 200)
-        self.assertEquals(out['message'], 'success')
+        self.assertEquals(out['message'], 'Node ID assigned.')
 
     def test_bad_node_registration(self):
         data = {'nothostname': self.name}
@@ -67,7 +71,7 @@ class NodeRegister(OpenCenterTestCase):
         out = json.loads(resp.data)
         self.logger.debug(out)
         self.assertEquals(out['message'],
-                          "'hostname' not found in json object")
+                          "Node ID or hostname required.")
         self.assertEquals(out['status'], 400)
 
 # shep, i broke this.  sorry.  but I'm testing more than this in
