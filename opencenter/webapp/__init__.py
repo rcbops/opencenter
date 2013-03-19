@@ -133,7 +133,8 @@ class WebServer(Flask):
                 'database_uri': 'sqlite:///',
                 'daemonize': False,
                 'pidfile': None,
-                'task_reaping_threshold': 1800
+                'task_reaping_threshold': 1800,
+                'hostidfile': '/etc/opencenter/hostid'
             }
         }
 
