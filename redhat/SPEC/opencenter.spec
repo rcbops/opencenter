@@ -13,8 +13,8 @@ URL:            https://github.com/rcbops/opencenter
 Source0:        opencenter-%{version}.tgz
 Source1:        opencenter.conf
 Source2:        opencenter.upstart
-Source2:        opencenter.systemd
-Source2:        opencenter.sysconfig
+Source3:        opencenter.systemd
+Source4:        opencenter.sysconfig
 BuildArch: noarch
 
 %description
@@ -87,6 +87,8 @@ install -m 600 $RPM_SOURCE_DIR/opencenter.conf $RPM_BUILD_ROOT/etc/opencenter/op
 %if 0%{?rhel} == 6
 install -m 755 $RPM_SOURCE_DIR/opencenter.upstart $RPM_BUILD_ROOT/etc/init/opencenter.conf
 %else
+mkdir -p $RPM_BUILD_ROOT/etc/sysconfig
+mkdir -p $RPM_BUILD_ROOT/etc/systemd/system
 install -m 755 $RPM_SOURCE_DIR/opencenter.sysconfig $RPM_BUILD_ROOT/etc/sysconfig/opencenter
 install -m 755 $RPM_SOURCE_DIR/opencenter.systemd $RPM_BUILD_ROOT/etc/systemd/system/opencenter.service
 %endif
@@ -102,7 +104,7 @@ install -m 755 $RPM_SOURCE_DIR/opencenter.systemd $RPM_BUILD_ROOT/etc/systemd/sy
 /etc/init/opencenter.conf
 %else
 /etc/systemd/system/opencenter.service
-/etc/sysconfig/opencenter
+%config(noreplace) /etc/sysconfig/opencenter
 %endif
 
 %files -n python-opencenter
