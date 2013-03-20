@@ -90,7 +90,6 @@ install -m 755 $RPM_SOURCE_DIR/opencenter.upstart $RPM_BUILD_ROOT/etc/init/openc
 install -m 755 $RPM_SOURCE_DIR/opencenter.sysconfig $RPM_BUILD_ROOT/etc/sysconfig/opencenter
 install -m 755 $RPM_SOURCE_DIR/opencenter.systemd $RPM_BUILD_ROOT/etc/systemd/system/opencenter.service
 %endif
-install -m 755 $RPM_BUILD_DIR/opencenter-%{version}/manage.py $RPM_BUILD_ROOT/usr/share/opencenter/manage.py
 %{__python} -B setup.py install --skip-build --root $RPM_BUILD_ROOT
 
 %files 
@@ -105,7 +104,6 @@ install -m 755 $RPM_BUILD_DIR/opencenter-%{version}/manage.py $RPM_BUILD_ROOT/us
 /etc/systemd/system/opencenter.service
 /etc/sysconfig/opencenter
 %endif
-/usr/share/opencenter/manage.py
 
 %files -n python-opencenter
 %defattr(-,root,root)
