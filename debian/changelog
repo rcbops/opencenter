@@ -1,11 +1,14 @@
 opencenter (0.2) precise; urgency=low
 
   * Fixed Fedora packaging
-  * Fixed defect with evacuate_hosts (da79833)
-  * Fixed issue with http_proxy env var being 
-    passed through to scipts
-  * Disabled ohai passwd plugin (a408443)
-  * Making sure curl is installed in setup (046ee33)
+  * Fixed default value for vncserver_listen env template
+  * Added new facts
+    ram_allocation_ratio
+    cpu_allocation_ratio
+    use_single_gateway
+    nova_network_dhcp_name
+  * Fixed node deletion showing up in updates
+  * Removed manage.py
 
  -- RCB Builder <rcb-deploy@lists.rackspace.com>  Wed, 20 Mar 2013 15:23:46 +0000
 
