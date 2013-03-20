@@ -4,7 +4,7 @@
 %global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 
 Name:       opencenter
-Version:    0.1.0
+Version:    0.2.0
 Release:    %{ver}%{?dist}
 Summary:        Pluggable, modular OpenCenter server
 Group:          System
@@ -119,3 +119,11 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Mon Sep 10 2012 Joseph W. Breu (joseph.breu@rackspace.com) - 0.1.0
 - Initial build
+
+* Wed Mar 20 2013 RCB Builder (rcb-deploy@lists.rackspace.com) - 0.2.0
+- Fixed Fedora packaging
+- Fixed defect with evacuate_hosts (da79833)
+- Fixed issue with http_proxy env var being
+  passed through to scipts
+- Disabled ohai passwd plugin (a408443)
+- Making sure curl is installed in setup (046ee33)
