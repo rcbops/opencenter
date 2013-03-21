@@ -1,3 +1,17 @@
+opencenter (0.2) precise; urgency=low
+
+  * Fixed Fedora packaging
+  * Fixed default value for vncserver_listen env template
+  * Added new facts
+    ram_allocation_ratio
+    cpu_allocation_ratio
+    use_single_gateway
+    nova_network_dhcp_name
+  * Fixed node deletion showing up in updates
+  * Removed manage.py
+
+ -- RCB Builder <rcb-deploy@lists.rackspace.com>  Wed, 20 Mar 2013 15:23:46 +0000
+
 opencenter (0.1) UNRELEASED; urgency=low
 
   * Initial release.

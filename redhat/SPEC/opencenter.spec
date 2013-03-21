@@ -4,7 +4,7 @@
 %global __os_install_post %(echo '%{__os_install_post}' | sed -e 's!/usr/lib[^[:space:]]*/brp-python-bytecompile[[:space:]].*$!!g')
 
 Name:       opencenter
-Version:    0.1.0
+Version:    0.2.0
 Release:    %{ver}%{?dist}
 Summary:        Pluggable, modular OpenCenter server
 Group:          System
@@ -13,6 +13,8 @@ URL:            https://github.com/rcbops/opencenter
 Source0:        opencenter-%{version}.tgz
 Source1:        opencenter.conf
 Source2:        opencenter.upstart
+Source3:        opencenter.systemd
+Source4:        opencenter.sysconfig
 BuildArch: noarch
 
 %description
@@ -82,8 +84,14 @@ mkdir -p $RPM_BUILD_ROOT/etc/opencenter
 mkdir -p $RPM_BUILD_ROOT/usr/share/opencenter
 mkdir -p $RPM_BUILD_ROOT/var/log/opencenter
 install -m 600 $RPM_SOURCE_DIR/opencenter.conf $RPM_BUILD_ROOT/etc/opencenter/opencenter.conf
+%if 0%{?rhel} == 6
 install -m 755 $RPM_SOURCE_DIR/opencenter.upstart $RPM_BUILD_ROOT/etc/init/opencenter.conf
-install -m 755 $RPM_BUILD_DIR/opencenter-%{version}/manage.py $RPM_BUILD_ROOT/usr/share/opencenter/manage.py
+%else
+mkdir -p $RPM_BUILD_ROOT/etc/sysconfig
+mkdir -p $RPM_BUILD_ROOT/etc/systemd/system
+install -m 755 $RPM_SOURCE_DIR/opencenter.sysconfig $RPM_BUILD_ROOT/etc/sysconfig/opencenter
+install -m 755 $RPM_SOURCE_DIR/opencenter.systemd $RPM_BUILD_ROOT/etc/systemd/system/opencenter.service
+%endif
 %{__python} -B setup.py install --skip-build --root $RPM_BUILD_ROOT
 
 %files 
@@ -92,8 +100,12 @@ install -m 755 $RPM_BUILD_DIR/opencenter-%{version}/manage.py $RPM_BUILD_ROOT/us
 %files server
 %defattr(-,root,root)
 /usr/bin/opencenter
+%if 0%{?rhel} == 6
 /etc/init/opencenter.conf
-/usr/share/opencenter/manage.py
+%else
+/etc/systemd/system/opencenter.service
+%config(noreplace) /etc/sysconfig/opencenter
+%endif
 
 %files -n python-opencenter
 %defattr(-,root,root)
@@ -104,6 +116,20 @@ rm -rf $RPM_BUILD_ROOT
 
 %post
 
+# *******************************************************
+# ATTENTION: changelog is in reverse chronological order
+# *******************************************************
 %changelog
+* Wed Mar 20 2013 RCB Builder (rcb-deploy@lists.rackspace.com) - 0.2.0
+- Fixed Fedora packaging
+- Fixed default value for vncserver_listen env template
+- Added new facts
+  ram_allocation_ratio
+  cpu_allocation_ratio
+  use_single_gateway
+  nova_network_dhcp_name
+- Fixed node deletion showing up in updates
+- Removed manage.py
+
 * Mon Sep 10 2012 Joseph W. Breu (joseph.breu@rackspace.com) - 0.1.0
 - Initial build

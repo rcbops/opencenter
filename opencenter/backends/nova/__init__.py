@@ -75,7 +75,8 @@ class NovaBackend(opencenter.backends.Backend):
         self._make_subcontainer(api,
                                 'AZ %s' % kwargs['az_name'],
                                 node_id,
-                                {'nova_az': kwargs['az_name']},
+                                {'nova_az': kwargs['az_name'],
+                                 'libvirt_type': kwargs['libvirt_type']},
                                 ['node', 'container', 'nova'])
 
         return self._ok()
@@ -105,7 +106,8 @@ class NovaBackend(opencenter.backends.Backend):
                          "nova_vm_bridge",
                          "osops_mgmt",
                          "osops_nova",
-                         "osops_public"]
+                         "osops_public",
+                         "libvirt_type"]
 
         environment_hash = {}
         for k, v in kwargs.items():
@@ -114,6 +116,10 @@ class NovaBackend(opencenter.backends.Backend):
 
         environment_hash['chef_server_consumed'] = kwargs['chef_server']
         environment_hash['chef_environment'] = kwargs['cluster_name']
+        environment_hash['ram_allocation_ratio'] = 1
+        environment_hash['cpu_allocation_ratio'] = 16
+        environment_hash['nova_use_single_default_gateway'] = "false"
+        environment_hash['nova_network_dhcp_name'] = 'novalocal'
 
         # have the attribute map, let's make it an apply the
         # facts.

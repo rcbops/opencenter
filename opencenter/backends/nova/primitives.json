@@ -7,6 +7,13 @@
                "default": "nova",
                "type": "string",
                "required": true
+            },
+            "libvirt_type": {
+               "friendly": "Virtualization Type",
+               "description": "libvirt virtualization type.  Usually qemu or kvm.",
+               "default": "kvm",
+               "type": "string",
+               "required": true
             }
        },
        "constraints":  [ "'nova-compute' in facts.backends" ],
@@ -100,6 +107,13 @@
                 "type": "interface",
                 "name": "chef-server",
                 "required": true
+            },
+            "libvirt_type": {
+               "friendly": "Virtualization Type",
+               "description": "libvirt virtualization type.  Usually qemu or kvm.",
+               "default": "kvm",
+               "type": "string",
+               "required": true
             }
         },
         "constraints": [ "ifcount('chef-server') > 0" ],

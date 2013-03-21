@@ -42,10 +42,16 @@ def create():
     api = api_from_models()
     data = flask.request.json
 
-    if 'node_id' in data and 'key' in data:
-        old_fact = api._model_get_first_by_query(
-            object_type, 'node_id=%d and key="%s"' % (
-                int(data['node_id']), data['key']))
+    try:
+        node_id = data['node_id']
+        key = data['key']
+    except TypeError:
+        return generic.http_badrequest('node_id and key are required.')
+    except KeyError:
+        pass
+    else:
+        query = 'node_id=%d and key="%s"' % (int(node_id), key)
+        old_fact = api._model_get_first_by_query(object_type, query)
 
     if old_fact:
         return modify_fact(old_fact['id'])

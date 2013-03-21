@@ -1,3 +1,2 @@
 debian/opencenter.conf etc/opencenter
 usr/bin/opencenter
-manage.py usr/share/opencenter

@@ -26,10 +26,6 @@ case "$1" in
         PASSWORD=$RET
         sed -i "/admin_pass *=.*/ d" /etc/opencenter/opencenter.conf
         echo "admin_pass = ${PASSWORD}" >> /etc/opencenter/opencenter.conf
-
-	# Dont need this anymore, since the opencenter daemon does it on startup
-        #   python /usr/share/opencenter/manage.py -c /etc/opencenter/opencenter.conf version_control || /bin/true
-        #   python /usr/share/opencenter/manage.py -c /etc/opencenter/opencenter.conf upgrade || /bin/true
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

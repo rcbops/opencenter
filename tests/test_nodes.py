@@ -54,9 +54,13 @@ class NodeRegister(OpenCenterTestCase):
         self.assertEquals(resp.status_code, 200)
         out = json.loads(resp.data)
         self.logger.debug(out)
-        self.assertEquals(out['node']['name'], self.name)
+        try:
+            node_id = int(out['node_id'])
+        except:
+            node_id = out['node_id']
+        self.assertIsInstance(node_id, int)
         self.assertEquals(out['status'], 200)
-        self.assertEquals(out['message'], 'success')
+        self.assertEquals(out['message'], 'Node ID assigned.')
 
     def test_bad_node_registration(self):
         data = {'nothostname': self.name}
@@ -67,7 +71,7 @@ class NodeRegister(OpenCenterTestCase):
         out = json.loads(resp.data)
         self.logger.debug(out)
         self.assertEquals(out['message'],
-                          "'hostname' not found in json object")
+                          "Node ID or hostname required.")
         self.assertEquals(out['status'], 400)
 
 # shep, i broke this.  sorry.  but I'm testing more than this in
@@ -334,6 +338,27 @@ class NodeTransactionTests(OpenCenterTestCase):
         trans = self._get_txid()
         _, _ = self._model_get_updates('nodes', trans['session_key'],
                                        0, expect_code=410, raw=True)
+
+    def test_delete_node_updates_transactions(self):
+        my_node = self._model_create('nodes', name='delete_me')
+
+        # Grab starting point info
+        trans = self._get_txid()
+        old_trans_id = trans['txid']
+        session_key = trans['session_key']
+
+        trans, changed_nodes = self._model_get_updates('nodes', session_key,
+                                                       old_trans_id)
+        self.assertEquals(set(changed_nodes), set())
+
+        self._model_delete('nodes', my_node['id'])
+
+        # Now lets look at updates from old_trans_id to latest
+        trans, changed_nodes = self._model_get_updates('nodes', session_key,
+                                                       old_trans_id)
+
+        self.assertEquals(trans['session_key'], session_key)
+        self.assertEquals(set(changed_nodes), set([my_node['id']]))
 
 
 class NodeMiscTests(OpenCenterTestCase):

@@ -22,10 +22,12 @@
 # under the License.
 #
 ##############################################################################
-import unittest2
-
-from util import OpenCenterTestCase
-from util import inject
+import imp
+import tests
+import json
+util_facts = imp.load_module('util_facts',
+                             *imp.find_module('util', tests.__path__))
+from opencenter.db import exceptions
 
 
 def identity(x):
@@ -49,7 +51,7 @@ class UnorderedList(list):
             return super(UnorderedList, self).__eq__(x)
 
 
-class FactsTests(OpenCenterTestCase):
+class FactsTests(util_facts.OpenCenterTestCase):
     base_object = 'fact'
 
     def setUp(self):
@@ -88,9 +90,6 @@ class FactsTests(OpenCenterTestCase):
         self._model_delete('nodes', self.c2['id'])
         self._model_delete('nodes', self.c1['id'])
 
-        all_facts = self._model_get_all('facts')
-        all_nodes = self._model_get_all('nodes')
-
     def test_001_add_fact(self):
         self._model_create('facts', node_id=self.n1['id'],
                            key='node_data',
@@ -99,6 +98,10 @@ class FactsTests(OpenCenterTestCase):
         n1_facts = self._model_get_by_id('nodes', self.n1['id'])['facts']
 
         self.assertEquals(n1_facts['node_data'], 'blah')
+
+    def test_add_fact_non_existant_node_fails(self):
+        self.assertRaises(exceptions.IdNotFound, self._model_create, 'facts',
+                          node_id=99999, key='bad_node', value='data')
 
     def inheritance_helper(self, fact, grand_parent,
                            parent, child_only,
@@ -196,6 +199,34 @@ class FactsTests(OpenCenterTestCase):
                                 UnorderedList(["c2", "c1"]),
                                 f=to_list)
 
+    def test_false_fact_inheritance_default(self):
+        for falsey in ['', False, []]:
+            self.inheritance_helper(
+                'defaulted',
+                falsey, falsey, falsey, falsey, falsey,
+                lambda(x): falsey)
+
+    def test_false_fact_inheritance_parent_clobber(self):
+        for falsey in ['', False, []]:
+            self.inheritance_helper(
+                'parent_clobbered',
+                falsey, falsey, falsey, falsey, falsey,
+                lambda(x): falsey)
+
+    def test_false_fact_inheritance_none(self):
+        for falsey in ['', False, []]:
+            self.inheritance_helper(
+                'noned',
+                falsey, falsey, falsey, falsey, None,
+                lambda(x): falsey)
+
+    def test_false_fact_inheritance_child_clobber(self):
+        for falsey in ['', False, []]:
+            self.inheritance_helper(
+                'child_clobbered',
+                falsey, falsey, falsey, falsey, falsey,
+                lambda(x): falsey)
+
     def test_updating_facts(self):
         self._model_create('facts', node_id=self.n1['id'],
                            key='test_fact',
@@ -233,4 +264,36 @@ class FactsTests(OpenCenterTestCase):
         self._model_get_by_id('facts', fact['id'])
 
 
-FactsTests = inject(FactsTests)
+def _modified_test_missing_create_field(self, missing_field, expected_code):
+    bo = self.base_object
+    bop = self._pluralize(bo)
+
+    schema = self._model_get_schema(bo)
+    all_fields = [x for x in schema]
+    all_fields.remove('id')
+
+    data = dict(zip(all_fields,
+                    [self._valid_rand(schema[x]['type'])
+                     for x in all_fields]))
+
+    try:
+        data['node_id'] = self.n1['id']
+    except KeyError:
+        pass
+
+    data.pop(missing_field)
+
+    # special case tasks -- need schema for enum type
+    if bo == 'task' and 'state' in data:
+        data['state'] = 'running'
+
+    self.logger.debug('creating with data %s (missing %s)' %
+                      (data, missing_field))
+
+    util_facts._test_request_returns(self, 'post', '/admin/%s/' % bop, data,
+                                     expected_code)
+mod_test = _modified_test_missing_create_field
+
+setattr(util_facts, '_test_missing_create_field', mod_test)
+
+FactsTests = util_facts.inject(FactsTests)
