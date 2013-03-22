@@ -263,6 +263,35 @@ class FactsTests(util_facts.OpenCenterTestCase):
         self.app.logger.debug('fact: %s' % fact)
         self._model_get_by_id('facts', fact['id'])
 
+    def test_create_fact_on_parent_fails(self):
+        payload = json.dumps({'node_id': self.c2['id'],
+                              'key': 'blah', 'value': 'bleurgh'})
+        resp = self.client.post('/facts/', data=payload,
+                                content_type='application/json')
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(json.loads(resp.data)['message'],
+                         'cannot set fact on containers')
+
+    def test_update_fact_on_parent_fails(self):
+        p = self._model_create('nodes',
+                               name=self._random_str())
+        f = self._model_create('facts',
+                               node_id=p['id'],
+                               key='blah',
+                               value='foo')
+        c = self._model_create('nodes',
+                               name=self._random_str())
+        self._model_create('facts',
+                           node_id=c['id'],
+                           key='parent_id',
+                           value=p['id'])
+        payload = json.dumps({'key': 'blah', 'value': 'bleurgh'})
+        resp = self.client.put('/facts/%s' % f['id'], data=payload,
+                               content_type='application/json')
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(json.loads(resp.data)['message'],
+                         'cannot update fact on containers')
+
 
 def _modified_test_missing_create_field(self, missing_field, expected_code):
     bo = self.base_object
