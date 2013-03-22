@@ -102,6 +102,18 @@ def modify_fact(object_id):
 
     node_id = model_object['node_id']
 
+    # here, if the fact is a fact on a container,
+    # we need to solve for fact application on all
+    # child nodes.  <eek>
+    #
+    # FIXME(rp): so we'll punt for now, and just refuse fact
+    # updates on containers.
+    children = api._model_query('nodes', 'facts.parent_id = %s' % node_id)
+    if len(children) > 0:
+        return generic.http_response(403,
+                                     msg='cannot update fact on containers',
+                                     friendly='oopsie')
+
     # FIXME: TYPECASTING WHEN WE HAVE FACT TYPES
     constraints = ['facts.%s = "%s"' %
                    (model_object['key'],
