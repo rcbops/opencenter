@@ -46,7 +46,7 @@ def create():
         node_id = data['node_id']
         key = data['key']
     except TypeError:
-        return generic.http_badrequest('node_id and key are required.')
+        return generic.http_badrequest(msg='node_id and key are required.')
     except KeyError:
         pass
     else:
