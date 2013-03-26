@@ -146,7 +146,7 @@ def _whoami_backwards_compatibility(api, hostname):
     api._model_create('attrs',
                       {'node_id': node['id'],
                        'key': 'registered',
-                       'value': False})
+                       'value': True})
     return node
 
 
