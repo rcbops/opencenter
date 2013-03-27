@@ -90,39 +90,8 @@ class ConvergeChefTests(OpenCenterTestCase):
         self.backend._watch_converge_task = Mock(
             return_value=[True, 'success'])
 
-        #self.c2 = self._model_create('nodes',
-                                     #name=self._random_str())
-        #self.c1 = self._model_create('nodes',
-                                     #name=self._random_str())
-        #self._model_create('facts',
-                           #node_id=self.c1['id'],
-                           #key='parent_id',
-                           #value=self.c2['id'])
-        #self.n1 = self._model_create('nodes',
-                                     #name=self._random_str())
-        #self._model_create('facts',
-                           #node_id=self.n1['id'],
-                           #key='parent_id',
-                           #value=self.c1['id'])
-
     def tearDown(self):
         self.backend = None
-        #c2_facts = self._model_filter('facts',
-                                      #'node_id=%s' % self.c2['id'])
-
-        #c1_facts = self._model_filter('facts',
-                                      #'node_id=%s' % self.c1['id'])
-
-        #n1_facts = self._model_filter('facts',
-                                      #'node_id=%s' % self.n1['id'])
-
-        #for fact_id in [x['id'] for x in c2_facts + c1_facts + n1_facts]:
-            #self.app.logger.debug('deleting fact %s' % fact_id)
-            #self._model_delete('facts', fact_id)
-
-        #self._model_delete('nodes', self.n1['id'])
-        #self._model_delete('nodes', self.c2['id'])
-        #self._model_delete('nodes', self.c1['id'])
 
     def test_fail_node_not_found(self):
         self.api._model_get_by_id = Mock(return_value=None)
