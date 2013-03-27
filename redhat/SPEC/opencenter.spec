@@ -106,6 +106,7 @@ install -m 755 $RPM_SOURCE_DIR/opencenter.systemd $RPM_BUILD_ROOT/etc/systemd/sy
 /etc/systemd/system/opencenter.service
 %config(noreplace) /etc/sysconfig/opencenter
 %endif
+/usr/share/opencenter
 
 %files -n python-opencenter
 %defattr(-,root,root)
