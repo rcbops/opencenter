@@ -93,12 +93,40 @@ class ChefClientBackend(opencenter.backends.Backend):
 
         return (json.loads(chef_node_attrs), json.loads(chef_env_attrs))
 
+    # README(claco): not executed on the server, skipping from code coverage
+    def _get_adventurator(self, api):
+        query = '"adventurator" in attrs.opencenter_agent_output_modules'
+        return api._model_get_first_by_query('nodes', query)
+
+    # README(claco): not executed on the server, skipping from code coverage
+    def _get_chef_api(self, server_uri, server_client_pem, server_client_name):
+        pem = StringIO.StringIO(server_client_pem)
+        rsa_key = chef.rsa.Key(pem)
+        chef_api = chef.ChefAPI(server_uri, rsa_key, server_client_name)
+        pem.close()
+
+        return chef_api
+
     # README(shep): not executed on the server, skipping from code coverage
     def _entity_exists(self, entity_type, key,
                        value, chef_api):  # pragma: no cover
         result = chef.Search(entity_type, '%s:%s' % (key, value),
                              1, 0, chef_api)
         return len(result) == 1
+
+    # README(claco): not executed on the server, skipping from code coverage
+    def _find_or_create_environment(self, environment_name,
+                                    chef_api):  # pragma: no cover
+        if not self._environment_exists(environment_name, chef_api):
+            self.logger.debug('Creating non-existent environment: %s' %
+                              environment_name)
+
+            env = chef.Environment.create(environment_name, api=chef_api)
+            env.save()
+
+            return env
+        else:
+            return chef.Environment(environment_name, chef_api)
 
     # README(shep): not executed on the server, skipping from code coverage
     def _environment_exists(self, environment_name,
@@ -110,6 +138,16 @@ class ChefClientBackend(opencenter.backends.Backend):
     def _node_exists(self, node_name, chef_api):  # pragma: no cover
         return self._entity_exists('node', 'name',
                                    node_name, chef_api)
+
+    # README(claco): not executed on the server, skipping from code coverage
+    def _get_node(self, node_name, chef_api):  # pragma: no cover
+        return chef.Node(node_name, chef_api)
+
+    # README(claco): not executed on the server, skipping from code coverage
+    def _remove_node(self, node_name, chef_api):  # pragma: no cover
+        if self._node_exists(node_name, chef_api):
+            chef_node = chef.Node(node_name, chef_api)
+            chef_node.delete()
 
     # README(shep): not executed on the server, skipping from code coverage
     def _map_roles(self, role):  # pragma: no cover
@@ -218,9 +256,7 @@ class ChefClientBackend(opencenter.backends.Backend):
 
         return True, 'Node(s) converged successfully'
 
-    # README(shep): not executed on the server, skipping from code coverage
-    def converge_chef(self, state_data, api,
-                      node_id, **kwargs):  # pragma: no cover
+    def converge_chef(self, state_data, api, node_id, **kwargs):
         def safe_get_fact(node, fact):
             if not fact in node['facts']:
                 return None
@@ -240,6 +276,9 @@ class ChefClientBackend(opencenter.backends.Backend):
             node_id,))
 
         node = api._model_get_by_id('nodes', node_id)
+        if not node:
+            return self._fail(msg='cannot find node %s' % node_id)
+
         api.apply_expression(node_id, 'attrs.converged := false')
 
         if not 'chef_server_consumed' in node['facts']:
@@ -263,23 +302,19 @@ class ChefClientBackend(opencenter.backends.Backend):
         self.logger.debug('Creating connection to chef server')
 
         # make a chef api object
-        pem = StringIO.StringIO(chef_server_client_pem)
-        rsa_key = chef.rsa.Key(pem)
-
-        chef_api = chef.ChefAPI(chef_server_uri,
-                                rsa_key,
-                                chef_server_client_name)
-        pem.close()
+        chef_api = self._get_chef_api(
+            chef_server_uri,
+            chef_server_client_pem,
+            chef_server_client_name)
 
         if not 'chef_environment' in node['facts']:
+            self.logger.debug('Empty environment. Removing node from Chef')
             # this node has been pulled out of a chef environment.
             # this is hateful, but...
             api.apply_expression(node_id, 'facts.backends := '
                                  'remove(facts.backends, "chef-client")')
 
-            if self._node_exists(node['name'], chef_api):
-                chef_node = chef.Node(node['name'], chef_api)
-                chef_node.delete()
+            self._remove_node(node['name'], chef_api)
 
             return self._ok()
 
@@ -293,21 +328,11 @@ class ChefClientBackend(opencenter.backends.Backend):
         chef_environment = node['facts']['chef_environment'].replace(' ', '_')
 
         # create the environment if it does not exist
-        env = None
-
-        if not self._environment_exists(chef_environment, chef_api):
-            self.logger.debug('Creating non-existent environment: %s' %
-                              chef_environment)
-
-            env = chef.Environment.create(chef_environment,
-                                          api=chef_api)
-            env.save()
-        else:
-            env = chef.Environment(chef_environment, chef_api)
-
+        env = self._find_or_create_environment(chef_environment, chef_api)
         if env is None:
-            self.logger.error('Cannot find/create chef environment')
-            return self._fail()
+            msg = 'Cannot find/create chef environment %s' % chef_environment
+            self.logger.error(msg)
+            return self._fail(msg=msg)
 
         old_env_overrides = env.override_attributes
 
@@ -322,13 +347,14 @@ class ChefClientBackend(opencenter.backends.Backend):
                                  "server.  Retrying %s/3)" % (
                                      node['name'], i + 1))
                 time.sleep(10)
-            if i == 3:
+            if i == 2:
                 msg = ("Node '%s' is not registered to chef.  "
                        "Exceeded max retries" % node['name'])
                 self.logger.error(msg)
+
                 return self._fail(msg=msg)
 
-        chef_node = chef.Node(node['name'], chef_api)
+        chef_node = self._get_node(node['name'], chef_api)
         old_node_overrides = self._serialize_node_blob(chef_node.normal)
 
         self.logger.debug('Old node overrides: %s' % old_node_overrides)
@@ -337,8 +363,7 @@ class ChefClientBackend(opencenter.backends.Backend):
         need_node_converge = False
         need_env_converge = False
 
-        query = '"adventurator" in attrs.opencenter_agent_output_modules'
-        adventurator = api._model_get_first_by_query('nodes', query)
+        adventurator = self._get_adventurator(api)
         if not adventurator:
             self.logger.error('Could not find adventurator')
             return self._fail(msg='could not find adventurator')
