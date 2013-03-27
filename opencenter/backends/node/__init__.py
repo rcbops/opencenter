@@ -52,8 +52,8 @@ class NodeBackend(backends.Backend):
                         return None
 
                     addl_constraints.append('"%s" in facts.backends' % name)
-                    # if fact_info['converge']:
-                    #     addl_constraints.append('facts.converged = true')
+                    if fact_info['converge']:
+                        addl_constraints.append('facts.converged = true')
                     return addl_constraints
             return None
 
