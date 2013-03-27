@@ -200,6 +200,16 @@ class ConvergeChefTests(OpenCenterTestCase):
         self.assertOkResponse(result)
         self.assertEqual(self.chef_node.run_list, ['role[single-compute]'])
 
+    def test_merges_node_run_list_with_nova_role(self):
+        self.chef_node.run_list = ['recipe[keeper]']
+        self.node['facts']['nova_role'] = 'nova-compute'
+
+        result = self.backend.converge_chef(None, self.api, 1)
+
+        self.assertOkResponse(result)
+        self.assertEqual(self.chef_node.run_list,
+                         ['role[single-compute]', 'recipe[keeper]'])
+
     def test_skip_node_in_converged_environment(self):
         self.node['facts']['nova_role'] = 'nova-compute'
 

@@ -383,7 +383,7 @@ class ChefClientBackend(opencenter.backends.Backend):
             # roles changed, refresh node and then all other nodes in env
             self.logger.debug('Updating node run list')
             need_node_converge = True
-            chef_node.run_list = new_runlist
+            chef_node.run_list = list(set(old_runlist + new_runlist))
 
         if old_node_overrides != node_attrs:
             self.logger.debug('Updating node attributes')
