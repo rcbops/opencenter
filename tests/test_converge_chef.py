@@ -210,6 +210,42 @@ class ConvergeChefTests(OpenCenterTestCase):
         self.assertEqual(self.chef_node.run_list,
                          ['role[single-compute]', 'recipe[keeper]'])
 
+    def test_merges_node_attributes_with_nova_attributes(self):
+        self.chef_node.normal = {
+            'level1': 1,
+            'level2': {'a': 1},
+            'level3': {'d': {'e': 1}}
+        }
+        self.node_attributes['level1'] = 'updated'
+        self.node_attributes['level2'] = {'b': 2}
+
+        result = self.backend.converge_chef(None, self.api, 1)
+
+        self.assertOkResponse(result)
+        self.assertEqual(self.chef_node.normal, {
+            'level1': 'updated',
+            'level2': {'a': 1, 'b': 2},
+            'level3': {'d': {'e': 1}}
+        })
+
+    def test_merges_environment_attributes_with_nova_attributes(self):
+        self.chef_environment.override_attributes = {
+            'level1': 1,
+            'level2': {'a': 1},
+            'level3': {'d': {'e': 1}}
+        }
+        self.environment_attributes['level1'] = 'updated'
+        self.environment_attributes['level2'] = {'b': 2}
+
+        result = self.backend.converge_chef(None, self.api, 1)
+
+        self.assertOkResponse(result)
+        self.assertEqual(self.chef_environment.override_attributes, {
+            'level1': 'updated',
+            'level2': {'a': 1, 'b': 2},
+            'level3': {'d': {'e': 1}}
+        })
+
     def test_skip_node_in_converged_environment(self):
         self.node['facts']['nova_role'] = 'nova-compute'
 

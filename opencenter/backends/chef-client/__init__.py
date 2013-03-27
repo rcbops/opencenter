@@ -23,6 +23,7 @@
 #
 ##############################################################################
 
+import copy
 import json
 import os
 import StringIO
@@ -42,6 +43,24 @@ class ChefClientBackend(opencenter.backends.Backend):
         if action == 'add_backend':
             return None
         return []
+
+    def _deep_merge(self, target, *args):
+        # Merge multiple dicts
+        if len(args) > 1:
+            for obj in args:
+                self._deep_merge(target, obj)
+            return target
+
+        # Recursively merge dicts and set non-dict values
+        obj = args[0]
+        if not isinstance(obj, dict):
+            return obj
+        for k, v in obj.iteritems():
+            if k in target and isinstance(target[k], dict):
+                self._deep_merge(target[k], v)
+            else:
+                target[k] = copy.deepcopy(v)
+        return target
 
     # README(shep): not executed on the server, skipping from code coverage
     def _represent_node_attributes(self, api, node_id):  # pragma: no cover
@@ -388,7 +407,7 @@ class ChefClientBackend(opencenter.backends.Backend):
         if old_node_overrides != node_attrs:
             self.logger.debug('Updating node attributes')
             need_node_converge = True
-            chef_node.normal = node_attrs
+            chef_node.normal = self._deep_merge(old_node_overrides, node_attrs)
 
         chef_node.save()
 
@@ -396,7 +415,8 @@ class ChefClientBackend(opencenter.backends.Backend):
             # refresh entire environment in one go
             self.logger.debug('Updating environment')
             need_env_converge = True
-            env.override_attributes = env_attrs
+            env.override_attributes = self._deep_merge(
+                old_env_overrides, env_attrs)
             env.save()
 
         if need_node_converge:
