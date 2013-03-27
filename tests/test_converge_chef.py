@@ -71,7 +71,12 @@ class ConvergeChefTests(OpenCenterTestCase):
         self.api._model_get_by_id = Mock(
             side_effect=[self.node, self.chef_server_node])
 
+        # calculated node/env attributes from templates
+        self.node_attributes = {}
+        self.environment_attributes = {}
+
         # stub out backend protected methods for full success case
+        self.backend._get_nodes_in_env = Mock(return_value=[])
         self.backend._get_adventurator = Mock(return_value=self.adventurator)
         self.backend._find_or_create_environment = Mock(
             return_value=self.chef_environment)
@@ -80,7 +85,10 @@ class ConvergeChefTests(OpenCenterTestCase):
         self.backend._node_exists = Mock(return_value=True)
         self.backend._remove_node = Mock(name='_remove_node')
         self.backend._represent_node_attributes = Mock(
-            '_represent_node_attributes', return_value=[{}, {}])
+            '_represent_node_attributes',
+            return_value=[self.node_attributes, self.environment_attributes])
+        self.backend._watch_converge_task = Mock(
+            return_value=[True, 'success'])
 
         #self.c2 = self._model_create('nodes',
                                      #name=self._random_str())
@@ -180,7 +188,7 @@ class ConvergeChefTests(OpenCenterTestCase):
 
         self.assertFailResponse(result, 'could not find adventurator', 1)
 
-    def test_sets_chef_node_environment_from_node(self):
+    def test_sets_chef_node_environment_from_node_fact(self):
         self.chef_node.chef_environment = '_default'
         self.node['facts']['chef_environment'] = 'production'
 
@@ -191,3 +199,65 @@ class ConvergeChefTests(OpenCenterTestCase):
             self.chef_node.chef_environment,
             self.node['facts']['chef_environment'])
         self.assertTrue(self.chef_node.save.called)
+
+    def test_sets_chef_environment_from_cluster_attributes(self):
+        self.chef_environment.override_attributes['thing'] = 'original'
+        self.environment_attributes['thing'] = 'updated'
+
+        result = self.backend.converge_chef(None, self.api, 1)
+
+        self.assertOkResponse(result)
+        self.assertEqual(
+            self.chef_environment.override_attributes,
+            self.environment_attributes)
+        self.assertTrue(self.chef_environment.save.called)
+
+    def test_fails_chef_environment_converge_unsuccessful(self):
+        self.chef_environment.override_attributes['thing'] = 'original'
+        self.environment_attributes['thing'] = 'updated'
+
+        self.backend._watch_converge_task = Mock(
+            return_value=[False, 'failed'])
+
+        result = self.backend.converge_chef(None, self.api, 1)
+
+        self.assertFailResponse(result, 'First env pass: failed', 1)
+
+    def test_sets_run_list_from_nova_role(self):
+        self.node['facts']['nova_role'] = 'nova-compute'
+
+        result = self.backend.converge_chef(None, self.api, 1)
+
+        self.assertOkResponse(result)
+        self.assertEqual(self.chef_node.run_list, ['role[single-compute]'])
+
+    def test_skip_node_in_converged_environment(self):
+        self.node['facts']['nova_role'] = 'nova-compute'
+
+        nodelist = Mock(return_value=[1, 2])
+        self.backend._get_nodes_in_env = nodelist
+
+        result = self.backend.converge_chef(None, self.api, 1)
+
+        self.assertOkResponse(result)
+        self.assertEqual([2], nodelist())
+
+    def test_fails_chef_node_converge_unsuccessful(self):
+        self.node['facts']['nova_role'] = 'nova-compute'
+
+        self.backend._watch_converge_task = Mock(
+            return_value=[False, 'failed'])
+
+        result = self.backend.converge_chef(None, self.api, 1)
+
+        self.assertFailResponse(result, 'First node pass: failed', 1)
+
+    def test_fails_chef_node_environment_converge_unsuccessful(self):
+        self.node['facts']['nova_role'] = 'nova-compute'
+
+        self.backend._watch_converge_task = Mock(
+            side_effect=[[True, 'success'], [False, 'failed']])
+
+        result = self.backend.converge_chef(None, self.api, 1)
+
+        self.assertFailResponse(result, 'First env pass: failed', 1)
