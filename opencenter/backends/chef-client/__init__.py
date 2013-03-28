@@ -396,27 +396,30 @@ class ChefClientBackend(opencenter.backends.Backend):
         self.logger.debug('Setting environment to %s' % chef_environment)
         chef_node.chef_environment = chef_environment
         old_runlist = chef_node.run_list
-        new_runlist = self._map_roles(nova_role)
+        new_runlist = list(set(old_runlist + self._map_roles(nova_role)))
+        new_node_overrides = self._deep_merge(
+            {}, old_node_overrides, node_attrs)
+        new_env_overrides = self._deep_merge(
+            {}, old_env_overrides, env_attrs)
 
         if old_runlist != new_runlist:
             # roles changed, refresh node and then all other nodes in env
             self.logger.debug('Updating node run list')
             need_node_converge = True
-            chef_node.run_list = list(set(old_runlist + new_runlist))
+            chef_node.run_list = new_runlist
 
-        if old_node_overrides != node_attrs:
+        if old_node_overrides != new_node_overrides:
             self.logger.debug('Updating node attributes')
             need_node_converge = True
-            chef_node.normal = self._deep_merge(old_node_overrides, node_attrs)
+            chef_node.normal = new_node_overrides
 
         chef_node.save()
 
-        if old_env_overrides != env_attrs:
+        if old_env_overrides != new_env_overrides:
             # refresh entire environment in one go
             self.logger.debug('Updating environment')
             need_env_converge = True
-            env.override_attributes = self._deep_merge(
-                old_env_overrides, env_attrs)
+            env.override_attributes = new_env_overrides
             env.save()
 
         if need_node_converge:
