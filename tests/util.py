@@ -52,6 +52,21 @@ class OpenCenterTestCase(unittest2.TestCase):
     def __init__(self, *args, **kwargs):
         super(OpenCenterTestCase, self).__init__(*args, **kwargs)
 
+    def assertFailResponse(self, result, result_str, result_code,
+                           result_data={}):
+        self.assertResponse(result, result_str, result_code, result_data)
+
+    def assertOkResponse(self, result, result_str='Action succeeded',
+                         result_data={}):
+        self.assertResponse(result, result_str, 0, result_data)
+
+    def assertResponse(self, result, result_str, result_code, result_data={}):
+        self.assertEquals(
+            result,
+            {'result_str': result_str,
+             'result_code': result_code,
+             'result_data': result_data})
+
     def _clean_all(self):
         for what in ['tasks', 'nodes', 'facts', 'filters',
                      'attrs', 'adventures']:
