@@ -141,11 +141,11 @@ class ConvergeChefTests(OpenCenterTestCase):
 
     @patch('time.sleep')
     def test_fail_chef_node_register_timeout(self, mock_sleep):
-        self.backend._node_exists = Mock(side_effect=[False, False, False])
+        self.backend._node_exists = Mock(return_value=None)
 
         result = self.backend.converge_chef(None, self.api, 1)
 
-        self.assertEqual(mock_sleep.call_count, 3)
+        self.assertEqual(mock_sleep.call_count, 11)
         self.assertFailResponse(
             result,
             "Node 'test' is not registered to chef.  Exceeded max retries", 1)

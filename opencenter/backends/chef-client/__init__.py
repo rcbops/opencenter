@@ -358,7 +358,7 @@ class ChefClientBackend(opencenter.backends.Backend):
         self.logger.debug('Old environment overrides: %s' % old_env_overrides)
 
         # Find the node.  Sometimes chef takes a while to index; we will retry
-        for i in range(3):
+        for i in range(11):
             if self._node_exists(node['name'], chef_api):
                 break
             else:
@@ -366,7 +366,7 @@ class ChefClientBackend(opencenter.backends.Backend):
                                  "server.  Retrying %s/3)" % (
                                      node['name'], i + 1))
                 time.sleep(10)
-            if i == 2:
+            if i == 10:
                 msg = ("Node '%s' is not registered to chef.  "
                        "Exceeded max retries" % node['name'])
                 self.logger.error(msg)
