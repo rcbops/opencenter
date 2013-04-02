@@ -276,3 +276,21 @@ class ConvergeChefTests(OpenCenterTestCase):
         result = self.backend.converge_chef(None, self.api, 1)
 
         self.assertFailResponse(result, 'First env pass: failed', 1)
+
+    def test_chef_node_attr_update_causes_converge(self):
+        self.node_attributes['foo'] = 'bar'
+
+        self.backend._watch_converge_task = Mock(
+            side_effect=Exception('converge attempted'))
+
+        self.assertRaisesRegexp(Exception, 'converge attempted',
+                                self.backend.converge_chef, None, self.api, 1)
+
+    def test_chef_env_attr_update_causes_converge(self):
+        self.environment_attributes['foo'] = 'bar'
+
+        self.backend._watch_converge_task = Mock(
+            side_effect=Exception('converge attempted'))
+
+        self.assertRaisesRegexp(Exception, 'converge attempted',
+                                self.backend.converge_chef, None, self.api, 1)
