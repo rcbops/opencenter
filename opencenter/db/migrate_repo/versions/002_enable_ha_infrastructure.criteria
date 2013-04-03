@@ -1,0 +1,1 @@
+(count(filter('nodes', 'facts.parent_id = {id}')) = 1) and (facts.ha_infra = false) and ('container' in facts.backends)
