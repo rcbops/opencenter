@@ -24,11 +24,40 @@
 ##############################################################################
 from util import _test_request_returns, _test_seed_data_request_returns
 from util import inject
-from util import OpenCenterTestCase
+from util import OpenCenterTestCase, ScaffoldedTestCase
 
 
 class AdventuresTests(OpenCenterTestCase):
     base_object = 'adventure'
+
+
+class ScaffoldedAdventuresTests(ScaffoldedTestCase):
+    base_object = 'adventure'
+
+    def setUp(self):
+        self.node1 = self._stub_node(
+            'client-01',
+            facts={'backends': ['agent', 'node'], 'parent_id': 2},
+            attrs={'opencenter_agent_output_modules': ['adventurator']})
+
+    def _model_find_by_name(self, model, name):
+        res = self._model_filter(model,
+                                 'name = "%s"' % name)
+        self.assertEqual(len(res), 1)
+        return res[0]
+
+    def test_adventure_please_criteria(self):
+        # make sure that requests to run an adventure that is not met
+        # by criteria returns a 400
+        cc = self._model_find_by_name('adventures', 'Install Chef Client')
+
+        self.assertTrue(cc is not None)
+
+        result = self._client_request('post',
+                                      '/adventures/%s/execute' % cc['id'],
+                                      node=self.node1['id'])
+
+        self.assertEqual(result.status_code, 400)
 
 
 def build_tests():

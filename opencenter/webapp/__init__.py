@@ -44,6 +44,7 @@ from opencenter.webapp import generic
 from opencenter.webapp import utility
 from opencenter.webapp.ast import FilterBuilder, FilterTokenizer
 from opencenter.webapp.adventures import bp as adventures_bp
+from opencenter.webapp.adventures_please import bp as adventures_please
 from opencenter.webapp.attrs import bp as attrs_bp
 from opencenter.webapp.facts import bp as facts_bp
 from opencenter.webapp.facts_please import bp as facts_please
@@ -196,7 +197,7 @@ class WebServer(Flask):
         self.register_blueprint(nodes_bp, url_prefix='/admin/nodes')
         self.register_blueprint(tasks_bp, url_prefix='/tasks')
         self.register_blueprint(tasks_bp, url_prefix='/admin/tasks')
-        self.register_blueprint(adventures_bp, url_prefix='/adventures')
+        self.register_blueprint(adventures_please, url_prefix='/adventures')
         self.register_blueprint(adventures_bp, url_prefix='/admin/adventures')
         self.register_blueprint(filters_bp, url_prefix='/filters')
         self.register_blueprint(filters_bp, url_prefix='/admin/filters')
