@@ -46,6 +46,7 @@ class ScaffoldedAdventuresTests(ScaffoldedTestCase):
         self.assertEqual(len(res), 1)
         return res[0]
 
+    # Issue TA135
     def test_adventure_please_criteria(self):
         # make sure that requests to run an adventure that is not met
         # by criteria returns a 400
