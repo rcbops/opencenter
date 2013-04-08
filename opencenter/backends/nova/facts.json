@@ -78,5 +78,9 @@
                       "settable": true,
                       "converge": true,
                       "inheritance": "child_clobber",
+                      "cluster_wide": false}},
+    {"ntp_servers": {"settable": true,
+                      "converge": true,
+                      "inheritance": "child_clobber",
                       "cluster_wide": false}}
 ]
