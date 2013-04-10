@@ -189,7 +189,7 @@ def whoami():
     try:
         node = api._model_get_by_id('nodes', node_id)
     except exceptions.IdNotFound:
-        message = 'Node %s not found.' % node['node_id']
+        message = 'Node %s not found.' % node_id
         return generic.http_notfound(msg=message)
     except exceptions.IdInvalid:
         return generic.http_badrequest('Node ID must be an integer.')
