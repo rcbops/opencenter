@@ -298,6 +298,17 @@ class ChefClientBackend(opencenter.backends.Backend):
         if not node:
             return self._fail(msg='cannot find node %s' % node_id)
 
+        # Convert node name attr to chef_node_name fact for existing installs
+        node_name = node['name']
+        chef_node_name = safe_get_fact(node, 'chef_node_name')
+
+        if not chef_node_name:
+            self.logger.debug('Empty node_name fact. Applying node name attr.')
+            api.apply_expression(
+                node_id, 'facts.chef_node_name := "%s"' % node_name)
+            node['facts']['chef_node_name'] = node_name
+
+        # Converge
         api.apply_expression(node_id, 'attrs.converged := false')
 
         if not 'chef_server_consumed' in node['facts']:
@@ -333,7 +344,7 @@ class ChefClientBackend(opencenter.backends.Backend):
             api.apply_expression(node_id, 'facts.backends := '
                                  'remove(facts.backends, "chef-client")')
 
-            self._remove_node(node['name'], chef_api)
+            self._remove_node(chef_node_name, chef_api)
 
             return self._ok()
 
@@ -359,21 +370,21 @@ class ChefClientBackend(opencenter.backends.Backend):
 
         # Find the node.  Sometimes chef takes a while to index; we will retry
         for i in range(11):
-            if self._node_exists(node['name'], chef_api):
+            if self._node_exists(chef_node_name, chef_api):
                 break
             else:
                 self.logger.info("Node '%s' is not registered with chef"
                                  "server.  Retrying %s/3)" % (
-                                     node['name'], i + 1))
+                                     chef_node_name, i + 1))
                 time.sleep(10)
             if i == 10:
                 msg = ("Node '%s' is not registered to chef.  "
-                       "Exceeded max retries" % node['name'])
+                       "Exceeded max retries" % chef_node_name)
                 self.logger.error(msg)
 
                 return self._fail(msg=msg)
 
-        chef_node = self._get_node(node['name'], chef_api)
+        chef_node = self._get_node(chef_node_name, chef_api)
         old_node_overrides = self._serialize_node_blob(chef_node.normal)
 
         self.logger.debug('Old node overrides: %s' % old_node_overrides)

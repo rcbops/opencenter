@@ -55,6 +55,7 @@ class ConvergeChefTests(OpenCenterTestCase):
             'facts': {
                 'chef_server_consumed': 1,
                 'chef_environment': '_default',
+                'chef_node_name': 'test',
                 'nova_role': ''
             }
         }
@@ -156,6 +157,40 @@ class ConvergeChefTests(OpenCenterTestCase):
         result = self.backend.converge_chef(None, self.api, 1)
 
         self.assertFailResponse(result, 'could not find adventurator', 1)
+
+    def test_sets_chef_node_name_fact_from_node_name_if_missing(self):
+        del self.node['facts']['chef_node_name']
+        self.node['name'] = 'locahost.localdomain'
+
+        result = self.backend.converge_chef(None, self.api, 1)
+
+        self.assertOkResponse(result)
+        self.assertEqual(
+            self.node['name'],
+            self.node['facts']['chef_node_name'])
+
+    def test_sets_chef_node_name_fact_from_node_name_if_empty(self):
+        self.node['facts']['chef_node_name'] = ''
+        self.node['name'] = 'locahost.localdomain'
+
+        result = self.backend.converge_chef(None, self.api, 1)
+
+        self.assertOkResponse(result)
+        self.assertEqual(
+            self.node['name'],
+            self.node['facts']['chef_node_name'])
+
+    def test_uses_chef_node_name_in_chef_api(self):
+        self.node['facts']['chef_node_name'] = 'funkynode'
+        self.node['name'] = 'locahost.localdomain'
+
+        result = self.backend.converge_chef(None, self.api, 1)
+
+        self.assertOkResponse(result)
+        self.assertNotEqual(
+            self.node['name'],
+            self.node['facts']['chef_node_name'])
+        self.backend._get_node.assert_called_with('funkynode', self.chef_api())
 
     def test_sets_chef_node_environment_from_node_fact(self):
         self.chef_node.chef_environment = '_default'
